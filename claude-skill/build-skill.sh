@@ -31,6 +31,9 @@ MASTER_3="$REPO_ROOT/3. Check/3. Completeness Check.md"
 MASTER_4="$REPO_ROOT/4. Act/4. Retrospect for continuous improvement.md"
 MASTER_WORKING_AGREEMENTS="$REPO_ROOT/Human Working Agreements.md"
 
+# Claude addon injection files (source — NOT build artifacts)
+CLAUDE_ADDON_DIR="$CORE_DIR/claude-addon/injections"
+
 # Beads addon files (source — NOT build artifacts)
 BEADS_PLAN_ADDON="$BEADS_DIR/sources/plan-beads-addon.md"
 BEADS_DO_ADDON="$BEADS_DIR/sources/do-beads-addon.md"
@@ -50,6 +53,17 @@ for file in "$MASTER_1A" "$MASTER_1B" "$MASTER_2" "$MASTER_ANTI_PATTERNS" "$MAST
 done
 echo -e "${GREEN}✓ All master files found${NC}\n"
 
+# Verify Claude addon injection files exist
+echo -e "${BLUE}Verifying Claude addon injection files...${NC}"
+CLAUDE_INJECTION_FILES=("goal-probe.md" "plan-mode-probe.md" "think-probe.md" "do-think-probe.md" "check-review-probe.md" "act-retro-probes.md")
+for fname in "${CLAUDE_INJECTION_FILES[@]}"; do
+    if [ ! -f "$CLAUDE_ADDON_DIR/$fname" ]; then
+        echo -e "${RED}Error: Claude injection file not found: $CLAUDE_ADDON_DIR/$fname${NC}"
+        exit 1
+    fi
+done
+echo -e "${GREEN}✓ All Claude injection files found${NC}\n"
+
 # Verify beads addon files exist
 echo -e "${BLUE}Verifying beads addon files...${NC}"
 for file in "$BEADS_PLAN_ADDON" "$BEADS_DO_ADDON" "$BEADS_CHECK_ADDON" "$BEADS_ACT_ADDON" "$BEADS_SETUP" "$BEADS_WORKFLOW" "$BEADS_EXPORT_SCRIPT"; do
@@ -62,6 +76,29 @@ echo -e "${GREEN}✓ All beads addon files found${NC}\n"
 
 # Create build directory
 mkdir -p "$CORE_DIR/references"
+
+# Replace <!-- CLAUDE_INJECT: key --> markers in a built reference file with the
+# corresponding injection content from claude-addon/injections/<key>.md.
+# Markers are HTML comments — invisible in Obsidian, replaced at build time.
+process_injections() {
+    local file="$1"
+    for injection_file in "$CLAUDE_ADDON_DIR"/*.md; do
+        local key
+        key=$(basename "$injection_file" .md)
+        python3 - "$file" "$injection_file" "$key" << 'PYEOF'
+import sys
+target_file, inject_file, key = sys.argv[1], sys.argv[2], sys.argv[3]
+marker = f"<!-- CLAUDE_INJECT: {key} -->"
+with open(inject_file, "r") as f:
+    content = f.read().rstrip("\n")
+with open(target_file, "r") as f:
+    text = f.read()
+text = text.replace(marker, content)
+with open(target_file, "w") as f:
+    f.write(text)
+PYEOF
+    done
+}
 
 # Strip license block from a file — removes "## License & Attribution" to EOF.
 # Source templates retain the block for GitHub/documentation; built files omit it
@@ -112,6 +149,20 @@ echo -e "${GREEN}✓ Built act-prompts.md${NC}"
 echo -e "${BLUE}Building working-agreements.md...${NC}"
 strip_license "$MASTER_WORKING_AGREEMENTS" > "$CORE_DIR/references/working-agreements.md"
 echo -e "${GREEN}✓ Built working-agreements.md${NC}\n"
+
+# ═══════════════════════════════════════════════════════
+# INJECT CLAUDE-SPECIFIC CONTENT
+# ═══════════════════════════════════════════════════════
+
+echo -e "${YELLOW}┌─────────────────────────────────────────────────────┐${NC}"
+echo -e "${YELLOW}│  Injecting Claude-specific content                  │${NC}"
+echo -e "${YELLOW}└─────────────────────────────────────────────────────┘${NC}\n"
+
+process_injections "$CORE_DIR/references/plan-prompts.md"
+process_injections "$CORE_DIR/references/do-prompts.md"
+process_injections "$CORE_DIR/references/check-prompts.md"
+process_injections "$CORE_DIR/references/act-prompts.md"
+echo -e "${GREEN}✓ Claude-specific injections applied${NC}\n"
 
 # ═══════════════════════════════════════════════════════
 # COPY BEADS ADDON FILES (progressive disclosure references)

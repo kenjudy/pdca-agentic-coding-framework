@@ -11,6 +11,10 @@ If provided, run this prompt in "Planning mode"
 
 > **Tool check:** Before running this analysis, does Claude Code have a command to explore codebase structure to support pattern discovery? (e.g., `/codebase-memory-exploring`) Would entering a planning mode help scope this analysis? (e.g., `/plan`)
 
+<!-- CLAUDE_INJECT: plan-mode-probe -->
+
+<!-- CLAUDE_INJECT: think-probe -->
+
 ---
 ``` markdown
 

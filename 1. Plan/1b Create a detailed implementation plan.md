@@ -10,6 +10,8 @@
 
 If available run this prompt in "Planning" mode.
 
+<!-- CLAUDE_INJECT: plan-mode-probe -->
+
 ---
 ``` markdown
 
