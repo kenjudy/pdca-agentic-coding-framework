@@ -43,6 +43,20 @@ EOF
 )"
 ```
 
+## Create CHECK and ACT Tasks
+
+After finalizing the plan, create tasks for the verification and retrospective steps:
+
+```bash
+# CHECK task — always required
+bd create "CHECK: Verify [goal] against acceptance criteria" --parent [epic-id] --type task
+
+# ACT task — always required
+bd create "ACT: Retrospective and working agreement updates" --parent [epic-id] --type task
+```
+
+These tasks appear in the task graph alongside implementation steps so CHECK can verify completeness against the full plan.
+
 **Why use beads in PLAN phase:**
 - Preserves analysis across sessions
 - Creates audit trail of decision rationale

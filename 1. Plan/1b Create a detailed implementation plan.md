@@ -51,6 +51,8 @@ Before behavioral steps begin, identify any structural cleanup required to make 
 - Definition of done (tests pass + process followed)
 - Risk areas to monitor
 - Rollback approach if needed
+- CHECK step: what will be verified and against what criteria
+- ACT step: retrospective (5-10 min) and proposed working agreement updates
 
 **Process Checkpoints:**
 
@@ -64,8 +66,6 @@ must include explicit tasks — not implied — for each of the following:
 
 - [ ] Build system: build script exists, is executable, produces correct output, command documented in CLAUDE.md
 - [ ] Documentation: README updated, CLAUDE.md commands table updated
-- [ ] CHECK: state what will be verified and against what criteria for this specific feature
-- [ ] ACT: retrospective, working agreement updates proposed, issues closed
 
 These are not cleanup items. Name them in the plan so CHECK can verify them like any other step.
 
