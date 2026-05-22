@@ -46,7 +46,7 @@ This template is part of the Human-AI TDD Collaboration Process framework.
 
 **Usage:** You are free to use, modify, and distribute this template with appropriate attribution. 
 
-**Source:** [Human-AI Collaboration Process Repository](https://github.com/kenjudy/human-ai-collaboration-process)
+**Source:** [Human-AI Collaboration Process Repository](https://github.com/kenjudy/pdca-framework)
 
 ---
 *2025*

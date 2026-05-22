@@ -51,7 +51,7 @@ This document is part of the Human-AI TDD Collaboration Process framework.
 
 **Living Document:** These working agreements should be continuously refined based on retrospective learnings from each collaboration session.
 
-**Source:** [Human-AI Collaboration Process Repository](https://github.com/kenjudy/human-ai-collaboration-process)
+**Source:** [Human-AI Collaboration Process Repository](https://github.com/kenjudy/pdca-framework)
 
 ---
 *2025*
