@@ -91,7 +91,7 @@ This template is part of the Human-AI PDCA Collaboration Process framework.
 
 **Usage:** You are free to use, modify, and distribute this template with appropriate attribution. 
 
-**Source:** [Human-AI Collaboration Process Repository](https://github.com/kenjudy/pdca-framework)
+**Source:** [PDCA Framework Repository](https://github.com/kenjudy/pdca-framework)
 
 ---
 *2025*
