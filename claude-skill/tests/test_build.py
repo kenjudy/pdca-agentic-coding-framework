@@ -367,7 +367,6 @@ class TestSkillPackage(unittest.TestCase):
     def test_do_prompts_contains_master_content(self):
         """do-prompts.md must contain master source content (injections may add to it)."""
         packaged = read_zip_file(SKILL_FILE, f"{SKILL_NAME}/references/do-prompts.md")
-        master = (REPO_ROOT / "2. Do" / "2. Test Drive the Change.md").read_text()
         # Use a distinctive phrase from the master, not the first line which may change
         distinctive = "BEFORE STARTING STEP - ARCHITECTURAL SAFETY CHECK"
         self.assertIn(
@@ -482,6 +481,15 @@ class TestClaudeInjections(unittest.TestCase):
                     content,
                     f"{pkg_path} still contains an unresolved CLAUDE_INJECT marker",
                 )
+
+    def test_plan_prompts_directs_steps_to_do_phase(self):
+        """plan-prompts.md must explicitly direct each implementation step to use the DO phase prompt."""
+        content = read_zip_file(SKILL_FILE, f"{SKILL_NAME}/references/plan-prompts.md")
+        self.assertIn(
+            "DO phase prompt",
+            content,
+            "plan-prompts.md missing instruction to use DO phase prompt for each step",
+        )
 
     def test_plan_prompts_contains_plan_mode_probe(self):
         """plan-prompts.md must contain the plan-mode-probe injection."""
