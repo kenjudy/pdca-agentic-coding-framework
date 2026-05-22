@@ -71,6 +71,8 @@ must include explicit tasks — not implied — for each of the following:
 
 These are not cleanup items. Name them in the plan so CHECK can verify them like any other step.
 
+At the end of your plan output, remind the human: "To execute each step, invoke PDCA Do. Do not begin any step without first opening that prompt."
+
 ```
 
 _Plan is verbose and I don't add it to any tracking_
