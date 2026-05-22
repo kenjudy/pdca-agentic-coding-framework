@@ -47,7 +47,7 @@ Before behavioral steps begin, identify any structural cleanup required to make 
 
 **Create actionable plan with:**
 
-- Numbered implementation steps (small, testable increments)
+- Numbered implementation steps (small, testable increments) — each step is executed using the DO phase prompt
 - ONE file/component per step when possible
 - Acceptance criteria for each step
 - Definition of done (tests pass + process followed)
