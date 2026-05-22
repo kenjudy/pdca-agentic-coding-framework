@@ -2,61 +2,67 @@
 
 Phase: ACT — end-of-session retrospective for continuous improvement
 
-Key behaviors evaluated:
-1. Identifies 2-3 specific critical moments — concrete decisions or interventions
-   that impacted the session, not generic observations
-2. Provides Start doing / Stop doing / Keep doing — three distinct, actionable insights
-3. Answers the "ONE thing" final question — a single highest-leverage change
-4. Covers the full retrospective structure even for short sessions
-5. Findings are specific to the described session, not generic coaching advice
+The ACT prompt is a Socratic facilitator, not a directive reporter. The agent:
+1. Analyzes the session transcript (goal achieved, critical moments, collaboration
+   patterns, TDD discipline) and presents findings factually
+2. Asks open questions to surface the human's own patterns — does not answer for them
+3. Frames observations as hypotheses for the human to validate, not prescriptions
+4. Asks for ONE thing the human would change; may offer 2-3 candidates as hypotheses
+   but leaves the human to choose and commit
+5. Offers a save/capture option to close
 
-Why these signals:
-- must_contain "Start doing:", "Stop doing:", "Keep doing:": these are the literal
-  labels for the three actionable insights; their absence means the model gave a
-  generic reflection without the required structure
-- GEval adds coverage for specificity (critical moments must reference the session)
-  and completeness (ONE thing question must be answered)
-- No must_not_contain needed: the failure mode here is vagueness and skipping
-  structure, which mechanical checks can't easily detect — GEval is the primary check
+Key distinction: observations and hypotheses are expected and good.
+Prescriptions ("you should change X") are a failure mode.
 
-Rubric follows Anthropic's chain-of-thought guidance: judge states strengths, weaknesses,
-and reasoning before assigning a score.
+Rubric follows Anthropic's chain-of-thought guidance: judge states strengths,
+weaknesses, and reasoning before assigning a score.
 """
 
 CRITERIA = """
-You are evaluating an AI assistant's response to a PDCA Act Phase (retrospection) request.
-The AI was given a system prompt requiring a structured end-of-session retrospective. Key requirements:
-  1. Session overview — brief summary of goal and scope.
-  2. Critical moments analysis — 2-3 specific moments that most impacted success or failure.
-     These must be concrete and tied to the described session, not generic advice.
-  3. Start doing / Stop doing / Keep doing — three distinct, actionable insights.
-  4. Next session setup decisions — process boundaries, intervention triggers, etc.
-  5. ONE thing — if you could change only one thing about the collaboration, what would it be?
-     This question must be answered specifically, not left open or deflected.
+You are evaluating an AI assistant's response to a PDCA Act Phase (Socratic retrospective) request.
+The AI was given a system prompt structured as a five-stage micro-retrospective. Key requirements:
+  1. Analyze and present — summarize the session factually: goal achieved or not, 2-3 specific
+     critical moments (concrete, tied to the described session), collaboration patterns,
+     and whether TDD discipline held.
+  2. Open question after summary — ask what stands out to the human or what surprised them.
+     The agent does NOT interpret the data for the human here.
+  3. Hypothesis framing — frame observations as hypotheses for the human to validate.
+     Example: "I noticed X happening three times — could that be the pattern?"
+     NOT: "The pattern here is X and you should address it."
+  4. ONE thing — ask what ONE thing the human would change. The agent may offer 2-3
+     candidate hypotheses if the human is stuck, but the human chooses and commits.
+     The agent does not prescribe a specific change.
+  5. Close — offer a save/capture option: beads note, working agreement update, or skip.
 
 Before scoring, think through the following:
 
-**Strengths** — What does the response do correctly? Are critical moments specific and
-  session-grounded? Are Start/Stop/Keep present and actionable? Is the ONE thing answered?
+**Strengths** — What does the response do well? Is the data summary factual and session-specific?
+  Does it ask open questions rather than answer them? Does it frame observations as hypotheses?
+  Does it invite the human to decide rather than prescribing an action?
 
-**Weaknesses** — What is missing or too generic? Are critical moments vague platitudes?
-  Is any required section absent? Is the ONE thing deflected or missing?
+**Weaknesses** — What goes wrong? Does the agent editorialize the data summary?
+  Does it answer its own questions instead of asking them? Does it prescribe specific changes
+  rather than offering candidates? Does it skip the save/capture close?
 
 **Reasoning** — Based on strengths and weaknesses, explain the score you will assign.
 
 Then assign a score on a scale of 0 to 1:
 
-1.0 — Fully compliant: session-specific critical moments, all three Start/Stop/Keep insights
-      present and actionable, next session decisions addressed, ONE thing answered specifically.
+1.0 — Fully compliant: session data summarized factually with session-specific critical moments,
+      open question asked after summary, observations framed as hypotheses (not prescriptions),
+      ONE thing asked with human as decision-maker, save/capture option offered.
 
-0.7 — Mostly compliant: structure is present and mostly session-specific, but one element is
-      thin — e.g., critical moments are slightly generic, or ONE thing is present but vague.
+0.7 — Mostly compliant: Socratic structure present but one element is weak — e.g., the data
+      summary editorializes slightly, or the agent leans prescriptive in one place while
+      remaining facilitative overall.
 
-0.4 — Partially compliant: has some retrospective content but is missing at least one required
-      section, or the content is generic coaching advice not grounded in the described session.
+0.4 — Partially compliant: some Socratic elements present but the agent answers its own
+      questions in at least one stage, or prescribes a specific change instead of offering
+      hypotheses and deferring to the human.
 
-0.0 — Non-compliant: provides generic advice without session-specific content, skips the
-      required structure entirely, or does not answer the ONE thing question.
+0.0 — Non-compliant: agent produces a directive retrospective report (Start/Stop/Keep style),
+      answers all questions itself, or provides generic advice without session-specific
+      grounding and without Socratic facilitation.
 """
 
 THRESHOLD = 0.5

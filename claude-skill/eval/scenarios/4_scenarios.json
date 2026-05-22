@@ -2,33 +2,33 @@
   {
     "prompt_id": "4",
     "scenario_id": "4-successful-session",
-    "description": "Successful session with good process discipline. Model must identify 2-3 specific critical moments, provide Start/Stop/Keep insights, and answer the ONE thing question.",
+    "description": "Successful session with good process discipline. Agent must summarize session factually, ask what stood out to the human, frame observations as hypotheses, and ask for ONE thing the human would change.",
     "input": "Session complete. We added webhook support. TDD was followed throughout — 5 steps, each with a called shot and failing test first. One intervention was needed when the agent tried to write a God class instead of the planned split. Took 90 minutes.",
     "expected_signals": {
       "must_contain": [],
-      "must_not_contain": [],
+      "must_not_contain": ["Start doing:", "Stop doing:", "Keep doing:"],
       "called_shot_required": false
     }
   },
   {
     "prompt_id": "4",
     "scenario_id": "4-tdd-breakdown",
-    "description": "Session where TDD discipline broke down mid-session. Model must identify the breakdown as a critical moment and give actionable Start/Stop/Keep guidance for preventing recurrence.",
+    "description": "Session where TDD discipline broke down mid-session. Agent must identify the breakdown as a critical moment, frame it as a hypothesis for the human to validate, and ask what ONE thing they would change — not prescribe the answer.",
     "input": "Session complete but TDD broke down in step 3. The agent wrote the full implementation before any test, claiming the logic was too simple to test-drive. We caught it and reset but lost 20 minutes. Feature works but test coverage feels retrofitted.",
     "expected_signals": {
       "must_contain": [],
-      "must_not_contain": [],
+      "must_not_contain": ["Start doing:", "Stop doing:", "Keep doing:", "you should"],
       "called_shot_required": false
     }
   },
   {
     "prompt_id": "4",
     "scenario_id": "4-short-session",
-    "description": "Short focused session (single bug fix). Model must still provide the complete retrospective structure — not skip sections because the session was small.",
+    "description": "Short focused session (single bug fix). Agent must still run the full five-stage structure — not skip stages because the session was small. Must ask open questions and not prescribe the ONE thing.",
     "input": "Short session: fixed a nil pointer crash in the payment processor when currency is missing. Wrote the failing test first (spec/payment_processor_spec.rb), then added a single guard clause. 15 minutes total. First time applying TDD discipline to a production hotfix in this codebase. No process violations.",
     "expected_signals": {
-      "must_contain": ["Start doing:", "Stop doing:", "Keep doing:"],
-      "must_not_contain": [],
+      "must_contain": [],
+      "must_not_contain": ["Start doing:", "Stop doing:", "Keep doing:"],
       "called_shot_required": false
     }
   }

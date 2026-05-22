@@ -5,7 +5,7 @@ import unittest
 from pathlib import Path
 from unittest.mock import MagicMock
 
-from eval.executor import run_phase
+from eval.executor import run_phase, strip_decision_probes
 
 PROMPT_CONTENT = "# Plan Phase\nGuide the user through architecture discovery."
 SCENARIO_INPUT = "I need to add OAuth2 to our Express API."
@@ -78,6 +78,52 @@ class TestRunPhaseResponse(unittest.TestCase):
         prompt_path = make_prompt_file()
         result = run_phase(prompt_path, SCENARIO_INPUT, _client=make_mock_client("non-empty response"))
         self.assertTrue(len(result) > 0)
+
+
+PROMPT_WITH_PROBE = """\
+# Plan Phase
+
+**Decision probe (30 sec):**
+
+- Does this touch a widely-used shared method? → if yes: open in `/plan` mode
+- Are there non-obvious tradeoffs? → if yes: prefix with `think harder`
+
+Guide the user through implementation.
+"""
+
+PROMPT_WITHOUT_PROBE = """\
+# Plan Phase
+
+Guide the user through implementation.
+"""
+
+
+class TestStripDecisionProbes(unittest.TestCase):
+    """strip_decision_probes removes probe blocks; leaves other content intact."""
+
+    def test_strip_decision_probes_removes_probe_block(self):
+        result = strip_decision_probes(PROMPT_WITH_PROBE)
+        self.assertNotIn("Decision probe", result)
+
+    def test_strip_decision_probes_preserves_surrounding_content(self):
+        result = strip_decision_probes(PROMPT_WITH_PROBE)
+        self.assertIn("# Plan Phase", result)
+        self.assertIn("Guide the user through implementation.", result)
+
+    def test_strip_decision_probes_is_idempotent_on_clean_text(self):
+        result = strip_decision_probes(PROMPT_WITHOUT_PROBE)
+        self.assertEqual(result, PROMPT_WITHOUT_PROBE)
+
+
+class TestRunPhaseStripsProbes(unittest.TestCase):
+    """run_phase sends probe-free content as system prompt."""
+
+    def test_run_phase_strips_probes_from_system_prompt(self):
+        prompt_path = make_prompt_file(PROMPT_WITH_PROBE)
+        mock_client = make_mock_client()
+        run_phase(prompt_path, SCENARIO_INPUT, _client=mock_client)
+        call_kwargs = mock_client.messages.create.call_args.kwargs
+        self.assertNotIn("Decision probe", call_kwargs["system"])
 
 
 if __name__ == "__main__":

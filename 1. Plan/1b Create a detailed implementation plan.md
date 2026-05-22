@@ -10,6 +10,8 @@
 
 If available run this prompt in "Planning" mode.
 
+<!-- CLAUDE_INJECT: plan-mode-probe -->
+
 ---
 ``` markdown
 
@@ -45,7 +47,7 @@ Before behavioral steps begin, identify any structural cleanup required to make 
 
 **Create actionable plan with:**
 
-- Numbered implementation steps (small, testable increments)
+- Numbered implementation steps (small, testable increments) — each step is executed using the DO phase prompt
 - ONE file/component per step when possible
 - Acceptance criteria for each step
 - Definition of done (tests pass + process followed)
@@ -69,6 +71,8 @@ must include explicit tasks — not implied — for each of the following:
 
 These are not cleanup items. Name them in the plan so CHECK can verify them like any other step.
 
+At the end of your plan output, remind the human: "To execute each step, invoke PDCA Do. Do not begin any step without first opening that prompt."
+
 ```
 
 _Plan is verbose and I don't add it to any tracking_
@@ -85,7 +89,7 @@ This template is part of the Human-AI PDCA Collaboration Process framework.
 
 **Usage:** You are free to use, modify, and distribute this template with appropriate attribution. 
 
-**Source:** [Human-AI Collaboration Process Repository](https://github.com/kenjudy/human-ai-collaboration-process)
+**Source:** [PDCA Framework Repository](https://github.com/kenjudy/pdca-framework)
 
 ---
 *2025*

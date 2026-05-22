@@ -29,7 +29,7 @@ p50/p90 distribution. The fix replaces it with a naturally bounded addition frac
 ## Step 1 — Install the PDCA Skill
   
 Follow the **Quick Install** instructions for Claude Code in
-[claude-skill/README.md — For Claude Code (Command Line)](https://github.com/kenjudy/human-ai-collaboration-process/blob/main/claude-skill/README.md#for-claude-code-command-line).
+[claude-skill/README.md — For Claude Code (Command Line)](https://github.com/kenjudy/pdca-framework/blob/main/claude-skill/README.md#for-claude-code-command-line).
   
 The install script handles placing the skill in `~/.claude/skills/pdca-framework/` so it is available across all your projects.
   
@@ -236,6 +236,6 @@ Or re-run `temp-reset.sh` from the original branch.
   
 ## References
   
-- PDCA skill install guide: [claude-skill/README.md](https://github.com/kenjudy/human-ai-collaboration-process/blob/main/claude-skill/README.md)
-- Beads integration: [claude-skill/README.md#beads-integration](https://github.com/kenjudy/human-ai-collaboration-process/blob/main/claude-skill/README.md#beads-integration)
-- Framework research and philosophy: [SOSA 2025 Notes](https://github.com/kenjudy/human-ai-collaboration-process/blob/main/presentations/SOSA%202025/SOSA%202025%20Notes.md)
+- PDCA skill install guide: [claude-skill/README.md](https://github.com/kenjudy/pdca-framework/blob/main/claude-skill/README.md)
+- Beads integration: [claude-skill/README.md#beads-integration](https://github.com/kenjudy/pdca-framework/blob/main/claude-skill/README.md#beads-integration)
+- Framework research and philosophy: [SOSA 2025 Notes](https://github.com/kenjudy/pdca-framework/blob/main/presentations/SOSA%202025/SOSA%202025%20Notes.md)

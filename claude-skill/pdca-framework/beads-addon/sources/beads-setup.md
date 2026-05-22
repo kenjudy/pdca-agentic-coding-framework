@@ -202,4 +202,4 @@ brew install dolt && bd init --verbose
 
 **Attribution:** Beads integration designed by [Ken Judy](https://github.com/kenjudy) with Claude Sonnet 4.5
 
-**Source:** [Human-AI Collaboration Process Repository](https://github.com/kenjudy/human-ai-collaboration-process)
+**Source:** [PDCA Framework Repository](https://github.com/kenjudy/pdca-framework)
