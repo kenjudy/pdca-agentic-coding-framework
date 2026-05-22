@@ -45,10 +45,13 @@ Why this note matters: it survives context compaction. Run `bd show [task-id]` m
 ## After RED → GREEN → REFACTOR
 
 ```bash
-# Close task with commit reference
-bd close [task-id] --message "✓ Tests pass, committed [hash]"
+# Commit the minimal change for this TDD cycle (one test, one commit)
+git add [test file] [production file]
+git commit -m "test: [test name] passes"
+hash=$(git rev-parse --short HEAD)
 
-# Example: bd close PDCA-a1b2.1 --message "✓ Tests pass, committed abc123"
+# Close task with the real commit hash
+bd close [task-id] --message "✓ Tests pass, committed $hash"
 ```
 
 ## Track Blocked Work

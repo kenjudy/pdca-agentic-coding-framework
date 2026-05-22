@@ -497,6 +497,15 @@ class TestClaudeInjections(unittest.TestCase):
         probe = (CLAUDE_ADDON_DIR / "plan-mode-probe.md").read_text().strip()
         self.assertIn(probe[:60], content, "plan-prompts.md missing plan-mode-probe injection")
 
+    def test_do_prompts_contains_commit_after_green(self):
+        """do-prompts.md must contain a commit-after-GREEN instruction."""
+        content = read_zip_file(SKILL_FILE, f"{SKILL_NAME}/references/do-prompts.md")
+        self.assertIn(
+            "commit",
+            content[content.find("Green phase"):content.find("Refactor")].lower(),
+            "do-prompts.md missing commit-after-green instruction",
+        )
+
     def test_do_prompts_contains_think_probe(self):
         """do-prompts.md must contain the do-think-probe injection."""
         content = read_zip_file(SKILL_FILE, f"{SKILL_NAME}/references/do-prompts.md")
@@ -694,6 +703,17 @@ class TestBeadsTemplateCompleteness(unittest.TestCase):
             "Done when:",
             content,
             "do-beads-addon.md task template must include a Done when: field",
+        )
+
+    def test_do_beads_addon_has_git_commit_after_green(self):
+        content = self._read_source("do-beads-addon.md")
+        green_pos = content.find("After RED")
+        self.assertNotEqual(green_pos, -1, "do-beads-addon.md missing 'After RED' section")
+        green_section = content[green_pos:]
+        self.assertIn(
+            "git commit",
+            green_section,
+            "do-beads-addon.md missing git commit block after GREEN",
         )
 
     # --- check-beads-addon.md ---
