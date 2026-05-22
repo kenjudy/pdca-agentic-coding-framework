@@ -5,11 +5,21 @@ Anthropic API, and returns the model's response. API key is loaded from
 .env (see .env.example).
 """
 
+import re
 from pathlib import Path
 from typing import Any
 
 DEFAULT_MODEL = "claude-sonnet-4-6"
 MAX_TOKENS = 2048
+
+
+def strip_decision_probes(text: str) -> str:
+    """Remove Decision probe blocks from prompt text before sending to the model.
+
+    Probes are human-facing decision gates; the model should not see them.
+    Pattern: **Decision probe...:** header, blank line, bullet list, trailing blank line.
+    """
+    return re.sub(r"\*\*Decision probe[^\n]*\n\n(?:-[^\n]*\n)+\n?", "", text)
 
 
 def _make_client() -> Any:
@@ -48,6 +58,6 @@ def run_phase(
         "messages": [{"role": "user", "content": scenario_input}],
     }
     if include_skill_prompt:
-        kwargs["system"] = phase_prompt_path.read_text()
+        kwargs["system"] = strip_decision_probes(phase_prompt_path.read_text())
     response = client.messages.create(**kwargs)
     return response.content[0].text

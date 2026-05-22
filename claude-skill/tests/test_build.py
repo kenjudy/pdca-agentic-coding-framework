@@ -59,6 +59,16 @@ BEADS_SOURCE_FILES = [
     BEADS_ADDON_DIR / "beads-workflow.md",
 ]
 
+CLAUDE_ADDON_DIR = CLAUDE_SKILL_DIR / "pdca-framework" / "claude-addon" / "injections"
+CLAUDE_INJECTION_FILES = [
+    "goal-probe.md",
+    "plan-mode-probe.md",
+    "think-probe.md",
+    "do-think-probe.md",
+    "check-review-probe.md",
+    "act-retro-probes.md",
+]
+
 
 def read_zip_file(zip_path, member):
     with zipfile.ZipFile(zip_path) as zf:
@@ -354,14 +364,15 @@ class TestSkillPackage(unittest.TestCase):
             "plan-prompts.md doesn't appear to contain 1b master content",
         )
 
-    def test_do_prompts_matches_master(self):
+    def test_do_prompts_contains_master_content(self):
+        """do-prompts.md must contain master source content (injections may add to it)."""
         packaged = read_zip_file(SKILL_FILE, f"{SKILL_NAME}/references/do-prompts.md")
-        master = (REPO_ROOT / "2. Do" / "2. Test Drive the Change.md").read_text()
-        master_stripped = master.split("## License & Attribution")[0]
-        self.assertEqual(
-            packaged.strip(),
-            master_stripped.strip(),
-            "do-prompts.md content doesn't match license-stripped master source",
+        # Use a distinctive phrase from the master, not the first line which may change
+        distinctive = "BEFORE STARTING STEP - ARCHITECTURAL SAFETY CHECK"
+        self.assertIn(
+            distinctive,
+            packaged,
+            "do-prompts.md doesn't contain expected master content",
         )
 
     def test_working_agreements_matches_master(self):
@@ -435,6 +446,77 @@ class TestSkillPackage(unittest.TestCase):
                     f"{pkg_path} still contains a License & Attribution block — "
                     "strip_license() should remove it at build time",
                 )
+
+
+class TestClaudeInjections(unittest.TestCase):
+    """Validate Claude-specific injection system: source files exist, markers replaced."""
+
+    def test_injection_source_files_exist(self):
+        for fname in CLAUDE_INJECTION_FILES:
+            with self.subTest(file=fname):
+                path = CLAUDE_ADDON_DIR / fname
+                self.assertTrue(path.exists(), f"Claude injection source missing: {path}")
+
+    def test_injection_source_files_non_empty(self):
+        for fname in CLAUDE_INJECTION_FILES:
+            with self.subTest(file=fname):
+                path = CLAUDE_ADDON_DIR / fname
+                if not path.exists():
+                    self.skipTest(f"Source file missing: {path}")
+                self.assertGreater(path.stat().st_size, 0, f"Claude injection file is empty: {fname}")
+
+    def test_no_inject_markers_remain_in_built_files(self):
+        """All CLAUDE_INJECT markers must be replaced during build — none should survive."""
+        built_files = [
+            f"{SKILL_NAME}/references/plan-prompts.md",
+            f"{SKILL_NAME}/references/do-prompts.md",
+            f"{SKILL_NAME}/references/check-prompts.md",
+            f"{SKILL_NAME}/references/act-prompts.md",
+        ]
+        for pkg_path in built_files:
+            with self.subTest(file=pkg_path):
+                content = read_zip_file(SKILL_FILE, pkg_path)
+                self.assertNotIn(
+                    "CLAUDE_INJECT",
+                    content,
+                    f"{pkg_path} still contains an unresolved CLAUDE_INJECT marker",
+                )
+
+    def test_plan_prompts_directs_steps_to_do_phase(self):
+        """plan-prompts.md must explicitly direct each implementation step to use the DO phase prompt."""
+        content = read_zip_file(SKILL_FILE, f"{SKILL_NAME}/references/plan-prompts.md")
+        self.assertIn(
+            "DO phase prompt",
+            content,
+            "plan-prompts.md missing instruction to use DO phase prompt for each step",
+        )
+
+    def test_plan_prompts_contains_plan_mode_probe(self):
+        """plan-prompts.md must contain the plan-mode-probe injection."""
+        content = read_zip_file(SKILL_FILE, f"{SKILL_NAME}/references/plan-prompts.md")
+        probe = (CLAUDE_ADDON_DIR / "plan-mode-probe.md").read_text().strip()
+        self.assertIn(probe[:60], content, "plan-prompts.md missing plan-mode-probe injection")
+
+    def test_do_prompts_contains_commit_after_green(self):
+        """do-prompts.md must contain a commit-after-GREEN instruction."""
+        content = read_zip_file(SKILL_FILE, f"{SKILL_NAME}/references/do-prompts.md")
+        self.assertIn(
+            "commit",
+            content[content.find("Green phase"):content.find("Refactor")].lower(),
+            "do-prompts.md missing commit-after-green instruction",
+        )
+
+    def test_do_prompts_contains_think_probe(self):
+        """do-prompts.md must contain the do-think-probe injection."""
+        content = read_zip_file(SKILL_FILE, f"{SKILL_NAME}/references/do-prompts.md")
+        probe = (CLAUDE_ADDON_DIR / "do-think-probe.md").read_text().strip()
+        self.assertIn(probe[:60], content, "do-prompts.md missing do-think-probe injection")
+
+    def test_act_prompts_contains_retro_probe(self):
+        """act-prompts.md must contain the act-retro-probes injection."""
+        content = read_zip_file(SKILL_FILE, f"{SKILL_NAME}/references/act-prompts.md")
+        probe = (CLAUDE_ADDON_DIR / "act-retro-probes.md").read_text().strip()
+        self.assertIn(probe[:60], content, "act-prompts.md missing act-retro-probes injection")
 
 
 class TestBuildScript(unittest.TestCase):
@@ -621,6 +703,17 @@ class TestBeadsTemplateCompleteness(unittest.TestCase):
             "Done when:",
             content,
             "do-beads-addon.md task template must include a Done when: field",
+        )
+
+    def test_do_beads_addon_has_git_commit_after_green(self):
+        content = self._read_source("do-beads-addon.md")
+        green_pos = content.find("After RED")
+        self.assertNotEqual(green_pos, -1, "do-beads-addon.md missing 'After RED' section")
+        green_section = content[green_pos:]
+        self.assertIn(
+            "git commit",
+            green_section,
+            "do-beads-addon.md missing git commit block after GREEN",
         )
 
     # --- check-beads-addon.md ---

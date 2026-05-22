@@ -11,6 +11,10 @@ If provided, run this prompt in "Planning mode"
 
 > **Tool check:** Before running this analysis, does Claude Code have a command to explore codebase structure to support pattern discovery? (e.g., `/codebase-memory-exploring`) Would entering a planning mode help scope this analysis? (e.g., `/plan`)
 
+<!-- CLAUDE_INJECT: plan-mode-probe -->
+
+<!-- CLAUDE_INJECT: think-probe -->
+
 ---
 ``` markdown
 
@@ -87,7 +91,7 @@ This template is part of the Human-AI PDCA Collaboration Process framework.
 
 **Usage:** You are free to use, modify, and distribute this template with appropriate attribution. 
 
-**Source:** [Human-AI Collaboration Process Repository](https://github.com/kenjudy/human-ai-collaboration-process)
+**Source:** [PDCA Framework Repository](https://github.com/kenjudy/pdca-framework)
 
 ---
 *2025*
