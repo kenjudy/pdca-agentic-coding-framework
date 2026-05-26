@@ -547,7 +547,7 @@ All beads commands in the prompts are optional. The skill includes `references/b
 
 | Component | Location | Scope | Purpose |
 |-----------|----------|-------|---------|
-| **Skill Installation** | `~/.claude/skills/pdca-framework-beads/` | Global | PDCA prompts available in all projects |
+| **Skill Installation** | `~/.claude/skills/pdca-framework/` | Global | PDCA prompts available in all projects |
 | **Beads Database** | `.beads/` in each project root | Per-Project | Task tracking for THAT project only |
 
 **You install the skill once globally, but initialize beads separately in each project.**
