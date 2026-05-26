@@ -610,9 +610,13 @@ bd --version
 ```bash
 # Install beads MCP server
 pip3 install beads-mcp
+```
 
-# Configure in Claude Desktop/Code
-# Add to ~/Library/Application Support/Claude/claude_desktop_config.json:
+**Configure** — add the following to your config file, then restart:
+- Claude Desktop app: `~/Library/Application Support/Claude/claude_desktop_config.json`
+- Claude CLI: `~/.claude.json`
+
+```json
 {
   "mcpServers": {
     "beads": {
@@ -620,7 +624,9 @@ pip3 install beads-mcp
     }
   }
 }
+```
 
+```bash
 # Restart Claude Desktop/Code after configuration
 ```
 
