@@ -978,5 +978,52 @@ class TestBeadsWorkflowContent(unittest.TestCase):
         )
 
 
+INSTALL_SCRIPT = CLAUDE_SKILL_DIR / "install-skill.sh"
+BUILD_SKILL_SCRIPT = CLAUDE_SKILL_DIR / "build-skill.sh"
+BUILD_SCAFFOLD_SCRIPT = CLAUDE_SKILL_DIR / "build-scaffold.sh"
+
+
+class TestInstallScriptOverride(unittest.TestCase):
+    """install-skill.sh and build scripts must honour the PDCA_SKILLS_DIR env var."""
+
+    def test_install_script_contains_pdca_skills_dir(self):
+        """install-skill.sh source must reference PDCA_SKILLS_DIR so the override is wired up."""
+        content = INSTALL_SCRIPT.read_text()
+        self.assertIn(
+            "PDCA_SKILLS_DIR",
+            content,
+            "install-skill.sh must reference PDCA_SKILLS_DIR to support installation directory override",
+        )
+
+    def test_personal_install_respects_pdca_skills_dir_override(self):
+        """install-skill.sh personal must install to PDCA_SKILLS_DIR when that env var is set."""
+        import tempfile
+
+        skill_file = CLAUDE_SKILL_DIR / "pdca-framework.skill"
+        if not skill_file.exists():
+            self.skipTest("pdca-framework.skill not found — run build-skill.sh first")
+
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            env = os.environ.copy()
+            env["PDCA_SKILLS_DIR"] = tmp_dir
+            result = subprocess.run(
+                ["bash", "install-skill.sh", "personal"],
+                cwd=str(CLAUDE_SKILL_DIR),
+                env=env,
+                capture_output=True,
+                text=True,
+                stdin=subprocess.DEVNULL,
+            )
+            self.assertEqual(
+                result.returncode,
+                0,
+                f"install-skill.sh failed:\nSTDOUT:\n{result.stdout}\nSTDERR:\n{result.stderr}",
+            )
+            expected_skill_md = Path(tmp_dir) / "pdca-framework" / "SKILL.md"
+            self.assertTrue(
+                expected_skill_md.exists(),
+                f"Skill not installed to PDCA_SKILLS_DIR={tmp_dir}: SKILL.md not found at {expected_skill_md}",
+            )
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)

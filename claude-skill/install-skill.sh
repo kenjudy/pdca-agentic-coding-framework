@@ -14,6 +14,8 @@ NC='\033[0m' # No Color
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SKILL_FILE="$SCRIPT_DIR/pdca-framework.skill"
 SKILL_NAME="pdca-framework"
+DEFAULT_PDCA_SKILLS_DIR="$HOME/.claude/skills"
+PDCA_SKILLS_DIR="${PDCA_SKILLS_DIR:-$DEFAULT_PDCA_SKILLS_DIR}"
 
 echo -e "${BLUE}═══════════════════════════════════════════════════════${NC}"
 echo -e "${BLUE}   PDCA Framework Skill Installer for Claude Code${NC}"
@@ -41,7 +43,7 @@ INSTALL_TYPE="${1:-personal}"
 
 echo -e "${YELLOW}Installation Scope:${NC}"
 echo ""
-echo "  ${GREEN}personal${NC} (default) — ~/.claude/skills/  (all your projects)"
+echo "  ${GREEN}personal${NC} (default) — $PDCA_SKILLS_DIR/  (all your projects)"
 echo "  ${GREEN}project${NC}            — .claude/skills/     (current project, shared via git)"
 echo ""
 
@@ -53,7 +55,7 @@ fi
 # Determine installation directory
 case "$INSTALL_TYPE" in
     personal|p)
-        INSTALL_DIR="$HOME/.claude/skills/$SKILL_NAME"
+        INSTALL_DIR="$PDCA_SKILLS_DIR/$SKILL_NAME"
         SCOPE="Personal"
         SCOPE_DESC="Available across all your projects"
         ;;
