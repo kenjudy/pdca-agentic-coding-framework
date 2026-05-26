@@ -1026,12 +1026,21 @@ class TestInstallScriptOverride(unittest.TestCase):
             )
 
     def test_build_skill_sh_next_steps_contains_pdca_skills_dir(self):
-        """build-skill.sh Next steps hint must reference $PDCA_SKILLS_DIR so users see their actual install path."""
+        """build-skill.sh Next steps hint must substitute $PDCA_SKILLS_DIR so users see their actual install path."""
         content = BUILD_SKILL_SCRIPT.read_text()
         self.assertIn(
             "$PDCA_SKILLS_DIR",
             content,
             "build-skill.sh Next steps hint must reference $PDCA_SKILLS_DIR",
+        )
+
+    def test_build_scaffold_sh_next_steps_contains_pdca_skills_dir(self):
+        """build-scaffold.sh Next steps hint must substitute $PDCA_SKILLS_DIR so users see their actual install path."""
+        content = BUILD_SCAFFOLD_SCRIPT.read_text()
+        self.assertIn(
+            "$PDCA_SKILLS_DIR",
+            content,
+            "build-scaffold.sh Next steps hint must reference $PDCA_SKILLS_DIR",
         )
 
 

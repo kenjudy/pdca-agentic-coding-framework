@@ -20,6 +20,8 @@ echo -e "${BLUE}═════════════════════�
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 SKILL_DIR="$SCRIPT_DIR/pdca-scaffold"
+DEFAULT_PDCA_SKILLS_DIR="$HOME/.claude/skills"
+PDCA_SKILLS_DIR="${PDCA_SKILLS_DIR:-$DEFAULT_PDCA_SKILLS_DIR}"
 
 # Master source files (5. Scaffold/ — source of truth for prompt content)
 MASTER_DISCOVERY="$REPO_ROOT/5. Scaffold/5a. Socratic Discovery.md"
@@ -113,6 +115,6 @@ echo ""
 
 echo -e "${BLUE}Next steps:${NC}"
 echo "1. Review generated files in pdca-scaffold/references/"
-echo "2. Install: unzip -o pdca-scaffold.skill -d ~/.claude/skills/"
+echo "2. Install: unzip -o pdca-scaffold.skill -d $PDCA_SKILLS_DIR/"
 echo "3. Commit changes if everything looks good"
 echo ""
