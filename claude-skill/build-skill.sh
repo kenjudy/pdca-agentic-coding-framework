@@ -21,6 +21,8 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 CORE_DIR="$SCRIPT_DIR/pdca-framework"
 BEADS_DIR="$CORE_DIR/beads-addon"
+DEFAULT_PDCA_SKILLS_DIR="$HOME/.claude/skills"
+PDCA_SKILLS_DIR="${PDCA_SKILLS_DIR:-$DEFAULT_PDCA_SKILLS_DIR}"
 
 # Master source files (Obsidian notes — source of truth for prompt content)
 MASTER_1A="$REPO_ROOT/1. Plan/1a Analyze to determine approach for achieving the goal.md"
@@ -240,7 +242,7 @@ echo ""
 
 echo -e "${BLUE}Next steps:${NC}"
 echo "1. Review generated files in pdca-framework/references/"
-echo "2. Install: unzip -o pdca-framework.skill -d ~/.claude/skills/pdca-framework/"
+echo "2. Install: unzip -o pdca-framework.skill -d $PDCA_SKILLS_DIR/"
 echo "3. Commit changes if everything looks good"
 echo ""
 echo -e "${YELLOW}Per-project beads setup reminder:${NC}"

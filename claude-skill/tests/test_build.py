@@ -1025,5 +1025,15 @@ class TestInstallScriptOverride(unittest.TestCase):
                 f"Skill not installed to PDCA_SKILLS_DIR={tmp_dir}: SKILL.md not found at {expected_skill_md}",
             )
 
+    def test_build_skill_sh_next_steps_contains_pdca_skills_dir(self):
+        """build-skill.sh Next steps hint must reference $PDCA_SKILLS_DIR so users see their actual install path."""
+        content = BUILD_SKILL_SCRIPT.read_text()
+        self.assertIn(
+            "$PDCA_SKILLS_DIR",
+            content,
+            "build-skill.sh Next steps hint must reference $PDCA_SKILLS_DIR",
+        )
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
