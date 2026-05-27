@@ -31,7 +31,7 @@ claude-skill/pdca-framework-beads.skill
 claude-skill/temp_package/
 
 # Beads credential file
-.beads/.beads-credential-key
+.beads/
 
 # Dolt database files (added by bd init)
 .dolt/
