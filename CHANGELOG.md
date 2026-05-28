@@ -1,5 +1,45 @@
 # PDCA Framework Skill - Update Summary
 
+## v1.1.0 (2026-05-28)
+
+### New Skills
+- **pdca-scaffold**: New first-class skill using 5-layer Socratic discovery to generate a domain-specific PDCA skill for any complex repeatable human task. Includes an active learning loop: after each ACT phase, proposes specific diffs back to the skill's own reference files; the human approves and commits; the skill sharpens over cycles without growing longer (anti-drift rule: +/- 10 net lines per refinement). Added `5. Scaffold/` master source files, `build-scaffold.sh`, and `pdca-scaffold/SKILL.md`.
+- **daily-retro-pdca**: Scaffolded skill for structured daily and weekly retrospection. Added to `scaffolded-skills/`.
+
+### PDCA Framework Redesigns
+- **Socratic ACT phase**: ACT retrospective replaced with a five-stage Socratic structure. Agent analyzes the session transcript and presents data; human draws own insights and decides one thing to change. `rubric_4.py` rewritten to evaluate Socratic facilitation rather than directive Start/Stop/Keep output.
+- **Claude Code injection system**: Marker-based injection added to `build-skill.sh` so Claude Code-specific content (plan mode, think/ultrathink prompts, slash commands) is embedded into built reference files at build time without polluting general-purpose Obsidian source files. Six injection files under `claude-addon/injections/`: goal-probe, plan-mode-probe, think-probe, do-think-probe, check-review-probe, act-retro-probes. `TestClaudeInjections` class (7 tests) added to `test_build.py`.
+- **Unconditional CHECK and ACT steps**: CHECK and ACT are now required items in every plan, not conditional. Beads addon gains an explicit "Create CHECK and ACT Tasks" section.
+- **Vacuous greens prevention**: Stub discipline and conditional-first test selection guidance added to DO phase to prevent Anti-Pattern #7 (ordering-triggered vacuous greens). `rubric_2.py` gains criterion #6 (stub discipline). `testing-anti-patterns.md` expanded with ordering-triggered sub-case.
+- **Slash command prompts**: Slash command guidance added to plan phase prompts.
+
+### Beads and Workflow
+- `beads-setup.md`: Pre-flight check section verifies `bd --version`, `dolt version`, and `brew outdated beads dolt` before installation, with explicit upgrade commands.
+- `beads-setup.md`: MCP server status check before install instructions.
+- `beads-setup.md`: "Initializing Beads in a Project" section with "Post-Init: Align CLAUDE.md with Working Agreements" subsection.
+- `beads-workflow.md`: "Resume a Session" section with orientation commands (`bd ready`, `bd list --status in_progress`, `bd show`) as the first thing to read when returning to in-progress work.
+- `beads-workflow.md`: "Export Requirements Document" section with `export-requirements.sh` usage and a copyable slash command template.
+- `beads-addon/scripts/export-requirements.sh`: New script to generate a structured requirements document from all open epics and their tasks.
+- Git push is now human-initiated per working agreements; agent only commits.
+- gitignore: git-native JSONL vs Dolt-native `bd dolt push` both documented as valid strategies.
+
+### Build and Distribution
+- **Removed `.beads/` from skill distribution**: Eliminates 375 lines of machine-specific runtime data (config, hooks, metadata, interactions, issues JSONL) from the built artifact.
+- **Renamed `src/` to `pdca-framework/`**: Flattened `core/` directory for cleaner layout.
+- **Release workflow**: `build-scaffold.sh` step added; `pdca-scaffold.skill` now attached to GitHub Releases alongside `pdca-framework.skill`.
+- Research citations and acknowledgements added to README.
+
+### Dependency Updates
+- anthropic >=0.98.1
+- deepeval >=3.9.9
+- ruff >=0.15.12
+- mypy >=1.20.2
+- pytest >=9.0.3
+- setuptools >=82.0.1
+- python-dotenv >=1.2.2
+
+---
+
 ## v1.0.3 (2026-04-21)
 
 ### Added

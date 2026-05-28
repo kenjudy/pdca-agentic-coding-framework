@@ -93,7 +93,7 @@ Human Working Agreements.md
 ## Releasing
 
 1. Update version in `claude-skill/README.md`
-2. Note change in `claude-skill/PDCA-SKILL-CHANGELOG.md`
+2. Note change in `CHANGELOG.md` (repo root)
 3. Commit and push to main
 4. `git tag v1.x.x && git push --tags`
 

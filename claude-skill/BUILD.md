@@ -394,7 +394,7 @@ with `pdca-framework.skill` attached as a downloadable artifact.
 **To cut a release:**
 
 1. Update the version in `README.md` (search for `v1.0.0`)
-2. Note the change in `PDCA-SKILL-CHANGELOG.md`
+2. Note the change in `CHANGELOG.md` (repo root)
 3. (Optional) Run Anthropic's official skill validator — see [Pre-Release Validation](#pre-release-validation) below
 4. Commit and push to main
 5. Tag and push:

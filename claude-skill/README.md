@@ -447,10 +447,10 @@ Help improve the framework:
 
 ## Version Information
 
-**Current Version:** v1.0.3
+**Current Version:** v1.1.0
 **License:** Creative Commons Attribution 4.0 International (CC BY 4.0)
 **Attribution:** Ken Judy with Claude Anthropic 4
-**Last Updated:** 2026-04-21
+**Last Updated:** 2026-05-28
 
 ---
 

@@ -24,19 +24,26 @@ jobs:
       - name: Run tests
         run: bash claude-skill/run-tests.sh
 
-      - name: Build skill package
-        run: bash claude-skill/build-skill.sh
+      - name: Build skill packages
+        run: |
+          bash claude-skill/build-skill.sh
+          bash claude-skill/build-scaffold.sh
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v3
         with:
-          files: claude-skill/pdca-framework.skill
+          files: |
+            claude-skill/pdca-framework.skill
+            claude-skill/pdca-scaffold.skill
           generate_release_notes: false
           body: |
             ## Install via Claude UI
 
-            1. Download `pdca-framework.skill` below
+            1. Download a `.skill` file below
             2. Go to claude.ai → **Customize** → **Skills** → **Add Skill**
             3. Upload the file and toggle it on
+
+            - **pdca-framework.skill** — TDD-disciplined AI code generation with Beads integration
+            - **pdca-scaffold.skill** — Generalized PDCA skill generator for any repeatable task
 
             See the [README](https://github.com/kenjudy/pdca-code-generation-process/blob/main/claude-skill/README.md) for full documentation.
