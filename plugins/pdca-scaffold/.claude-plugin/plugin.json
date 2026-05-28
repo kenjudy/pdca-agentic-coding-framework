@@ -1,0 +1,9 @@
+{
+  "name": "pdca-scaffold",
+  "version": "1.1.0",
+  "description": "Generalized PDCA skill generator for any complex repeatable human task. Uses 5-layer Socratic discovery to produce a domain-specific, installable Claude skill. Includes an active learning loop that sharpens the skill over cycles without growing it longer.",
+  "author": {
+    "name": "Ken Judy",
+    "email": "ken@kenjudy.us"
+  }
+}
