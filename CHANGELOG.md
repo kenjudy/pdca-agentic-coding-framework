@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+### New Skills
+- **update-changelog**: New skill that drafts changelog entries from commits ahead of `main`, groups them by category, shows a preview, and writes to `CHANGELOG.md` (or a named changelog file) only after user confirmation.
+
 ### Documentation
 - Add `CONTRIBUTING.md`: contribution workflow, issue filing guidance,
   PDCA process, commit style, master prompt validation steps, and PR
