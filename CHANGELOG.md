@@ -1,5 +1,14 @@
 # PDCA Framework Skill - Update Summary
 
+## Unreleased
+
+### Documentation
+- Add `CONTRIBUTING.md`: contribution workflow, issue filing guidance,
+  PDCA process, commit style, master prompt validation steps, and PR
+  checklist including changelog format and version bump guidance
+
+---
+
 ## v1.1.0 (2026-05-28)
 
 ### New Skills
