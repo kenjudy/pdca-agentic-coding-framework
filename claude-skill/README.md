@@ -129,6 +129,17 @@ Use the installation script for automatic setup:
 .\install-skill.ps1 project    # Install to current project's .claude/skills/
 ```
 
+#### Custom Install Directory
+
+If you manage skills outside `~/.claude/skills/` (e.g. `~/.agents/skills/`), set `PDCA_SKILLS_DIR` in your shell profile:
+
+```bash
+# ~/.zshrc or ~/.bashrc
+export PDCA_SKILLS_DIR="$HOME/.agents/skills"
+```
+
+`install-skill.sh personal` and the post-build hints in `build-skill.sh` / `build-scaffold.sh` will all use this path automatically. `project` installs always go to `.claude/skills/` in the current directory regardless of this variable.
+
 #### Manual Install - Personal Skills (Available Across All Projects)
 
 ```bash
