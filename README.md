@@ -473,7 +473,7 @@ New-Item -ItemType Directory -Path ".claude\prompts" -Force
 
 ## License
 
-This setup guide is part of the Human-AI PDCA Collaboration Process framework, licensed under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/).
+This repository uses a dual license. Documentation and prompts — including all files in the phase directories and `Human Working Agreements.md` — are licensed under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). Source code — including all files in `claude-skill/` — is licensed under the [MIT License](https://opensource.org/licenses/MIT). See [LICENSE](LICENSE) for full terms.
 
 **Attribution:** Ken Judy with Claude Anthropic
 

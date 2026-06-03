@@ -420,7 +420,7 @@ This framework embodies agile principles:
 - **Responding to change** over following a plan (retrospection)
 
 ### Contributing
-The PDCA framework is open source under CC BY 4.0.
+The PDCA framework is open source under a dual license: CC BY 4.0 for documentation and prompts, MIT for source code.
 
 **Repository:** https://github.com/kenjudy/pdca-framework
 **Issues/Suggestions:** [Create GitHub issue](https://github.com/kenjudy/pdca-framework/issues/new)
@@ -448,7 +448,7 @@ Help improve the framework:
 ## Version Information
 
 **Current Version:** v1.1.0
-**License:** Creative Commons Attribution 4.0 International (CC BY 4.0)
+**License:** CC BY 4.0 (documentation & prompts) / MIT (source code)
 **Attribution:** Ken Judy with Claude Anthropic 4
 **Last Updated:** 2026-05-28
 
