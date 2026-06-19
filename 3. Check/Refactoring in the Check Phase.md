@@ -136,7 +136,7 @@ This document is part of the Human-AI PDCA Collaboration Process framework.
 
 **Attribution:** Process framework developed by [Ken Judy](https://github.com/kenjudy) with Claude Anthropic
 
-**Source:** [PDCA Framework Repository](https://github.com/kenjudy/pdca-framework)
+**Source:** [PDCA Framework Repository](https://github.com/kenjudy/pdca-agentic-coding-framework)
 
 ---
 *2026*

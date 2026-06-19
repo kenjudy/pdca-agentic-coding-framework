@@ -452,4 +452,4 @@ When submitting PRs that modify master prompts:
 
 ---
 
-**Questions?** Open an issue on [GitHub](https://github.com/kenjudy/pdca-framework)
+**Questions?** Open an issue on [GitHub](https://github.com/kenjudy/pdca-agentic-coding-framework)

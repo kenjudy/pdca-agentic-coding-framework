@@ -57,7 +57,7 @@ See [BUILD.md](BUILD.md) for full details, including troubleshooting and CI/CD a
 This is the primary distribution path — upload `pdca-framework.skill` directly in Claude's UI.
 
 1. **Download the skill file**
-   - [**Download pdca-framework.skill**](https://github.com/kenjudy/pdca-framework/releases/latest/download/pdca-framework.skill) (latest release)
+   - [**Download pdca-framework.skill**](https://github.com/kenjudy/pdca-agentic-coding-framework/releases/latest/download/pdca-framework.skill) (latest release)
    - Or build from source: `cd claude-skill && bash build-skill.sh`
 
 2. **Open Claude Settings**
@@ -384,7 +384,7 @@ The skill is based on documented research showing AI code generation quality iss
 - Google DORA 2024: 7.2% stability decrease per 25% AI adoption
 - METR 2025: 19% slower development with AI tools
 
-Read the full framework paper: [SOSA 2025 Notes](https://github.com/kenjudy/pdca-framework/blob/main/presentations/SOSA%202025/SOSA%202025%20Notes.md)
+Read the full framework paper: [SOSA 2025 Notes](https://github.com/kenjudy/pdca-agentic-coding-framework/blob/main/presentations/SOSA%202025/SOSA%202025%20Notes.md)
 
 Presentation prepared for [XP 2026](https://kenjudy.us/presentations/human-centric-ai-code-generation/)
 
@@ -398,9 +398,9 @@ This framework embodies agile principles:
 ### Contributing
 The PDCA framework is open source under a dual license: CC BY 4.0 for documentation and prompts, MIT for source code.
 
-**Repository:** https://github.com/kenjudy/pdca-framework
-**Issues/Suggestions:** [Create GitHub issue](https://github.com/kenjudy/pdca-framework/issues/new)
-**Discussions:** [GitHub Discussions](https://github.com/kenjudy/pdca-framework/discussions)
+**Repository:** https://github.com/kenjudy/pdca-agentic-coding-framework
+**Issues/Suggestions:** [Create GitHub issue](https://github.com/kenjudy/pdca-agentic-coding-framework/issues/new)
+**Discussions:** [GitHub Discussions](https://github.com/kenjudy/pdca-agentic-coding-framework/discussions)
 
 ---
 

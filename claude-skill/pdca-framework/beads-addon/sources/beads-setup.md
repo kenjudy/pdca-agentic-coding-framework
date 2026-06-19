@@ -202,4 +202,4 @@ brew install dolt && bd init --verbose
 
 **Attribution:** Beads integration designed by [Ken Judy](https://github.com/kenjudy) with Claude Sonnet 4.5
 
-**Source:** [PDCA Framework Repository](https://github.com/kenjudy/pdca-framework)
+**Source:** [PDCA Framework Repository](https://github.com/kenjudy/pdca-agentic-coding-framework)

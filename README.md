@@ -75,7 +75,7 @@ Research shows AI code generation without human oversight leads to measurable qu
 
 PDCA Framework keeps humans actively engaged, empowered, and accountable while using structured prompts to regulate agent behavior toward transparency and discipline.
 
-Read the full framework paper: [SOSA 2025 Notes](https://github.com/kenjudy/pdca-framework/blob/main/presentations/SOSA%202025/SOSA%202025%20Notes.md) — Presentation prepared for [XP 2026](https://kenjudy.us/presentations/human-centric-ai-code-generation/)
+Read the full framework paper: [SOSA 2025 Notes](https://github.com/kenjudy/pdca-agentic-coding-framework/blob/main/presentations/SOSA%202025/SOSA%202025%20Notes.md) — Presentation prepared for [XP 2026](https://kenjudy.us/presentations/human-centric-ai-code-generation/)
 
 ---
 
@@ -430,7 +430,7 @@ New-Item -ItemType Directory -Path ".claude\prompts" -Force
 ## Resources
 
 - [Claude Code Documentation](https://docs.anthropic.com/en/docs/claude-code)
-- [PDCA Process Repository](https://github.com/kenjudy/pdca-framework)
+- [PDCA Process Repository](https://github.com/kenjudy/pdca-agentic-coding-framework)
 - [claude-skill/README.md](claude-skill/README.md) — recommended skill-based setup
 
 ## License

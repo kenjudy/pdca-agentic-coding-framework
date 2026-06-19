@@ -43,4 +43,4 @@ jobs:
 
             To generate a custom AI workflow skill for any domain, see [human-directed-ai-workflow-builder](https://github.com/kenjudy/human-directed-ai-workflow-builder).
 
-            See the [README](https://github.com/kenjudy/pdca-framework/blob/main/claude-skill/README.md) for full documentation.
+            See the [README](https://github.com/kenjudy/pdca-agentic-coding-framework/blob/main/claude-skill/README.md) for full documentation.

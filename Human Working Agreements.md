@@ -51,7 +51,7 @@ This document is part of the Human-AI TDD Collaboration Process framework.
 
 **Living Document:** These working agreements should be continuously refined based on retrospective learnings from each collaboration session.
 
-**Source:** [PDCA Framework Repository](https://github.com/kenjudy/pdca-framework)
+**Source:** [PDCA Framework Repository](https://github.com/kenjudy/pdca-agentic-coding-framework)
 
 ---
 *2025*
