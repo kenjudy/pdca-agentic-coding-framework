@@ -2,7 +2,7 @@
 
 A Claude skill for human-supervised AI-assisted software development using Plan-Do-Check-Act methodology. Enforces explicit human-AI role separation, mandatory STOP gates, and TDD discipline.
 
-> **Looking to build a custom AI workflow for any domain?** See [ai-workflow-builder](https://github.com/kenjudy/ai-workflow-builder) — generates a tailored PDCA skill for any complex repeatable task, with a built-in learning loop that sharpens it each cycle.
+> **Looking to build a custom AI workflow for any domain?** See [human-directed-ai-workflow-builder](https://github.com/kenjudy/human-directed-ai-workflow-builder) — generates a tailored PDCA skill for any complex repeatable task, with a built-in learning loop that sharpens it each cycle.
 
 ---
 

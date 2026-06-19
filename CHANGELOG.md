@@ -3,7 +3,7 @@
 ## v1.2.0 (2026-06-19)
 
 ### Repository Split
-- **ai-workflow-builder** moved to its own repository: [kenjudy/ai-workflow-builder](https://github.com/kenjudy/ai-workflow-builder). Removed `5. Scaffold/`, `claude-skill/pdca-scaffold/`, `claude-skill/build-scaffold.sh`, `plugins/pdca-scaffold/`, `scaffolded-skills/`, and `presentations/` from this repo.
+- **human-directed-ai-workflow-builder** moved to its own repository: [kenjudy/human-directed-ai-workflow-builder](https://github.com/kenjudy/human-directed-ai-workflow-builder). Removed `5. Scaffold/`, `claude-skill/pdca-scaffold/`, `claude-skill/build-scaffold.sh`, `plugins/pdca-scaffold/`, `scaffolded-skills/`, and `presentations/` from this repo.
 
 ---
 

@@ -41,6 +41,6 @@ jobs:
 
             **pdca-framework.skill** — TDD-disciplined AI-assisted code generation with Beads integration.
 
-            To generate a custom AI workflow skill for any domain, see [ai-workflow-builder](https://github.com/kenjudy/ai-workflow-builder).
+            To generate a custom AI workflow skill for any domain, see [human-directed-ai-workflow-builder](https://github.com/kenjudy/human-directed-ai-workflow-builder).
 
             See the [README](https://github.com/kenjudy/pdca-framework/blob/main/claude-skill/README.md) for full documentation.

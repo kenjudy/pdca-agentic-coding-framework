@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 The **pdca-framework** skill: a TDD-disciplined PDCA cycle for AI-assisted software development. Master prompt files in `1. Plan/`, `2. Do/`, `3. Check/`, `4. Act/`. Built into `pdca-framework.skill`.
 
-> To generate a custom AI workflow skill for any domain, see [kenjudy/ai-workflow-builder](https://github.com/kenjudy/ai-workflow-builder).
+> To generate a custom AI workflow skill for any domain, see [kenjudy/human-directed-ai-workflow-builder](https://github.com/kenjudy/human-directed-ai-workflow-builder).
 
 ## Commands
 
@@ -84,7 +84,7 @@ Human Working Agreements.md
 
 The release workflow runs automatically and attaches `pdca-framework.skill` to the GitHub Release.
 
-> To release `ai-workflow-builder`, see [kenjudy/ai-workflow-builder](https://github.com/kenjudy/ai-workflow-builder).
+> To release `human-directed-ai-workflow-builder`, see [kenjudy/human-directed-ai-workflow-builder](https://github.com/kenjudy/human-directed-ai-workflow-builder).
 
 ## Issue Tracking (Beads)
 
