@@ -1,6 +1,8 @@
 # PDCA Framework Skills - Setup Guide
 
-Two Claude skills for human-supervised AI collaboration using Plan-Do-Check-Act methodology.
+A Claude skill for human-supervised AI-assisted code generation using Plan-Do-Check-Act methodology.
+
+> To generate a custom AI workflow skill for any domain, see [ai-workflow-builder](https://github.com/kenjudy/ai-workflow-builder).
 
 ---
 
@@ -16,30 +18,13 @@ A disciplined framework for AI-assisted code generation with strict TDD:
 
 ---
 
-## pdca-scaffold — Generalized PDCA Skill Generator
-
-A tool for creating domain-specific PDCA skills for any complex repeatable human task:
-- Socratic discovery across 5 layers to understand your task, human-AI role division, quality signals, and intervention points
-- Generates a valid installable Claude skill tailored to your domain
-- Built-in active learning loop: after each ACT phase, proposes specific diffs back to the skill's own reference files; the human approves and commits; the skill sharpens over cycles
-
-Use `/pdca-scaffold` when you want to systematize a repeatable task outside of software development — content pipelines, research cycles, data analysis, legal review, client reporting, product design, or any other domain where human-AI collaboration benefits from structure.
-
----
-
-## 📦 Skill Packages
+## 📦 Skill Package
 
 **pdca-framework.skill** includes:
 - ✅ Core PDCA framework (Plan→Do→Check→Act)
 - ✅ Strict TDD discipline and working agreements
 - ✅ Beads integration files included (optional)
 - 📦 **Size**: ~20K
-
-**pdca-scaffold.skill** includes:
-- ✅ 5-layer Socratic discovery framework
-- ✅ Domain PDCA generation templates
-- ✅ Active learning loop / refinement protocol
-- 📦 **Size**: ~12K
 
 **Beads** (by [Steve Yegge](https://github.com/steveyegge)) adds persistent task tracking across sessions. Optional — see [Beads Integration](#beads-integration) if you want it.
 
@@ -55,13 +40,7 @@ cd claude-skill
 ./build-skill.sh
 ```
 
-**pdca-scaffold:**
-```bash
-cd claude-skill
-./build-scaffold.sh
-```
-
-**Windows (pdca-framework only):**
+**Windows:**
 ```powershell
 cd claude-skill
 .\build-skill.ps1
@@ -137,9 +116,6 @@ mkdir -p ~/.claude/skills
 
 # Install pdca-framework
 unzip pdca-framework.skill -d ~/.claude/skills
-
-# Install pdca-scaffold (optional — for generating domain-specific PDCA skills)
-unzip pdca-scaffold.skill -d ~/.claude/skills
 
 # Extract the skill package (zip contains pdca-framework/ at root)
 unzip pdca-framework.skill -d ~/.claude/skills
