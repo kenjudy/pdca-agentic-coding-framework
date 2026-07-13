@@ -19,18 +19,18 @@ jobs:
 
       - name: Install test dependencies
         run: uv sync --extra test
-        working-directory: claude-skill
+        working-directory: skill
 
       - name: Run tests
-        run: bash claude-skill/run-tests.sh
+        run: bash skill/run-tests.sh
 
       - name: Build skill package
-        run: bash claude-skill/build-skill.sh
+        run: bash skill/build-skill.sh
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v3
         with:
-          files: claude-skill/pdca-framework.skill
+          files: skill/pdca-framework.skill
           generate_release_notes: false
           body: |
             ## Install via Claude UI
@@ -43,4 +43,4 @@ jobs:
 
             To generate a custom AI workflow skill for any domain, see [human-directed-ai-workflow-builder](https://github.com/kenjudy/human-directed-ai-workflow-builder).
 
-            See the [README](https://github.com/kenjudy/pdca-agentic-coding-framework/blob/main/claude-skill/README.md) for full documentation.
+            See the [README](https://github.com/kenjudy/pdca-agentic-coding-framework/blob/main/skill/README.md) for full documentation.

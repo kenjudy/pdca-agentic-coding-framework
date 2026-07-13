@@ -162,5 +162,7 @@ Write-Host "Size: ${SkillSizeKB} KB" -ForegroundColor Blue
 Write-Host ""
 Write-Host "Next steps:" -ForegroundColor Blue
 Write-Host "1. Review the generated files in src/references/"
-Write-Host "2. Test the skill by uploading pdca-framework.skill to Claude"
-Write-Host "3. Commit changes if everything looks good"
+Write-Host "2. Install for Claude Code: Expand-Archive pdca-framework.skill -DestinationPath `$env:USERPROFILE\.claude\skills"
+Write-Host "   Install for Codex:       Expand-Archive pdca-framework.skill -DestinationPath `$env:USERPROFILE\.agents\skills"
+Write-Host "3. Upload pdca-framework.skill to Claude.ai, if needed"
+Write-Host "4. Commit changes if everything looks good"

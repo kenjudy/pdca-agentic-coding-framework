@@ -19,7 +19,7 @@ Full license text: https://creativecommons.org/licenses/by/4.0/
 
 ## Code — MIT License
 
-All source code in this repository — including files in `claude-skill/`, shell scripts,
+All source code in this repository — including files in `skill/`, shell scripts,
 Python files, and build artifacts — is licensed under the MIT License.
 
 Copyright (c) 2024-2026 Ken Judy

@@ -1,6 +1,6 @@
 #!/bin/bash
-# Installation script for PDCA Framework Claude Skill
-# Installs the unified skill for use with Claude Code CLI
+# Installation script for the PDCA Framework skill
+# Installs the unified skill for Claude Code or Codex
 
 set -e  # Exit on error
 
@@ -16,7 +16,7 @@ SKILL_FILE="$SCRIPT_DIR/pdca-framework.skill"
 SKILL_NAME="pdca-framework"
 
 echo -e "${BLUE}═══════════════════════════════════════════════════════${NC}"
-echo -e "${BLUE}   PDCA Framework Skill Installer for Claude Code${NC}"
+echo -e "${BLUE}   PDCA Framework Skill Installer${NC}"
 echo -e "${BLUE}═══════════════════════════════════════════════════════${NC}"
 echo ""
 
@@ -41,30 +41,39 @@ INSTALL_TYPE="${1:-personal}"
 
 echo -e "${YELLOW}Installation Scope:${NC}"
 echo ""
-echo "  ${GREEN}personal${NC} (default) — ~/.claude/skills/  (all your projects)"
-echo "  ${GREEN}project${NC}            — .claude/skills/     (current project, shared via git)"
+echo "  ${GREEN}personal${NC} / ${GREEN}claude${NC} (default) — ~/.claude/skills/  (all your projects)"
+echo "  ${GREEN}project${NC}                     — .claude/skills/     (current project, shared via git)"
+echo "  ${GREEN}codex${NC}                       — ~/.agents/skills/   (all your projects)"
 echo ""
 
 if [ -z "$1" ]; then
-    read -p "Install scope? (personal/project) [personal]: " INSTALL_TYPE
+    read -p "Install scope? (personal/project/codex) [personal]: " INSTALL_TYPE
     INSTALL_TYPE=${INSTALL_TYPE:-personal}
 fi
 
 # Determine installation directory
 case "$INSTALL_TYPE" in
-    personal|p)
+    personal|p|claude)
         INSTALL_DIR="$HOME/.claude/skills/$SKILL_NAME"
+        PLATFORM="Claude Code"
         SCOPE="Personal"
         SCOPE_DESC="Available across all your projects"
         ;;
     project|proj)
         INSTALL_DIR="$PWD/.claude/skills/$SKILL_NAME"
+        PLATFORM="Claude Code"
         SCOPE="Project"
         SCOPE_DESC="Available in current project, shared via git"
         ;;
+    codex|c)
+        INSTALL_DIR="$HOME/.agents/skills/$SKILL_NAME"
+        PLATFORM="Codex"
+        SCOPE="Personal"
+        SCOPE_DESC="Available across all your Codex projects"
+        ;;
     *)
         echo -e "${RED}Error: Invalid scope: $INSTALL_TYPE${NC}"
-        echo "Usage: $0 [personal|project]"
+        echo "Usage: $0 [personal|project|claude|codex]"
         exit 1
         ;;
 esac
@@ -107,7 +116,7 @@ echo -e "${BLUE}Installed files:${NC}"
 find "$INSTALL_DIR" -type f | sed "s|$INSTALL_DIR/||" | sort
 echo ""
 
-echo -e "${GREEN}Success!${NC} The PDCA framework skill is now available in Claude Code."
+echo -e "${GREEN}Success!${NC} The PDCA framework skill is now available in $PLATFORM."
 echo ""
 
 # Scope-specific next steps

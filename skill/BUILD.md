@@ -8,14 +8,14 @@ This document explains how to build and install the PDCA Framework skill package
 
 **Running unit tests** (no API key, runs in CI):
 ```bash
-cd claude-skill
+cd skill
 uv sync --extra test
 bash run-tests.sh
 ```
 
 **Running eval tests** (requires `ANTHROPIC_API_KEY` in `.env`, ~$2-5/run, on-demand only):
 ```bash
-cd claude-skill
+cd skill
 uv sync --extra eval
 bash run-evals.sh
 ```
@@ -28,9 +28,11 @@ bash run-evals.sh
 ./build-skill.sh
 
 # Install for Claude Code
-./install-skill.sh personal   # Available across all projects
+./install-skill.sh claude     # Available across all projects
 # or
 ./install-skill.sh project    # Available in current project only
+# or install for Codex
+./install-skill.sh codex      # Available across all projects
 ```
 
 **Windows (PowerShell):**
@@ -39,9 +41,11 @@ bash run-evals.sh
 .\build-skill.ps1
 
 # Install for Claude Code
-.\install-skill.ps1 personal   # Available across all projects
+.\install-skill.ps1 claude     # Available across all projects
 # or
 .\install-skill.ps1 project    # Available in current project only
+# or install for Codex
+.\install-skill.ps1 codex      # Available across all projects
 ```
 
 ## Overview
@@ -59,7 +63,8 @@ Master Sources → Build Script → Skill Package → Installation
                           └→ src/SKILL.md (manually maintained) ─┘                         │
                                                                                             │
 For Claude.ai: Upload .skill file ←───────────────────────────────────────────────────────┘
-For Claude Code: Extract to ~/.claude/skills/pdca-framework/ ←────────────────────────────┘
+For Claude Code: Extract to ~/.claude/skills/ ←───────────────────────────────────────────┘
+For Codex: Extract to ~/.agents/skills/ ←─────────────────────────────────────────────────┘
 ```
 
 ## Prerequisites
@@ -81,13 +86,13 @@ From the repository root:
 
 **macOS/Linux:**
 ```bash
-cd claude-skill
+cd skill
 ./build-skill.sh
 ```
 
 **Windows:**
 ```powershell
-cd claude-skill
+cd skill
 .\build-skill.ps1
 ```
 
@@ -103,7 +108,7 @@ cd claude-skill
 ### Build Output
 
 ```
-claude-skill/
+skill/
 ├── build-skill.sh              # The build script (macOS/Linux)
 ├── build-skill.ps1             # The build script (Windows)
 ├── install-skill.sh            # Installation script (macOS/Linux)
@@ -172,9 +177,9 @@ git commit -m "Rebuild skill from updated master prompts"
 Add to `.gitignore`:
 ```gitignore
 # Build artifacts
-claude-skill/src/references/
-claude-skill/pdca-framework.skill
-claude-skill/temp_package/
+skill/src/references/
+skill/pdca-framework.skill
+skill/temp_package/
 ```
 
 Then build locally (macOS/Linux):
@@ -311,16 +316,16 @@ powershell -ExecutionPolicy Bypass -File .\build-skill.ps1
 
 **Cause:** Working directory issue in script
 
-**Solution:** Ensure script runs from `claude-skill/` directory:
+**Solution:** Ensure script runs from `skill/` directory:
 
 **macOS/Linux:**
 ```bash
-cd claude-skill && ./build-skill.sh
+cd skill && ./build-skill.sh
 ```
 
 **Windows:**
 ```powershell
-cd claude-skill; .\build-skill.ps1
+cd skill; .\build-skill.ps1
 ```
 
 ## Automation Ideas
@@ -332,7 +337,7 @@ Automatically rebuild when masters change:
 ```bash
 # .git/hooks/pre-commit
 #!/bin/bash
-cd claude-skill && ./build-skill.sh
+cd skill && ./build-skill.sh
 git add src/references/ pdca-framework.skill
 ```
 
@@ -348,11 +353,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - run: cd claude-skill && ./build-skill.sh
+      - run: cd skill && ./build-skill.sh
       - uses: actions/upload-artifact@v2
         with:
           name: pdca-skill
-          path: claude-skill/pdca-framework.skill
+          path: skill/pdca-framework.skill
 ```
 
 ### Makefile (macOS/Linux)
@@ -362,12 +367,12 @@ Add to repository root:
 ```makefile
 .PHONY: skill
 skill:
-	cd claude-skill && ./build-skill.sh
+	cd skill && ./build-skill.sh
 
 .PHONY: skill-clean
 skill-clean:
-	rm -f claude-skill/pdca-framework.skill
-	rm -rf claude-skill/src/references/
+	rm -f skill/pdca-framework.skill
+	rm -rf skill/src/references/
 ```
 
 Usage: `make skill`
@@ -378,7 +383,7 @@ Create `build.bat` in repository root:
 
 ```batch
 @echo off
-cd claude-skill
+cd skill
 powershell -ExecutionPolicy Bypass -File .\build-skill.ps1
 cd ..
 ```
@@ -425,7 +430,7 @@ pip install pyyaml  # if not already installed
 
 ```bash
 cd /tmp/anthropics-skills/skills/skill-creator
-python3 -m scripts.quick_validate "/path/to/claude-skill/pdca-framework"
+python3 -m scripts.quick_validate "/path/to/skill/pdca-framework"
 # Expected output: Skill is valid!
 ```
 

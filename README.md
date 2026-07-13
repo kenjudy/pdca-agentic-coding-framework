@@ -18,7 +18,7 @@ A Claude skill for human-supervised AI-assisted software development using Plan-
 - **Maintenance:** Update once, improves everywhere
 - **Platforms:** macOS, Linux, Windows
 
-📦 **[Get started with Standard Skill →](claude-skill/README.md)**
+📦 **[Get started with Standard Skill →](skill/README.md)**
 
 ### Option 2: Claude Skill - with Beads (For Long-Running Work)
 **Standard skill + persistent task tracking across sessions**
@@ -29,7 +29,7 @@ A Claude skill for human-supervised AI-assisted software development using Plan-
 - **Works like:** Standard skill with optional beads commands in each phase
 - **Backward compatible:** All beads commands are optional, skip them if beads not installed
 
-🎯 **[Get started with Beads Skill →](claude-skill/README.md#beads-integration)**
+🎯 **[Get started with Beads Skill →](skill/README.md#beads-integration)**
 
 ### Option 3: Manual Prompts (Best for Customization)
 **Copy/paste prompts as needed for each session**
@@ -93,7 +93,7 @@ The PDCA workflow consists of four phases:
 
 The rest of this document describes how to set up the manual prompt workflow in Claude Code using symlinked files.
 
-For the Claude Skill setup (recommended), see **[claude-skill/README.md](claude-skill/README.md)** instead.
+For the installable skill setup (recommended), see **[skill/README.md](skill/README.md)** instead.
 
 ## Prerequisites
 
@@ -431,11 +431,11 @@ New-Item -ItemType Directory -Path ".claude\prompts" -Force
 
 - [Claude Code Documentation](https://docs.anthropic.com/en/docs/claude-code)
 - [PDCA Process Repository](https://github.com/kenjudy/pdca-agentic-coding-framework)
-- [claude-skill/README.md](claude-skill/README.md) — recommended skill-based setup
+- [skill/README.md](skill/README.md) — recommended skill-based setup
 
 ## License
 
-This repository uses a dual license. Documentation and prompts — including all files in the phase directories and `Human Working Agreements.md` — are licensed under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). Source code — including all files in `claude-skill/` — is licensed under the [MIT License](https://opensource.org/licenses/MIT). See [LICENSE](LICENSE) for full terms.
+This repository uses a dual license. Documentation and prompts — including all files in the phase directories and `Human Working Agreements.md` — are licensed under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). Source code — including all files in `skill/` — is licensed under the [MIT License](https://opensource.org/licenses/MIT). See [LICENSE](LICENSE) for full terms.
 
 **Attribution:** Ken Judy with Claude Anthropic
 

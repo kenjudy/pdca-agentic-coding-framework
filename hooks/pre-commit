@@ -6,4 +6,4 @@
 
 REPO_ROOT="$(git rev-parse --show-toplevel)"
 
-WARN_ONLY=1 bash "$REPO_ROOT/claude-skill/run-tests.sh"
+WARN_ONLY=1 bash "$REPO_ROOT/skill/run-tests.sh"
