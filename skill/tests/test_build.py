@@ -1,7 +1,7 @@
 """
 Tests for build-skill.sh and the resulting pdca-framework.skill package.
 
-Run from the claude-skill/ directory:
+Run from the skill/ directory:
     python3 tests/test_build.py
 
 Or to run a fresh build before testing:

@@ -1,5 +1,11 @@
 # PDCA Framework Skill - Update Summary
 
+## Unreleased
+
+- Renamed `claude-skill/` to `skill/` and added Codex installation support via `~/.agents/skills/pdca-framework`.
+
+---
+
 ## v1.2.0 (2026-06-19)
 
 ### Repository Split

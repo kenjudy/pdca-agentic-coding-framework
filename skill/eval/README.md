@@ -34,7 +34,7 @@ apply the correct one based on the scenario input. This mirrors real skill usage
 **Prerequisites:** Python 3.11+, uv, ANTHROPIC_API_KEY in `.env`
 
 ```bash
-cd claude-skill
+cd skill
 uv sync --extra eval
 cp .env.example .env        # fill in ANTHROPIC_API_KEY
 bash run-evals.sh           # all 15 scenarios
@@ -49,7 +49,7 @@ bash run-evals.sh tests/test_evals.py::TestPrompt2Evals
 Run a single scenario by ID:
 
 ```bash
-cd claude-skill && uv run python -m pytest tests/test_evals.py -m eval -k "2-skip-tests-request" -v
+cd skill && uv run python -m pytest tests/test_evals.py -m eval -k "2-skip-tests-request" -v
 ```
 
 Unit tests (no API calls, always run in CI):

@@ -36,13 +36,13 @@ A disciplined framework for AI-assisted code generation with strict TDD:
 
 **pdca-framework:**
 ```bash
-cd claude-skill
+cd skill
 ./build-skill.sh
 ```
 
 **Windows:**
 ```powershell
-cd claude-skill
+cd skill
 .\build-skill.ps1
 ```
 
@@ -50,7 +50,7 @@ See [BUILD.md](BUILD.md) for full details, including troubleshooting and CI/CD a
 
 ## Installation
 
-**Important:** Claude.ai (web/desktop) and Claude Code (CLI) use different installation methods.
+**Important:** Claude.ai (web/desktop), Claude Code, and Codex use different installation methods.
 
 ### For Claude.ai Web/Desktop App (Skill Upload)
 
@@ -58,7 +58,7 @@ This is the primary distribution path — upload `pdca-framework.skill` directly
 
 1. **Download the skill file**
    - [**Download pdca-framework.skill**](https://github.com/kenjudy/pdca-agentic-coding-framework/releases/latest/download/pdca-framework.skill) (latest release)
-   - Or build from source: `cd claude-skill && bash build-skill.sh`
+   - Or build from source: `cd skill && bash build-skill.sh`
 
 2. **Open Claude Settings**
    - Go to [claude.ai](https://claude.ai) or open the Claude desktop app
@@ -90,22 +90,24 @@ Use the installation script for automatic setup:
 
 **macOS/Linux (Bash):**
 ```bash
-# From the claude-skill directory
+# From the skill directory
 ./install-skill.sh
 
 # Optional: Specify scope as argument
 ./install-skill.sh personal   # Install to ~/.claude/skills/ (default)
 ./install-skill.sh project    # Install to current project's .claude/skills/
+./install-skill.sh codex      # Install to ~/.agents/skills/
 ```
 
 **Windows (PowerShell):**
 ```powershell
-# From the claude-skill directory
+# From the skill directory
 .\install-skill.ps1
 
 # Optional: Specify scope as argument
 .\install-skill.ps1 personal   # Install to ~/.claude/skills/ (default)
 .\install-skill.ps1 project    # Install to current project's .claude/skills/
+.\install-skill.ps1 codex      # Install to %USERPROFILE%\.agents\skills\
 ```
 
 #### Manual Install - Personal Skills (Available Across All Projects)
@@ -164,6 +166,28 @@ ls .claude/skills/pdca-framework/
 ```
 
 **Note:** Skills are automatically discovered by Claude Code. No restart needed.
+
+---
+
+### For Codex (Command Line)
+
+Codex discovers personal skills from `~/.agents/skills/`.
+
+```bash
+# From the skill directory
+./install-skill.sh codex
+
+# Or manually
+mkdir -p ~/.agents/skills
+unzip pdca-framework.skill -d ~/.agents/skills
+ls ~/.agents/skills/pdca-framework/
+```
+
+On Windows:
+
+```powershell
+.\install-skill.ps1 codex
+```
 
 ---
 
@@ -479,7 +503,7 @@ Print this card and keep it visible during coding sessions!
 ### For running unit tests (no API key needed)
 
 ```bash
-cd claude-skill
+cd skill
 uv sync --extra test
 bash run-tests.sh
 ```
@@ -491,7 +515,7 @@ across a range of scenarios. Claude Haiku acts as the judge, scoring outputs aga
 chain-of-thought rubric (strengths → weaknesses → reasoning → score).
 
 ```bash
-cd claude-skill
+cd skill
 uv sync --extra eval
 cp .env.example .env          # add your ANTHROPIC_API_KEY
 bash run-evals.sh             # run all prompt evals

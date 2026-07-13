@@ -141,19 +141,19 @@ Any change to master prompt files (`1. Plan/`, `2. Do/`, etc.) or eval rubrics m
 Check the most recent eval report:
 
 ```bash
-ls -t claude-skill/eval/results/
+ls -t skill/eval/results/
 ```
 
 If a recent report exists, use its per-scenario scores as the baseline. If not, or if the codebase has diverged, run the full eval first:
 
 ```bash
-cd claude-skill && bash run-evals.sh
+cd skill && bash run-evals.sh
 ```
 
 ### 2. Make Small, Discrete Changes
 
 - Change **one concern at a time** — a single prompt section, a single rubric criterion
-- Rebuild after each change: `bash claude-skill/build-skill.sh`
+- Rebuild after each change: `bash skill/build-skill.sh`
 - Confirm the change appears in the built references before running evals
 
 ### 3. Re-run Evals for Affected Phases Only
@@ -170,7 +170,7 @@ Identify which phases are affected:
 | `eval/rubrics/rubric_Xb.py` | that phase's class only |
 
 ```bash
-cd claude-skill && bash run-evals.sh -k "TestPrompt1aEvals or TestPrompt1bEvals"
+cd skill && bash run-evals.sh -k "TestPrompt1aEvals or TestPrompt1bEvals"
 ```
 
 ### 4. Accept Only Same-or-Better Scores
@@ -210,7 +210,7 @@ The report shows precision and recall across iterations:
 ### When to re-run
 
 Re-run trigger accuracy after any change to:
-- `claude-skill/pdca-framework/SKILL.md` (the description field specifically)
+- `skill/pdca-framework/SKILL.md` (the description field specifically)
 - `eval/trigger-eval.json` (scenario quality improvements)
 
 The current scenario set includes ambiguous should-trigger cases (complex features, reliability problems, messy codebases) alongside obvious ones, to prevent the optimizer from overfitting to explicit PDCA/TDD keyword mentions.

@@ -7,7 +7,7 @@
           {
             "type": "command",
             "statusMessage": "Running mypy before commit...",
-            "command": "cmd=$(jq -r '.tool_input.command // \"\"' 2>/dev/null); echo \"$cmd\" | grep -qE 'git commit' || exit 0; cd '/Users/kenjudy/Library/Mobile Documents/iCloud~md~obsidian/Documents/PDCA Process/claude-skill' && uv run mypy eval tests/test_build.py 2>&1 | python3 -c \"import sys, json; output = sys.stdin.read().strip(); print(json.dumps({'hookSpecificOutput':{'hookEventName':'PreToolUse','additionalContext':'mypy (advisory — commit will proceed):\\n' + output}})) if output else None\"; exit 0"
+            "command": "cmd=$(jq -r '.tool_input.command // \"\"' 2>/dev/null); echo \"$cmd\" | grep -qE 'git commit' || exit 0; cd '/Users/kenjudy/Library/Mobile Documents/iCloud~md~obsidian/Documents/PDCA Process/skill' && uv run mypy eval tests/test_build.py 2>&1 | python3 -c \"import sys, json; output = sys.stdin.read().strip(); print(json.dumps({'hookSpecificOutput':{'hookEventName':'PreToolUse','additionalContext':'mypy (advisory — commit will proceed):\\n' + output}})) if output else None\"; exit 0"
           }
         ]
       }

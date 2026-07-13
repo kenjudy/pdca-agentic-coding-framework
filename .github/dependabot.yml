@@ -6,6 +6,6 @@ updates:
       interval: "weekly"
 
   - package-ecosystem: "pip"
-    directory: "/claude-skill"
+    directory: "/skill"
     schedule:
       interval: "weekly"
