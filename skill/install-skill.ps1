@@ -4,10 +4,21 @@
 param(
     [Parameter(Position=0)]
     [ValidateSet("personal", "p", "claude", "codex", "c", "project", "proj")]
-    [string]$InstallType = "personal"
+    [string]$InstallType
 )
 
 $ErrorActionPreference = "Stop"
+
+if ([string]::IsNullOrWhiteSpace($InstallType)) {
+    Write-Host "Installation Scope:" -ForegroundColor Cyan
+    Write-Host "  personal / claude (default) - ~/.claude\skills\ (all your projects)"
+    Write-Host "  project                    - .claude\skills\  (current project, shared via git)"
+    Write-Host "  codex                      - ~/.agents\skills\  (all your projects)"
+    $InstallType = Read-Host "Install scope? (personal/project/codex) [personal]"
+    if ([string]::IsNullOrWhiteSpace($InstallType)) {
+        $InstallType = "personal"
+    }
+}
 
 Write-Host "`nPDCA Framework Skill Installer" -ForegroundColor Cyan
 Write-Host ""
@@ -32,10 +43,14 @@ if ($InstallType -in "personal", "p", "claude") {
     $InstallDir = Join-Path $env:USERPROFILE ".agents\skills\pdca-framework"
     $Platform = "Codex"
     $Scope = "Personal (available across all Codex projects)"
-} else {
+} elseif ($InstallType -in "project", "proj") {
     $InstallDir = Join-Path (Get-Location) ".claude\skills\pdca-framework"
     $Platform = "Claude Code"
     $Scope = "Project (available in current project only)"
+} else {
+    Write-Host "Error: Invalid scope: $InstallType" -ForegroundColor Red
+    Write-Host "Usage: .\install-skill.ps1 [personal|project|claude|codex]" -ForegroundColor Yellow
+    exit 1
 }
 
 Write-Host "Installation Type: $Scope" -ForegroundColor Cyan
