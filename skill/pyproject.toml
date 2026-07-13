@@ -11,7 +11,7 @@ dependencies = []
 [project.optional-dependencies]
 # Unit tests — pytest runner only, no API deps
 test = [
-    "pytest>=9.0.3",
+    "pytest>=9.1.1",
 ]
 # Eval harness — install separately: uv sync --extra eval
 eval = [
