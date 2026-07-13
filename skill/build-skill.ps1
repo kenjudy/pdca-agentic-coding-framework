@@ -90,7 +90,7 @@ Copy-Item $MasterAntiPatterns -Destination $OutputAntiPatterns -Force
 Write-Host ([char]0x2713 + " Created testing-anti-patterns.md") -ForegroundColor Green
 
 # SKILL.md is manually maintained, so we don't overwrite it
-$skillMdPath = Join-Path $SrcDir "SKILL.md"
+$skillMdPath = Join-Path (Join-Path $ScriptDir "pdca-framework") "SKILL.md"
 if (-not (Test-Path $skillMdPath)) {
     Write-Host "Warning: SKILL.md not found. This file should be manually maintained." -ForegroundColor Red
 }
