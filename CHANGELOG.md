@@ -10,6 +10,17 @@
   PDCA process, commit style, master prompt validation steps, and PR
   checklist including changelog format and version bump guidance
 
+### Repository Changes
+- Renamed `claude-skill/` to `skill/` and added Codex installation support via `~/.agents/skills/pdca-framework`.
+
+---
+
+## v1.2.0 (2026-06-19)
+
+### Repository Split
+- **human-directed-ai-workflow-builder** moved to its own repository: [kenjudy/human-directed-ai-workflow-builder](https://github.com/kenjudy/human-directed-ai-workflow-builder). Removed `5. Scaffold/`, `claude-skill/pdca-scaffold/`, `claude-skill/build-scaffold.sh`, `plugins/pdca-scaffold/`, `scaffolded-skills/`, and `presentations/` from this repo.
+
+
 ---
 
 ## v1.1.0 (2026-05-28)

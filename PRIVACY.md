@@ -17,4 +17,4 @@ The skill provides structured prompts to Claude. All processing happens within y
 
 ## Contact
 
-Questions? Open an issue at https://github.com/kenjudy/pdca-framework/issues
+Questions? Open an issue at https://github.com/kenjudy/pdca-agentic-coding-framework/issues

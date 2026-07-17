@@ -1,46 +1,8 @@
-# PDCA Skills Factory
+# PDCA Framework
 
-A collection of Claude skills for human-supervised AI collaboration using Plan-Do-Check-Act
-methodology. Two first-class skills are available:
+A Claude skill for human-supervised AI-assisted software development using Plan-Do-Check-Act methodology. Enforces explicit human-AI role separation, mandatory STOP gates, and TDD discipline.
 
-| Skill | What it does | For |
-|---|---|---|
-| **pdca-framework** | TDD-disciplined AI-assisted software development | Engineers and developers |
-| **pdca-scaffold** | Generates a customized PDCA skill for any complex repeatable task | Anyone building an agentic HITL workflow |
-
-Both skills enforce explicit human-AI role separation, mandatory STOP gates, and a built-in
-learning loop that sharpens the skill after each cycle.
-
----
-
-## pdca-scaffold — Generate a Domain-Specific PDCA Skill
-
-pdca-scaffold uses Socratic questioning to produce a valid, installable Claude skill
-for any complex repeatable human task that benefits from agentic Human-in-the-Loop workflows:
-content pipelines, data analysis, client reporting, operations, legal review, and more.
-
-**How it works:**
-1. You describe your task. pdca-scaffold asks 5 layers of discovery questions.
-2. After you confirm the summary, it generates a complete skill:
-   - `SKILL.md` with YAML frontmatter and domain-specific triggering
-   - `references/working-agreements.md` — explicit human vs. AI ownership, STOP triggers
-   - `references/phase-prompts.md` — PLAN/DO/CHECK/ACT with domain-specific checkpoints
-   - `references/quality-gates.md` — verifiable done criteria and failure mode checks
-3. The generated skill includes a refinement protocol: after each ACT retrospective
-   it proposes specific diffs to its own reference files. You approve, commit, repeat.
-   The skill improves with each cycle without growing longer.
-
-**Install pdca-scaffold:**
-```bash
-# From the latest GitHub Release:
-unzip -o pdca-scaffold.skill -d ~/.claude/skills/
-```
-
-Then in Claude Code: describe a repeatable task you want to systematize. The skill
-triggers on phrases like "create a process for", "build a workflow for",
-"design a PDCA cycle for", or "help me structure [domain]".
-
-After generation, validate the output with `/skill-creator` before using it in production.
+> **Looking to build a custom AI workflow for any domain?** See [human-directed-ai-workflow-builder](https://github.com/kenjudy/human-directed-ai-workflow-builder) — generates a tailored PDCA skill for any complex repeatable task, with a built-in learning loop that sharpens it each cycle.
 
 ---
 
@@ -56,7 +18,7 @@ After generation, validate the output with `/skill-creator` before using it in p
 - **Maintenance:** Update once, improves everywhere
 - **Platforms:** macOS, Linux, Windows
 
-📦 **[Get started with Standard Skill →](claude-skill/README.md)**
+📦 **[Get started with Standard Skill →](skill/README.md)**
 
 ### Option 2: Claude Skill - with Beads (For Long-Running Work)
 **Standard skill + persistent task tracking across sessions**
@@ -67,7 +29,7 @@ After generation, validate the output with `/skill-creator` before using it in p
 - **Works like:** Standard skill with optional beads commands in each phase
 - **Backward compatible:** All beads commands are optional, skip them if beads not installed
 
-🎯 **[Get started with Beads Skill →](claude-skill/README.md#beads-integration)**
+🎯 **[Get started with Beads Skill →](skill/README.md#beads-integration)**
 
 ### Option 3: Manual Prompts (Best for Customization)
 **Copy/paste prompts as needed for each session**
@@ -113,7 +75,7 @@ Research shows AI code generation without human oversight leads to measurable qu
 
 PDCA Framework keeps humans actively engaged, empowered, and accountable while using structured prompts to regulate agent behavior toward transparency and discipline.
 
-Read the full framework paper: [SOSA 2025 Notes](https://github.com/kenjudy/pdca-framework/blob/main/presentations/SOSA%202025/SOSA%202025%20Notes.md) — Presentation prepared for [XP 2026](https://kenjudy.us/presentations/human-centric-ai-code-generation/)
+Read the full framework paper: [SOSA 2025 Notes](https://github.com/kenjudy/pdca-agentic-coding-framework/blob/main/presentations/SOSA%202025/SOSA%202025%20Notes.md) — Presentation prepared for [XP 2026](https://kenjudy.us/presentations/human-centric-ai-code-generation/)
 
 ---
 
@@ -131,7 +93,7 @@ The PDCA workflow consists of four phases:
 
 The rest of this document describes how to set up the manual prompt workflow in Claude Code using symlinked files.
 
-For the Claude Skill setup (recommended), see **[claude-skill/README.md](claude-skill/README.md)** instead.
+For the installable skill setup (recommended), see **[skill/README.md](skill/README.md)** instead.
 
 ## Prerequisites
 
@@ -468,12 +430,12 @@ New-Item -ItemType Directory -Path ".claude\prompts" -Force
 ## Resources
 
 - [Claude Code Documentation](https://docs.anthropic.com/en/docs/claude-code)
-- [PDCA Process Repository](https://github.com/kenjudy/pdca-framework)
-- [claude-skill/README.md](claude-skill/README.md) — recommended skill-based setup
+- [PDCA Process Repository](https://github.com/kenjudy/pdca-agentic-coding-framework)
+- [skill/README.md](skill/README.md) — recommended skill-based setup
 
 ## License
 
-This setup guide is part of the Human-AI PDCA Collaboration Process framework, licensed under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/).
+This repository uses a dual license. Documentation and prompts — including all files in the phase directories and `Human Working Agreements.md` — are licensed under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). Source code — including all files in `skill/` — is licensed under the [MIT License](https://opensource.org/licenses/MIT). See [LICENSE](LICENSE) for full terms.
 
 **Attribution:** Ken Judy with Claude Anthropic
 

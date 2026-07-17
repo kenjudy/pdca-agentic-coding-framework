@@ -1,6 +1,9 @@
 # Obsidian metadata
 .obsidian/**
 
+# Codex hooks
+.codex
+
 # PowerShell scripts (may contain user-specific paths)
 claude-code/*.ps1
 
@@ -22,13 +25,13 @@ _DS_Store
 .deepeval/
 
 # Eval reports (local run artifacts - not committed)
-claude-skill/eval/results/
+skill/eval/results/
 
 # Build artifacts (generated files - not committed)
-claude-skill/pdca-framework/references/
-claude-skill/pdca-framework.skill
-claude-skill/pdca-framework-beads.skill
-claude-skill/temp_package/
+skill/pdca-framework/references/
+skill/pdca-framework.skill
+skill/pdca-framework-beads.skill
+skill/temp_package/
 
 # Beads credential file
 .beads/
