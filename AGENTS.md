@@ -14,29 +14,27 @@ bd sync               # Sync with git
 
 ## Landing the Plane (Session Completion)
 
-**When ending a work session**, you MUST complete ALL steps below. Work is NOT complete until `git push` succeeds.
+**When ending a work session**, complete ALL steps below, then stop and wait for human approval before pushing.
 
 **MANDATORY WORKFLOW:**
 
 1. **File issues for remaining work** - Create issues for anything that needs follow-up
 2. **Run quality gates** (if code changed) - Tests, linters, builds
 3. **Update issue status** - Close finished work, update in-progress items
-4. **PUSH TO REMOTE** - This is MANDATORY:
+4. **Prepare push** - Stage and commit, then present the following to the human and wait for explicit approval:
    ```bash
    git pull --rebase
    bd sync
-   git push
-   git status  # MUST show "up to date with origin"
+   git status   # show the human what will be pushed
    ```
-5. **Clean up** - Clear stashes, prune remote branches
-6. **Verify** - All changes committed AND pushed
+5. **Push only after explicit approval** - When the human says to push, run `git push`
+6. **Verify** - `git status` must show "up to date with origin"
 7. **Hand off** - Provide context for next session
 
 **CRITICAL RULES:**
-- Work is NOT complete until `git push` succeeds
-- NEVER stop before pushing - that leaves work stranded locally
-- NEVER say "ready to push when you are" - YOU must push
-- If push fails, resolve and retry until it succeeds
+- Do NOT push without explicit human instruction ("go ahead and push", "push it", etc.)
+- Present git status and the proposed push command; wait for a clear go-ahead
+- If push fails, report the error and wait for human direction before retrying
 
 ## Skill Build System
 

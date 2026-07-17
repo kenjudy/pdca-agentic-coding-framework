@@ -126,7 +126,7 @@ Don't assume them — name them in the plan. See the 1b prompt for the full chec
 
 ## Human Supervision (Non-Negotiable)
 
-See `skill/Agent.md` for the full protocol. Key rules:
+See `skill/SUPERVISION-PROTOCOL.md` for the full protocol. Key rules:
 
 - **STOP and present to the human** before writing code, committing, pushing, or closing issues
 - All code changes require a failing test first (TDD, no exceptions)
@@ -139,4 +139,4 @@ Any edit to master prompt files or eval rubrics requires:
 1. Check `skill/eval/results/` for the baseline scores
 2. Make one discrete change, rebuild (`bash skill/build-skill.sh`)
 3. Re-run only the affected phase evals
-4. All previously passing scenarios must still pass — see `skill/Agent.md` for the full table of phase → eval class mappings
+4. All previously passing scenarios must still pass — see `skill/SUPERVISION-PROTOCOL.md` for the full table of phase → eval class mappings
