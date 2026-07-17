@@ -110,6 +110,8 @@ validation before the PR can merge:
 - Add an entry to `CHANGELOG.md` (repo root) under an `## Unreleased`
   section. Group entries under a `### Category` subheading (e.g.,
   `### New Features`, `### Bug Fixes`, `### Build and Distribution`).
+  If you are using Claude Code, run `/update-changelog` to draft entries
+  from your commits and write them to the file automatically.
   If your change requires any action from existing users (renamed files,
   changed install paths, removed options), add a `### Migration Notes`
   subsection.
