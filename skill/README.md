@@ -32,7 +32,7 @@ A disciplined framework for AI-assisted code generation with strict TDD:
 
 ## Installation
 
-**Most users should download the pre-built skill from [GitHub Releases](https://github.com/kenjudy/pdca-agentic-coding-framework/releases/latest)** rather than building from source — see [Building from Source](#building-from-source) below only if you need the latest unreleased changes or are customizing the prompts.
+**Most users should download the pre-built skill from [GitHub Releases](https://github.com/kenjudy/pdca-agentic-coding-framework/releases/latest)** rather than building from source. If you need the latest unreleased changes from `main` or are customizing the prompts, see the "Alternative: Install via Script" steps below (Claude Code or Codex) — they build from source before installing.
 
 **Important:** Claude.ai (web/desktop), Claude Code, and Codex use different installation methods.
 
@@ -168,6 +168,8 @@ If you've cloned the repo (e.g. to build from source), `install-skill.sh` / `ins
 .\install-skill.ps1 codex      # Install to %USERPROFILE%\.agents\skills\
 ```
 
+See [BUILD.md](BUILD.md) for full details, including troubleshooting and CI/CD automation.
+
 #### Verify Installation
 
 **macOS/Linux (Bash):**
@@ -234,7 +236,6 @@ cd skill
 .\build-skill.ps1
 .\install-skill.ps1 codex
 ```
-
 
 See [BUILD.md](BUILD.md) for full details, including troubleshooting and CI/CD automation.
 

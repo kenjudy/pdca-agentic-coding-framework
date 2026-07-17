@@ -1,25 +1,70 @@
 # PDCA Framework Skill - Update Summary
 
-## Unreleased
+## v1.2.0 (2026-07-17)
 
 ### New Skills
 - **update-changelog**: New skill that drafts changelog entries from commits ahead of `main`, groups them by category, shows a preview, and writes to `CHANGELOG.md` (or a named changelog file) only after user confirmation.
+
+### Repository Split
+- **human-directed-ai-workflow-builder** moved to its own repository: [kenjudy/human-directed-ai-workflow-builder](https://github.com/kenjudy/human-directed-ai-workflow-builder). Removed `5. Scaffold/`, `claude-skill/pdca-scaffold/`, `claude-skill/build-scaffold.sh`, `plugins/pdca-scaffold/`, `scaffolded-skills/`, and `presentations/` from this repo.
 
 ### Documentation
 - Add `CONTRIBUTING.md`: contribution workflow, issue filing guidance,
   PDCA process, commit style, master prompt validation steps, and PR
   checklist including changelog format and version bump guidance
+- **DO phase**: Added a fifth mandatory "Stub check" called-shot item to
+  `2. Do/2. Test Drive the Change.md` — requires identifying whether a
+  no-op stub could satisfy the test, and naming the next test a stub
+  cannot satisfy.
+- Renamed `skill/Agent.md` to `skill/SUPERVISION-PROTOCOL.md` for clarity;
+  updated all `CLAUDE.md` references.
+- Reordered `skill/README.md` so Installation precedes Building from
+  Source, since most users should download the pre-built `.skill` from
+  GitHub Releases rather than build it themselves. Release links now
+  point to `/releases/latest` instead of a pinned version. Manual unzip
+  (no repo clone needed) is now the primary recommended path for Claude
+  Code and Codex, with matching PowerShell commands alongside every bash
+  command; `install-skill.sh`/`.ps1` is presented as a repo-clone-only
+  alternative.
 
 ### Repository Changes
-- Renamed `claude-skill/` to `skill/` and added Codex installation support via `~/.agents/skills/pdca-framework`.
+- Renamed `claude-skill/` to `skill/` and added Codex installation support.
+  Install locations now differ by tool:
+  ```bash
+  unzip -o pdca-framework.skill -d ~/.claude/skills/  # Claude Code
+  unzip -o pdca-framework.skill -d ~/.agents/skills/  # Codex
+  ```
+- Fixed PowerShell skill descriptor path in `build-skill.ps1`.
+- `install-skill.ps1` now prompts for install scope (user vs. machine)
+  instead of assuming one.
+- GitHub repository renamed from `kenjudy/pdca-framework` to
+  `kenjudy/pdca-agentic-coding-framework`; all doc/URL references updated.
 
----
+### Licensing
+- Replaced CC0 with a dual license: CC BY 4.0 for documentation/prompts,
+  MIT for source code in `skill/`.
 
-## v1.2.0 (2026-06-19)
+### Build and Distribution
+- Added `.claude-plugin/plugin.json` manifest so `pdca-framework` can be
+  referenced via git-subdir source in the Stride plugin marketplace.
 
-### Repository Split
-- **human-directed-ai-workflow-builder** moved to its own repository: [kenjudy/human-directed-ai-workflow-builder](https://github.com/kenjudy/human-directed-ai-workflow-builder). Removed `5. Scaffold/`, `claude-skill/pdca-scaffold/`, `claude-skill/build-scaffold.sh`, `plugins/pdca-scaffold/`, `scaffolded-skills/`, and `presentations/` from this repo.
+### Dependency Updates
+- anthropic >=0.116.0
+- deepeval >=4.1.0
+- ruff >=0.15.21
+- mypy >=2.3.0
+- pytest >=9.1.1
+- `actions/checkout` bumped from v6 to v7
 
+### Migration Notes
+- If your remote points to `kenjudy/pdca-framework`, update it to
+  `kenjudy/pdca-agentic-coding-framework`.
+- Documentation/prompts are now CC BY 4.0 (previously CC0); source code
+  in `skill/` is now MIT licensed — review terms if you redistribute.
+- References to `skill/Agent.md` should be updated to
+  `skill/SUPERVISION-PROTOCOL.md`.
+- Codex users: install to `~/.agents/skills/`, not `~/.claude/skills/`
+  (see Repository Changes above).
 
 ---
 
@@ -60,33 +105,6 @@
 - pytest >=9.0.3
 - setuptools >=82.0.1
 - python-dotenv >=1.2.2
-
----
-
-## v1.0.3 (2026-04-21)
-
-### Added
-- `beads-setup.md`: Pre-flight Check section before Installation -- checks `bd --version`, `dolt version`, and `brew outdated beads dolt` before proceeding, with explicit upgrade commands and a warning against running `bd init` on outdated installs
-- `beads-setup.md`: MCP server status check (`pip3 show beads-mcp`, `grep` against `claude_desktop_config.json`) before install instructions -- user knows whether to proceed without opening config manually
-- `beads-setup.md`: "Initializing Beads in a Project" section with "Post-Init: Align CLAUDE.md with Working Agreements" subsection -- patches the autonomous-agent rules `bd init` generates to cooperate with human-in-the-loop working agreements; includes two-strategy `.gitignore` guidance (git-native JSONL vs Dolt-native `bd dolt push`)
-- `beads-workflow.md`: "Resume a Session" section immediately after Prerequisites -- `bd ready`, `bd list --status in_progress`, `bd show` orientation commands, now the first thing to read when returning to in-progress work
-- `beads-workflow.md`: `brew outdated beads dolt` one-liner appended to Resume section as a periodic version check reminder
-- `beads-workflow.md`: "Export Requirements Document" section with `export-requirements.sh` usage and a copyable `.claude/commands/requirements-doc.md` slash command template
-- `beads-addon/scripts/export-requirements.sh`: new script to generate a structured requirements document from all open epics and their tasks (open or closed) using `bd graph --all --compact` for the dependency overview and `bd list --parent` for per-epic task detail
-- 11 new tests in `TestBeadsWorkflowContent` covering all content changes above
-
-### Changed
-- `beads-workflow.md` Git Integration section: removed bare `git push` autonomous instruction; replaced with commit-only guidance and explicit note that pushing is human-initiated per working agreements
-- `act-beads-addon.md` closing checklist: "Stored in git (.beads/dolt/)" updated to "Committed to git (.beads/) -- push when ready per working agreements"
-- `build-skill.sh` post-build note: updated to present both git-native JSONL and Dolt-native `bd dolt push` strategies instead of a single mandate
-- `README.md` Beads Integration section: replaced "Commit .beads/ to your project" step 4 with two-strategy framing (git-native vs Dolt-native)
-- `.gitignore`: removed `.beads/` exclusion block from project root -- beads gitignore handles its own exclusions
-- `.beads/.gitignore`: added `embeddeddolt/.lock`, `export-state.json`, and `dolt-monitor.pid.lock` -- machine-specific runtime files missing from beads' own gitignore
-- 2 new tests in `TestBeadsWorkflowContent`: `test_setup_gitignore_no_mandate` and `test_setup_gitignore_presents_both_strategies`
-
-### Fixed
-- `beads-setup.md` no longer mandates committing all of `.beads/` as a regular project file; now presents the git-native (JSONL) vs Dolt-native (`bd dolt push`) choice
-- `.beads/.gitignore` gap: `dolt-monitor.pid.lock` was not excluded despite `dolt-monitor.pid` being listed
 
 ---
 
