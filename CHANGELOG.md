@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+### New Skills
+- **update-changelog**: New skill that drafts changelog entries from commits ahead of `main`, groups them by category, shows a preview, and writes to `CHANGELOG.md` (or a named changelog file) only after user confirmation.
+
+### Documentation
+- Add `CONTRIBUTING.md`: contribution workflow, issue filing guidance,
+  PDCA process, commit style, master prompt validation steps, and PR
+  checklist including changelog format and version bump guidance
+
+### Repository Changes
 - Renamed `claude-skill/` to `skill/` and added Codex installation support via `~/.agents/skills/pdca-framework`.
 
 ---
@@ -10,6 +19,7 @@
 
 ### Repository Split
 - **human-directed-ai-workflow-builder** moved to its own repository: [kenjudy/human-directed-ai-workflow-builder](https://github.com/kenjudy/human-directed-ai-workflow-builder). Removed `5. Scaffold/`, `claude-skill/pdca-scaffold/`, `claude-skill/build-scaffold.sh`, `plugins/pdca-scaffold/`, `scaffolded-skills/`, and `presentations/` from this repo.
+
 
 ---
 
