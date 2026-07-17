@@ -149,7 +149,7 @@ If you've cloned the repo (e.g. to build from source), `install-skill.sh` / `ins
 **macOS/Linux (Bash):**
 ```bash
 # From the skill directory
-./install-skill.sh
+./build-skill.sh
 
 # Optional: Specify scope as argument
 ./install-skill.sh personal   # Install to ~/.claude/skills/ (default)
@@ -160,7 +160,7 @@ If you've cloned the repo (e.g. to build from source), `install-skill.sh` / `ins
 **Windows (PowerShell):**
 ```powershell
 # From the skill directory
-.\install-skill.ps1
+.\build-skill.ps1
 
 # Optional: Specify scope as argument
 .\install-skill.ps1 personal   # Install to ~/.claude/skills/ (default)
@@ -223,31 +223,18 @@ dir "$env:USERPROFILE\.agents\skills\pdca-framework\"
 
 ```bash
 # macOS/Linux — from the skill directory
+cd skill
+./build-skill.sh
 ./install-skill.sh codex
 ```
 
 ```powershell
 # Windows — from the skill directory
+cd skill
+.\build-skill.ps1
 .\install-skill.ps1 codex
 ```
 
----
-
-## Building from Source
-
-Optional — only needed if you want the latest unreleased changes from `main` or are customizing the prompts. Most users should download the pre-built `.skill` from [GitHub Releases](https://github.com/kenjudy/pdca-agentic-coding-framework/releases/latest) instead (see [Installation](#installation) above).
-
-**pdca-framework:**
-```bash
-cd skill
-./build-skill.sh
-```
-
-**Windows:**
-```powershell
-cd skill
-.\build-skill.ps1
-```
 
 See [BUILD.md](BUILD.md) for full details, including troubleshooting and CI/CD automation.
 
