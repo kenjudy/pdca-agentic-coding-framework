@@ -20,6 +20,7 @@ REPO_ROOT = CLAUDE_SKILL_DIR.parent
 SKILL_FILE = CLAUDE_SKILL_DIR / "pdca-framework.skill"
 SKILL_SRC = CLAUDE_SKILL_DIR / "pdca-framework" / "SKILL.md"
 BEADS_ADDON_DIR = CLAUDE_SKILL_DIR / "pdca-framework" / "beads-addon" / "sources"
+PONYTAIL_ADDON_DIR = CLAUDE_SKILL_DIR / "pdca-framework" / "ponytail-addon" / "sources"
 
 SKILL_NAME = "pdca-framework"
 
@@ -59,6 +60,11 @@ BEADS_SOURCE_FILES = [
     BEADS_ADDON_DIR / "beads-workflow.md",
 ]
 
+PONYTAIL_SOURCE_FILES = [
+    PONYTAIL_ADDON_DIR / "ponytail-setup.md",
+    PONYTAIL_ADDON_DIR / "ponytail-workflow.md",
+]
+
 # Optional third-party addons. Each slug's source files must exist, and every
 # SKILL.md reference to that slug must be marked Optional. Add a slug here
 # (plus an ADDON_SOURCE_FILES entry) when a new addon lands.
@@ -66,6 +72,7 @@ ADDON_SLUGS = ["beads"]
 
 ADDON_SOURCE_FILES = {
     "beads": BEADS_SOURCE_FILES,
+    "ponytail": PONYTAIL_SOURCE_FILES,
 }
 
 CLAUDE_ADDON_DIR = CLAUDE_SKILL_DIR / "pdca-framework" / "claude-addon" / "injections"
