@@ -37,6 +37,8 @@ EXPECTED_FILES = [
     f"{SKILL_NAME}/references/act-beads-addon.md",
     f"{SKILL_NAME}/references/beads-setup.md",
     f"{SKILL_NAME}/references/beads-workflow.md",
+    f"{SKILL_NAME}/references/ponytail-setup.md",
+    f"{SKILL_NAME}/references/ponytail-workflow.md",
     f"{SKILL_NAME}/references/testing-anti-patterns.md",
     f"{SKILL_NAME}/references/scripts/export-requirements.sh",
 ]
