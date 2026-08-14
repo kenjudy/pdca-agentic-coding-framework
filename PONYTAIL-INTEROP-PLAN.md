@@ -6,8 +6,7 @@
 > **Branch:** `claude/pdca-ponytail-interop-r5u670` — all work lands here.
 > **Produced by:** PDCA PLAN phase (1a analysis + 1b plan), Opus 5, 2026-08-14
 >
-> **Progress:** Steps 0–3 complete (`5a62ffa`). Next: Step 4.
-> (`7bf13af`, verified green: 134 passed, ruff clean). Next: Step 1b.
+> **Progress:** Steps 0–3 complete (`5a62ffa`), all verified green. Next: Step 4.
 
 ---
 
