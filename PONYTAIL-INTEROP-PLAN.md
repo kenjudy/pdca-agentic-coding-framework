@@ -95,7 +95,7 @@ they shift as soon as Step 1 lands.
 | Reference | Content |
 |---|---|
 | `skill/tests/test_build.py:26` | `EXPECTED_FILES = [` |
-| `skill/tests/test_build.py:140` | `def test_beads_references_are_optional(self):` |
+| `skill/tests/test_build.py:150` | `def test_addon_references_are_optional(self):` (renamed by Step 1) |
 | `skill/SUPERVISION-PROTOCOL.md:165` | phase → eval-class mapping row for `1. Plan/1a...md` |
 | `2. Do/2. Test Drive the Change.md:72` | `**If beads is active** ...` — the guard-clause precedent |
 | `3. Check/3. Completeness Check.md:26` | `- [ ] No TODO implementations remaining created by this test driving` |

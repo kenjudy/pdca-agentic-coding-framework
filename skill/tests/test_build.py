@@ -98,8 +98,8 @@ class TestSourceFiles(unittest.TestCase):
                 self.assertTrue(f.exists(), f"Master file missing: {f}")
 
     def test_addon_source_files_exist(self):
-        for slug in ADDON_SLUGS:
-            for f in ADDON_SOURCE_FILES[slug]:
+        for slug, files in ADDON_SOURCE_FILES.items():
+            for f in files:
                 with self.subTest(addon=slug, file=f.name):
                     self.assertTrue(f.exists(), f"{slug.capitalize()} source file missing: {f}")
 
