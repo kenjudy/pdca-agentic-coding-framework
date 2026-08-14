@@ -59,6 +59,15 @@ BEADS_SOURCE_FILES = [
     BEADS_ADDON_DIR / "beads-workflow.md",
 ]
 
+# Optional third-party addons. Each slug's source files must exist, and every
+# SKILL.md reference to that slug must be marked Optional. Add a slug here
+# (plus an ADDON_SOURCE_FILES entry) when a new addon lands.
+ADDON_SLUGS = ["beads"]
+
+ADDON_SOURCE_FILES = {
+    "beads": BEADS_SOURCE_FILES,
+}
+
 CLAUDE_ADDON_DIR = CLAUDE_SKILL_DIR / "pdca-framework" / "claude-addon" / "injections"
 CLAUDE_INJECTION_FILES = [
     "goal-probe.md",
@@ -88,10 +97,11 @@ class TestSourceFiles(unittest.TestCase):
             with self.subTest(file=f.name):
                 self.assertTrue(f.exists(), f"Master file missing: {f}")
 
-    def test_beads_addon_source_files_exist(self):
-        for f in BEADS_SOURCE_FILES:
-            with self.subTest(file=f.name):
-                self.assertTrue(f.exists(), f"Beads source file missing: {f}")
+    def test_addon_source_files_exist(self):
+        for slug in ADDON_SLUGS:
+            for f in ADDON_SOURCE_FILES[slug]:
+                with self.subTest(addon=slug, file=f.name):
+                    self.assertTrue(f.exists(), f"{slug.capitalize()} source file missing: {f}")
 
     def test_skill_md_source_exists(self):
         self.assertTrue(SKILL_SRC.exists(), f"SKILL.md source missing: {SKILL_SRC}")
@@ -137,12 +147,9 @@ class TestSkillMdSource(unittest.TestCase):
                 msg = f"SKILL.md references '{ref}' but '{qualified}' is not in EXPECTED_FILES"
                 self.assertIn(qualified, EXPECTED_FILES, msg)
 
-    def test_beads_references_are_optional(self):
-        """All beads references must be either on a line with 'Optional' or inside
+    def test_addon_references_are_optional(self):
+        """All addon references must be either on a line with 'Optional' or inside
         a section whose heading contains 'Optional'."""
-        beads_refs = re.findall(r"`(references/[^`]*beads[^`]*\.md)`", self.content)
-        self.assertTrue(len(beads_refs) > 0, "No beads references found in SKILL.md")
-
         # Build a map: line_number -> current section heading
         section_headings = {}
         current_heading = ""
@@ -151,19 +158,23 @@ class TestSkillMdSource(unittest.TestCase):
                 current_heading = line
             section_headings[i] = current_heading
 
-        for ref in beads_refs:
-            matching_line_nums = [i for i, row in enumerate(self.lines) if ref in row]
-            for lineno in matching_line_nums:
-                line = self.lines[lineno]
-                section = section_headings.get(lineno, "")
-                optional_on_line = "Optional" in line
-                optional_in_section = "Optional" in section
-                with self.subTest(ref=ref, line=line.strip()):
-                    self.assertTrue(
-                        optional_on_line or optional_in_section,
-                        f"Beads reference '{ref}' has no 'Optional' signal "
-                        f"on its line or in its section heading ('{section.strip()}')",
-                    )
+        for slug in ADDON_SLUGS:
+            addon_refs = re.findall(rf"`(references/[^`]*{slug}[^`]*\.md)`", self.content)
+            self.assertTrue(len(addon_refs) > 0, f"No {slug} references found in SKILL.md")
+
+            for ref in addon_refs:
+                matching_line_nums = [i for i, row in enumerate(self.lines) if ref in row]
+                for lineno in matching_line_nums:
+                    line = self.lines[lineno]
+                    section = section_headings.get(lineno, "")
+                    optional_on_line = "Optional" in line
+                    optional_in_section = "Optional" in section
+                    with self.subTest(addon=slug, ref=ref, line=line.strip()):
+                        self.assertTrue(
+                            optional_on_line or optional_in_section,
+                            f"{slug.capitalize()} reference '{ref}' has no 'Optional' signal "
+                            f"on its line or in its section heading ('{section.strip()}')",
+                        )
 
     def test_description_is_third_person(self):
         """Marketplace requirement: description must be third-person, not imperative."""
