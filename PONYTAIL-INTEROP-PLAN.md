@@ -3,9 +3,11 @@
 > **Working artifact.** This file exists so the plan survives across sessions and threads.
 > Delete it before merging to `main`.
 >
-> **Branch:** `claude/pdca-ponytail-interop-r5u670`
+> **Branch:** `claude/pdca-ponytail-interop-r5u670` — all work lands here.
 > **Produced by:** PDCA PLAN phase (1a analysis + 1b plan), Opus 5, 2026-08-14
-> **Status:** approved scope, not yet started
+>
+> **Progress:** Step 1 complete (`7bf13af`, verified green: 134 passed, ruff clean).
+> Next: Step 2.
 
 ---
 
@@ -119,12 +121,13 @@ review after each step** — do not batch.
 | # | Type | Model | Step | Called shot / acceptance |
 |---|---|---|---|---|
 | 0 | prep | — | Human records baseline pass/fail for `TestPrompt2Evals` and `TestPrompt3Evals` from local `skill/eval/results/` (gitignored — not in the repo) | Numbers written down before any master edit |
-| 1 | `refactor:` | Sonnet 5 | Generalize `test_beads_references_are_optional` → `test_addon_references_are_optional`, parameterized over `ADDON_SLUGS = ["beads"]`; same for the addon-source-existence test | All tests green **before and after**; zero new files |
-| 2 | `test:` **RED** | Sonnet 5 | Add `"ponytail"` to `ADDON_SLUGS` and ponytail sources to the source-existence list | Expected failure: `AssertionError: Addon source missing: .../ponytail-addon/sources/ponytail-setup.md` |
+| 1 | `refactor:` | Sonnet 5 | ✅ **DONE** (`7bf13af`) — Generalized `test_beads_references_are_optional` → `test_addon_references_are_optional` over `ADDON_SLUGS = ["beads"]`, and `test_beads_addon_source_files_exist` → `test_addon_source_files_exist`; added `ADDON_SOURCE_FILES` dict | Verified: 134 passed, 135 subtests, ruff clean; zero new files |
+| 1b | `refactor:` | Sonnet 5 | **Decouple the two test drivers** (see "Sequencing correction" below): change `test_addon_source_files_exist` to iterate `ADDON_SOURCE_FILES.items()` instead of `ADDON_SLUGS` | All tests still green before and after; no behavior change while only `beads` exists |
+| 2 | `test:` **RED** | Sonnet 5 | Add `"ponytail": PONYTAIL_SOURCE_FILES` to `ADDON_SOURCE_FILES` **only** — do NOT touch `ADDON_SLUGS` yet | Expected failure, **one test**: `test_addon_source_files_exist` — `Ponytail source file missing: .../ponytail-addon/sources/ponytail-setup.md` |
 | 3 | `feat:` GREEN | Sonnet 5 | Create `skill/pdca-framework/ponytail-addon/sources/ponytail-setup.md` and `ponytail-workflow.md` (content spec below) | Step-2 test passes; nothing else changes |
 | 4 | `test:` **RED** | Sonnet 5 | Add both files to `EXPECTED_FILES` (`test_build.py:26`) | Expected failure: `pdca-framework/references/ponytail-setup.md` not in zip namelist |
 | 5 | `feat:` GREEN | Sonnet 5 | `build-skill.sh`: verify block, copy step, **and the `zip -r` manifest** | Step-4 test passes. **The manifest is the trap** — files absent from it vanish silently; Step 4's test is the only thing that catches it |
-| 6 | `test:` **RED** | Sonnet 5 | Generalized optionality test now runs over `ponytail` | Expected failure: `No ponytail references found in SKILL.md` (the `len > 0` assert) |
+| 6 | `test:` **RED** | Sonnet 5 | Add `"ponytail"` to `ADDON_SLUGS` — this is the step that arms the optionality check | Expected failure, **one test**: `test_addon_references_are_optional` — `No ponytail references found in SKILL.md` (the `len > 0` assert). Verified by simulation on 2026-08-14 |
 | 7 | `feat:` GREEN | Sonnet 5 | SKILL.md → "Ponytail Integration (Optional)" section, mirroring the beads section | Passes; SKILL.md stays under the 500-line cap |
 | 8 | `feat:` **master** | Opus 5 | `3. Check/3. Completeness Check.md`: add `/ponytail-review` to the tool-check line at :47; add one line reconciling `# ponytail:` markers with the no-TODO assertion at :26 | Rebuild; re-run `TestPrompt3Evals`; all previously passing scenarios still pass |
 | 9 | `feat:` **master** | Opus 5 | `2. Do/2. Test Drive the Change.md`: `**If ponytail is active**` guard clause + the three precedence rules | Rebuild; re-run `TestPrompt2Evals`; no regression vs. baseline |
@@ -132,6 +135,25 @@ review after each step** — do not batch.
 
 Steps 8 and 9 are **separate commits with separate eval runs** — one discrete change per
 CLAUDE.md's "Validating Prompt Changes."
+
+### Sequencing correction (found after Step 1)
+
+**This was a flaw in the original plan, not in the Step 1 work.** Step 1 faithfully implemented
+what the plan specified; the plan specified something that breaks TDD discipline one step later.
+
+As written, both `test_addon_source_files_exist` and `test_addon_references_are_optional` iterate
+`ADDON_SLUGS`. So the original Step 2 — "add `ponytail` to `ADDON_SLUGS` **and** the source list" —
+would drive **two** tests red at once, violating the framework's one-failing-test-at-a-time rule.
+Confirmed by simulation: adding the slug alone trips `test_addon_references_are_optional`
+immediately, because SKILL.md carries no ponytail reference until Step 7.
+
+The fix is Step 1b: give each test its own driver.
+
+- `test_addon_source_files_exist` iterates `ADDON_SOURCE_FILES.items()` → armed by **Step 2**
+- `test_addon_references_are_optional` iterates `ADDON_SLUGS` → armed by **Step 6**
+
+Step 1b is a pure `refactor:` commit — while `beads` is the only addon, both forms iterate the
+same single entry, so all tests stay green across the change.
 
 ### Model-switch note
 
