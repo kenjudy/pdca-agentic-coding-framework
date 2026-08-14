@@ -21,6 +21,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 CORE_DIR="$SCRIPT_DIR/pdca-framework"
 BEADS_DIR="$CORE_DIR/beads-addon"
+PONYTAIL_DIR="$CORE_DIR/ponytail-addon"
 
 # Master source files (Obsidian notes — source of truth for prompt content)
 MASTER_1A="$REPO_ROOT/1. Plan/1a Analyze to determine approach for achieving the goal.md"
@@ -42,6 +43,10 @@ BEADS_ACT_ADDON="$BEADS_DIR/sources/act-beads-addon.md"
 BEADS_SETUP="$BEADS_DIR/sources/beads-setup.md"
 BEADS_WORKFLOW="$BEADS_DIR/sources/beads-workflow.md"
 BEADS_EXPORT_SCRIPT="$BEADS_DIR/scripts/export-requirements.sh"
+
+# Ponytail addon files (source — NOT build artifacts)
+PONYTAIL_SETUP="$PONYTAIL_DIR/sources/ponytail-setup.md"
+PONYTAIL_WORKFLOW="$PONYTAIL_DIR/sources/ponytail-workflow.md"
 
 # Verify master files exist
 echo -e "${BLUE}Verifying master source files...${NC}"
@@ -73,6 +78,16 @@ for file in "$BEADS_PLAN_ADDON" "$BEADS_DO_ADDON" "$BEADS_CHECK_ADDON" "$BEADS_A
     fi
 done
 echo -e "${GREEN}✓ All beads addon files found${NC}\n"
+
+# Verify ponytail addon files exist
+echo -e "${BLUE}Verifying ponytail addon files...${NC}"
+for file in "$PONYTAIL_SETUP" "$PONYTAIL_WORKFLOW"; do
+    if [ ! -f "$file" ]; then
+        echo -e "${RED}Error: Ponytail addon file not found: $file${NC}"
+        exit 1
+    fi
+done
+echo -e "${GREEN}✓ All ponytail addon files found${NC}\n"
 
 # Create build directory
 mkdir -p "$CORE_DIR/references"
@@ -184,6 +199,18 @@ chmod +x "$CORE_DIR/references/scripts/export-requirements.sh"
 echo -e "${GREEN}✓ Copied 6 beads addon files + 1 script${NC}\n"
 
 # ═══════════════════════════════════════════════════════
+# COPY PONYTAIL ADDON FILES (progressive disclosure references)
+# ═══════════════════════════════════════════════════════
+
+echo -e "${YELLOW}┌─────────────────────────────────────────────────────┐${NC}"
+echo -e "${YELLOW}│  Copying ponytail addon files                       │${NC}"
+echo -e "${YELLOW}└─────────────────────────────────────────────────────┘${NC}\n"
+
+cp "$PONYTAIL_SETUP"    "$CORE_DIR/references/ponytail-setup.md"
+cp "$PONYTAIL_WORKFLOW" "$CORE_DIR/references/ponytail-workflow.md"
+echo -e "${GREEN}✓ Copied 2 ponytail addon files${NC}\n"
+
+# ═══════════════════════════════════════════════════════
 # PACKAGE UNIFIED SKILL
 # ═══════════════════════════════════════════════════════
 
@@ -211,6 +238,8 @@ zip -r "$SKILL_FILE" \
     pdca-framework/references/act-beads-addon.md \
     pdca-framework/references/beads-setup.md \
     pdca-framework/references/beads-workflow.md \
+    pdca-framework/references/ponytail-setup.md \
+    pdca-framework/references/ponytail-workflow.md \
     pdca-framework/references/testing-anti-patterns.md \
     pdca-framework/references/scripts/export-requirements.sh \
     -x "*.DS_Store" \
