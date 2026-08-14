@@ -6,8 +6,8 @@
 > **Branch:** `claude/pdca-ponytail-interop-r5u670` — all work lands here.
 > **Produced by:** PDCA PLAN phase (1a analysis + 1b plan), Opus 5, 2026-08-14
 >
-> **Progress:** Step 1 complete (`7bf13af`, verified green: 134 passed, ruff clean).
-> Next: Step 2.
+> **Progress:** Step 0 complete (eval baseline recorded 2026-08-14). Step 1 complete
+> (`7bf13af`, verified green: 134 passed, ruff clean). Next: Step 1b.
 
 ---
 
@@ -120,7 +120,7 @@ review after each step** — do not batch.
 
 | # | Type | Model | Step | Called shot / acceptance |
 |---|---|---|---|---|
-| 0 | prep | — | Human records baseline pass/fail for `TestPrompt2Evals` and `TestPrompt3Evals` from local `skill/eval/results/` (gitignored — not in the repo) | Numbers written down before any master edit |
+| 0 | prep | — | ✅ **DONE** — Baseline recorded 2026-08-14: `TestPrompt2Evals` 4/4 passed (scores 0.80/n/a/0.90/0.80 vs. 0.50 threshold); `TestPrompt3Evals` 3/3 passed (scores 0.67±0.35/0.90/0.90±0.0 vs. 0.50 threshold). Reports: `skill/eval/results/report_20260814_164716.md` (Prompt2), `report_20260814_164922.md` (Prompt3) — gitignored, local only | Numbers written down before any master edit |
 | 1 | `refactor:` | Sonnet 5 | ✅ **DONE** (`7bf13af`) — Generalized `test_beads_references_are_optional` → `test_addon_references_are_optional` over `ADDON_SLUGS = ["beads"]`, and `test_beads_addon_source_files_exist` → `test_addon_source_files_exist`; added `ADDON_SOURCE_FILES` dict | Verified: 134 passed, 135 subtests, ruff clean; zero new files |
 | 1b | `refactor:` | Sonnet 5 | **Decouple the two test drivers** (see "Sequencing correction" below): change `test_addon_source_files_exist` to iterate `ADDON_SOURCE_FILES.items()` instead of `ADDON_SLUGS` | All tests still green before and after; no behavior change while only `beads` exists |
 | 2 | `test:` **RED** | Sonnet 5 | Add `"ponytail": PONYTAIL_SOURCE_FILES` to `ADDON_SOURCE_FILES` **only** — do NOT touch `ADDON_SLUGS` yet | Expected failure, **one test**: `test_addon_source_files_exist` — `Ponytail source file missing: .../ponytail-addon/sources/ponytail-setup.md` |
