@@ -6,7 +6,7 @@
 > **Branch:** `claude/pdca-ponytail-interop-r5u670` — all work lands here.
 > **Produced by:** PDCA PLAN phase (1a analysis + 1b plan), Opus 5, 2026-08-14
 >
-> **Progress:** Step 0 complete (eval baseline recorded 2026-08-14). Step 1 complete
+> **Progress:** Steps 0–3 complete (`5a62ffa`). Next: Step 4.
 > (`7bf13af`, verified green: 134 passed, ruff clean). Next: Step 1b.
 
 ---
@@ -127,6 +127,7 @@ review after each step** — do not batch.
 | 3 | `feat:` GREEN | Sonnet 5 | Create `skill/pdca-framework/ponytail-addon/sources/ponytail-setup.md` and `ponytail-workflow.md` (content spec below) | Step-2 test passes; nothing else changes |
 | 4 | `test:` **RED** | Sonnet 5 | Add both files to `EXPECTED_FILES` (`test_build.py:26`) | Expected failure: `pdca-framework/references/ponytail-setup.md` not in zip namelist |
 | 5 | `feat:` GREEN | Sonnet 5 | `build-skill.sh`: verify block, copy step, **and the `zip -r` manifest** | Step-4 test passes. **The manifest is the trap** — files absent from it vanish silently; Step 4's test is the only thing that catches it |
+| 5b | `refactor:` | Sonnet 5 | **Generalize the copy-fidelity test** (see "Coverage gap" below): rewrite `test_beads_addon_files_match_source` → `test_addon_files_match_source`, deriving its map from `ADDON_SOURCE_FILES` (packaged path is `references/<source filename>`) instead of a hand-written beads dict | Green before and after. **Then prove it covers ponytail**: temporarily corrupt a byte in the packaged `references/ponytail-setup.md`, confirm the test fails naming that file, restore. A refactor that stays green does not by itself prove new coverage |
 | 6 | `test:` **RED** | Sonnet 5 | Add `"ponytail"` to `ADDON_SLUGS` — this is the step that arms the optionality check | Expected failure, **one test**: `test_addon_references_are_optional` — `No ponytail references found in SKILL.md` (the `len > 0` assert). Verified by simulation on 2026-08-14 |
 | 7 | `feat:` GREEN | Sonnet 5 | SKILL.md → "Ponytail Integration (Optional)" section, mirroring the beads section | Passes; SKILL.md stays under the 500-line cap |
 | 8 | `feat:` **master** | Opus 5 | `3. Check/3. Completeness Check.md`: add `/ponytail-review` to the tool-check line at :47; add one line reconciling `# ponytail:` markers with the no-TODO assertion at :26 | Rebuild; re-run `TestPrompt3Evals`; all previously passing scenarios still pass |
@@ -154,6 +155,26 @@ The fix is Step 1b: give each test its own driver.
 
 Step 1b is a pure `refactor:` commit — while `beads` is the only addon, both forms iterate the
 same single entry, so all tests stay green across the change.
+
+### Coverage gap (found after Step 3)
+
+**Another flaw in the original plan.** `test_beads_addon_files_match_source`
+(`skill/tests/test_build.py:406`) asserts that each packaged addon file matches its source
+byte-for-byte. It carries its own hand-written beads-only `addon_map` and was missed when
+Step 1 generalized the other two beads-specific tests.
+
+Without an equivalent for ponytail, nothing verifies that `build-skill.sh` copies the ponytail
+files *faithfully*. Step 4 checks only that the paths appear in the zip namelist — a build step
+that copied the wrong file, copied a stale file, or truncated one would pass Step 4 and ship
+broken content.
+
+The lazy fix is the one Step 1 already established: derive the map from `ADDON_SOURCE_FILES`
+rather than hand-writing a second dict. That is Step 5b.
+
+**Why 5b and not 4b:** the fidelity test reads from the *zip*. Ponytail files do not enter the
+zip until Step 5 lands the build change. Generalizing the test before then would drive it red
+alongside Step 4's presence check — two tests red at once, the same violation the Step 1b
+correction fixed. Sequencing it after Step 5 keeps it a genuine green-to-green refactor.
 
 ### Model-switch note
 
