@@ -7,8 +7,8 @@
 > **Origin:** ACT retrospective of the ponytail interop cycle. Filed as
 > [#111](https://github.com/kenjudy/pdca-agentic-coding-framework/issues/111).
 >
-> **Progress:** Steps 0–8 complete. 148 passed, ruff + mypy clean. Step 7b inserted and landed.
-> Step 8 verdicts recorded below. Next: Step 9.
+> **Progress:** Steps 0–9 complete. 148 passed, ruff + mypy clean. Step 7b inserted and landed.
+> Verdicts below. **Step 9's acceptance criterion was NOT met — see the Step 9 verdict.** Next: Step 10.
 
 ---
 
@@ -169,6 +169,56 @@ an explicit stop-and-ask condition, so it is not something this cycle takes unil
 **Note on Step 7b's value:** attribution took one deterministic replay because the shot output was
 recorded. Before 7b it would have required a 6-pair interleaved A/B — roughly 12 paid runs — for a
 statistically weaker answer. The inserted step paid for itself on its first use.
+
+---
+
+## Step 9 verdict — rewrite kept, but its acceptance criterion was not met
+
+**Diagnosis (from recorded shot outputs, now available thanks to Step 7b).** `3-all-complete`
+failed because the model refused to certify without evidence. Verbatim tails of two failing shots:
+
+> "Once those are answered, I can give a clean **Ready to close: Yes/No** with confidence rather
+> than rubber-stamping the summary."
+
+> "Once those are answered I can give you a **Status: Complete** and a clean **Ready to close**
+> verdict to add to the ticket."
+
+The old input asserted "47 passing, no TODOs, docs updated" while the checklist asks the model to
+audit TDD discipline, coverage adequacy, untested implementation, and structural findings — 6 of
+13 items with no evidence supplied. Asking for that evidence is the correct response, and the
+scenario scored it as failure. **This confirms, from direct observation, the hypothesis raised in
+the previous cycle's ACT: the scenario penalised the behaviour the framework exists to produce.**
+
+**The rewrite** supplies evidence for every checklist section, so `Status: Complete` /
+`Ready to close: Yes` becomes defensible rather than a rubber stamp. Signals unchanged — the input
+was fixed, not the check weakened.
+
+**Measurement — and an honest failure.**
+
+| Comparison | Result |
+|---|---|
+| Sequential: rewrite 8/8 vs prior evidence 22/27 | p = 0.3152 — not significant, and sequential-vs-historical is the methodology this cycle exists to reject |
+| **Interleaved A/B, 8 pairs: old 7/8 vs new 8/8** | **p = 1.0000 — criterion NOT met** |
+
+The plan required "an interleaved A/B showing a materially better pass rate." It does not show
+that. The rewrite is kept on the independent ground that the old input asks for judgments it
+supplies no evidence for — a design defect observed directly in the outputs, not inferred from
+rates — and the A/B confirms it is not worse. **A reviewer who disagrees should revert it; the
+data does not compel keeping it.**
+
+### The broken A/B (recorded because it nearly shipped as a finding)
+
+The first interleaved run returned **old 0/8, new 8/8, Fisher p = 0.0002** — perfect separation.
+It was entirely an artifact. The ad-hoc script ran the old arm from the repo root instead of
+`skill/`, so `uv` failed before pytest started and every old-arm run exited non-zero and was scored
+as a content failure. The same configuration passed 7/8 once it could actually run.
+
+A harness that cannot distinguish *"the test failed"* from *"the test never ran"* manufactures
+decisive-looking evidence — the exact error this cycle's tooling exists to prevent. `run-ab-eval.sh`
+now aborts on pytest exit > 1 rather than scoring it (`de39e70`).
+
+The tell was the discrepancy against an earlier measurement of the same configuration. **A result
+that is far cleaner than every prior measurement deserves suspicion before publication, not after.**
 
 ---
 
