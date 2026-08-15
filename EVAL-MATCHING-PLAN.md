@@ -7,7 +7,8 @@
 > **Origin:** ACT retrospective of the ponytail interop cycle. Filed as
 > [#111](https://github.com/kenjudy/pdca-agentic-coding-framework/issues/111).
 >
-> **Progress:** Step 0 complete — baseline below. Next: Step 1.
+> **Progress:** Steps 0–7 complete (`282c454`). 147 passed, ruff + mypy clean.
+> Step 8 pre-check done (below); Steps 8–9 blocked on `ANTHROPIC_API_KEY`.
 
 ---
 
@@ -53,7 +54,11 @@ False
 Affects every phrase whose signal ends in a colon — roughly 20 of the 51 signal phrases in the
 suite, plus the four internal fields of `called_shot_required`. Observed live: during the ponytail
 cycle, `2-after-passing-test` shot 3 failed on `'Why this test first:' NOT found` while the GEval
-judge scored that same response **0.90** and praised its called-shot discipline.
+judge scored that same response **0.90** and praised its called-shot discipline. **Attribution
+caveat:** that the emphasis defect *caused* that particular failure is a hypothesis, not an
+observation — the model could simply have omitted the field. It is unverifiable from the
+artifacts, because `reporter.py:124` stores only the first shot's output and that failure was on
+shot 3. Stated as inference, not fact.
 
 **A meaningful share of what this repo has been calling eval flakiness is probably this defect.**
 The judge layer largely agrees with itself across runs; the cheap deterministic layer underneath
@@ -98,6 +103,41 @@ Gathered during the ponytail cycle, 2026-08-15:
 currently pass," which requires an API key — contradicting the plan's own claim that Steps 0–7 need
 none. The eval baseline is **deferred to Step 8**, where the key is required regardless. The
 deterministic baseline above is what Steps 1–7 actually need.
+
+---
+
+## Step 8 pre-check — replay against recorded outputs (no API key required)
+
+Before spending API budget, the new matcher was replayed against every model output recorded in
+`eval/results/` from the cycle that produced this plan.
+
+**Result: 46 recorded outputs replayed, 0 check results changed.**
+
+That is a genuine null result and it constrains what this cycle may claim:
+
+1. **The defect is still proven** — by direct unit test, `"Status: Complete" in "**Status:**
+   Complete"` is `False`. A model that certifies completion in the template's own format is scored
+   as passing. That is demonstrated, not inferred.
+2. **But no recorded output exercised it.** Every recorded `**Status:** Complete` belongs to
+   `3-all-complete`, which carries no `must_not_contain` guard — Complete is the *correct* answer
+   there. The two scenarios that do carry the guard (`3-todos-remaining`,
+   `3-missing-documentation`) never recorded a completion claim; the model correctly declined to
+   certify in both.
+3. **The sample cannot settle it either way.** `reporter.py:124` writes only `r["output"]` — the
+   first shot. Retry shots store scores and judge reasoning but **not their outputs**. The
+   mechanically-failing shots are therefore precisely the ones absent from the sample, which is
+   the population this replay most needed.
+
+**Consequence for the claim in Defect 2.** The assertion that the emphasis defect caused
+`2-after-passing-test` shot 3 to fail is downgraded to a hypothesis in the Background section
+above. It is not verifiable from the artifacts and should not have been written as an observation.
+
+**Follow-up filed by this cycle:** `reporter.py` discards the outputs of retried shots, making
+post-hoc diagnosis of exactly the failures worth diagnosing impossible. Worth fixing before the
+next prompt-change cycle.
+
+**What Steps 8–9 must therefore establish:** whether the armed guard changes anything on *live*
+runs, where retry shots actually occur. The replay does not substitute for that.
 
 ---
 
