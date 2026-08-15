@@ -39,7 +39,7 @@ def check_mechanical(output: str, signals: dict) -> list[CheckResult]:
     results: list[CheckResult] = []
 
     for phrase in signals.get("must_contain", []):
-        passed = phrase in output
+        passed = _normalize(phrase) in _normalize(output)
         results.append(CheckResult(
             field=f"must_contain: '{phrase}'",
             passed=passed,
