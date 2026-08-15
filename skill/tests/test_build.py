@@ -405,27 +405,21 @@ class TestSkillPackage(unittest.TestCase):
             "working-agreements.md content doesn't match license-stripped master source",
         )
 
-    def test_beads_addon_files_match_source(self):
-        """Beads addon files in package should match their source files exactly."""
-        addon_map = {
-            f"{SKILL_NAME}/references/plan-beads-addon.md": BEADS_ADDON_DIR / "plan-beads-addon.md",
-            f"{SKILL_NAME}/references/do-beads-addon.md": BEADS_ADDON_DIR / "do-beads-addon.md",
-            f"{SKILL_NAME}/references/check-beads-addon.md": BEADS_ADDON_DIR / "check-beads-addon.md",
-            f"{SKILL_NAME}/references/act-beads-addon.md": BEADS_ADDON_DIR / "act-beads-addon.md",
-            f"{SKILL_NAME}/references/beads-setup.md": BEADS_ADDON_DIR / "beads-setup.md",
-            f"{SKILL_NAME}/references/beads-workflow.md": BEADS_ADDON_DIR / "beads-workflow.md",
-        }
-        for pkg_path, src_path in addon_map.items():
-            with self.subTest(file=pkg_path):
-                if not src_path.exists():
-                    self.skipTest(f"Source file missing: {src_path}")
-                packaged = read_zip_file(SKILL_FILE, pkg_path)
-                source = src_path.read_text()
-                self.assertEqual(
-                    packaged.strip(),
-                    source.strip(),
-                    f"{pkg_path} doesn't match source {src_path.name}",
-                )
+    def test_addon_files_match_source(self):
+        """Addon files in package should match their source files exactly."""
+        for slug, files in ADDON_SOURCE_FILES.items():
+            for src_path in files:
+                pkg_path = f"{SKILL_NAME}/references/{src_path.name}"
+                with self.subTest(addon=slug, file=pkg_path):
+                    if not src_path.exists():
+                        self.skipTest(f"Source file missing: {src_path}")
+                    packaged = read_zip_file(SKILL_FILE, pkg_path)
+                    source = src_path.read_text()
+                    self.assertEqual(
+                        packaged.strip(),
+                        source.strip(),
+                        f"{pkg_path} doesn't match source {src_path.name}",
+                    )
 
     def test_all_skill_md_references_resolvable(self):
         """Every references/xxx.md link in packaged SKILL.md must exist in the zip."""
