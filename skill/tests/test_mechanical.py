@@ -87,6 +87,15 @@ class TestMustNotContain(unittest.TestCase):
         self.assertEqual(len(results), 1)
         self.assertFalse(results[0].passed)
 
+    def test_must_not_contain_fires_across_bold_emphasis(self):
+        # The CHECK template teaches the model to write "**Status:** Complete".
+        # Raw substring matching does not see "Status: Complete" in that string,
+        # so the guard against certifying unfinished work never fires.
+        signals = {**EMPTY_SIGNALS, "must_not_contain": ["Status: Complete"]}
+        results = check_mechanical("**Status:** Complete", signals)
+        self.assertEqual(len(results), 1)
+        self.assertFalse(results[0].passed)
+
 
 class TestCalledShotRequired(unittest.TestCase):
     """called_shot_required checks — all four fields must be present in output."""
