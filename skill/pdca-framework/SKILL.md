@@ -38,6 +38,20 @@ Beads provides persistent, git-backed memory across PDCA sessions:
 
 All beads commands in the phase addon files are **optional**. The framework works with or without beads installed.
 
+## Ponytail Integration (Optional)
+
+[ponytail](https://github.com/DietrichGebert/ponytail) is an AI-agent minimalism framework that
+climbs a decision ladder (YAGNI → reuse → stdlib → platform feature → dependency → one-liner →
+minimum-that-works) before writing code. Where its guidance and PDCA's TDD discipline conflict,
+three precedence rules resolve it — PDCA governs how work is verified, ponytail governs what
+gets built and how complex it is.
+
+**Setup**: See `references/ponytail-setup.md`
+**Active sessions**: See `references/ponytail-workflow.md` for the precedence rules and mode-to-phase guidance
+
+This addon is fully optional. The framework works with or without ponytail installed, and PDCA
+never sets or reads ponytail's mode on its behalf.
+
 ## PDCA Cycle Overview
 
 Each step has distinct prompts and human commitments:
