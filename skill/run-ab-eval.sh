@@ -70,6 +70,21 @@ run_arm() {
   cp "$1" "$MASTER_PATH"
   bash "$SCRIPT_DIR/build-skill.sh" >/dev/null 2>&1
   (cd "$SCRIPT_DIR" && uv run python -m pytest -m eval -q "$TEST_ID" >/dev/null 2>&1)
+  local code=$?
+  # pytest: 0 = passed, 1 = a test failed. Anything else means the run never
+  # happened — uv could not start, collection error, bad node id. Scoring those
+  # as content failures manufactures perfect separation: an arm that cannot run
+  # loses every pair and the p-value looks decisive. Abort instead.
+  if [ $code -gt 1 ]; then
+    echo "" >&2
+    echo "ABORT: the eval run did not execute (pytest exit $code)." >&2
+    echo "  Arm: $1" >&2
+    echo "  This is an infrastructure failure, not a result. Nothing is scored." >&2
+    echo "  Re-run manually to see the error:" >&2
+    echo "    cd $SCRIPT_DIR && uv run python -m pytest -m eval -q '$TEST_ID'" >&2
+    exit 3
+  fi
+  return $code
 }
 
 echo "=== Interleaved A/B: $PAIRS pairs ==="
