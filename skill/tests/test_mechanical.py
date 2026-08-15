@@ -24,6 +24,14 @@ CALLED_SHOT_MISSING_EXPECTED_FAILURE = """
 - **Behavior under test:** validate_scenario({}) raises ScenarioValidationError
 """
 
+# All four fields present, but bolded with the colon outside the emphasis
+CALLED_SHOT_COLON_OUTSIDE_EMPHASIS = """
+- **Test name**: test_rejects_empty_input
+- **Behavior under test**: validate_scenario({}) raises ScenarioValidationError
+- **Expected failure**: AssertionError: ScenarioValidationError not raised
+- **Why this test first**: degenerate case — establishes the API contract
+"""
+
 
 class TestDegenerateCase(unittest.TestCase):
     """Empty signals — establishes return type and API contract."""
@@ -126,6 +134,16 @@ class TestCalledShotRequired(unittest.TestCase):
         called_shot_results = [r for r in results if "called_shot" in r.field]
         self.assertEqual(len(called_shot_results), 1)
         self.assertFalse(called_shot_results[0].passed)
+
+    def test_called_shot_matches_across_bold_emphasis(self):
+        # Observed live: 2-after-passing-test shot 3 failed on
+        # "'Why this test first:' NOT found" while the GEval judge scored that
+        # same response 0.90 and praised its called-shot discipline.
+        signals = {**EMPTY_SIGNALS, "called_shot_required": True}
+        results = check_mechanical(CALLED_SHOT_COLON_OUTSIDE_EMPHASIS, signals)
+        called_shot_results = [r for r in results if "called_shot" in r.field]
+        self.assertEqual(len(called_shot_results), 1)
+        self.assertTrue(called_shot_results[0].passed)
 
     def test_called_shot_missing_all_fields_fails(self):
         signals = {**EMPTY_SIGNALS, "called_shot_required": True}
