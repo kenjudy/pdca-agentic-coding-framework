@@ -1,5 +1,43 @@
 # PDCA Framework Skill - Update Summary
 
+## Unreleased
+
+### Eval harness — mechanical matching repair
+
+- **Fixed a defect that made the anti-rubber-stamp guard inoperable.** `check_mechanical` compared
+  signal phrases against raw markdown, so `must_not_contain: "Status: Complete"` could never match
+  the CHECK template's own `**Status:** Complete` rendering. A model certifying unfinished work in
+  the format the template teaches was scored as passing — in the two scenarios written to catch
+  exactly that. Emphasis is now stripped symmetrically before matching.
+- Same defect in the other direction: colon-terminated phrases such as `Status:` and
+  `Why this test first:` failed against `**Status**:` styling — 19 of the suite's 51 signal
+  phrases were exposed. Underscores are deliberately preserved so code identifiers like
+  `def deliver_webhook` are unaffected.
+- **Eval reports now record every retry shot's output.** Previously only the first shot was kept,
+  which discarded exactly the outputs needed to diagnose a mechanical failure.
+- **`3-all-complete` scenario input rewritten** to supply evidence for all three checklist
+  sections. It previously asked the model to audit TDD discipline, coverage, and structural
+  findings while providing evidence for none, so declining to certify was the correct answer and
+  the scenario scored it as a failure.
+
+### New tooling
+
+- **`skill/run-ab-eval.sh`** — interleaved A/B for master-prompt changes. Alternates arms within
+  each pair so API-side drift affects both equally, and aborts rather than scoring a run that
+  failed to execute.
+- **`skill/eval/abstats.py`** — two-tailed Fisher exact test, pure stdlib, verified against
+  published reference values. Added because an eyeballed p-value in the preceding cycle was wrong
+  by a factor of two.
+- `SUPERVISION-PROTOCOL.md` gains a section on attributing eval failures: never from a single run,
+  never from sequential batches, and treat a suspiciously clean result as a harness bug until
+  proven otherwise.
+
+### Optional ponytail interop
+
+- The pdca-framework skill now offers optional interoperation with
+  [ponytail](https://github.com/DietrichGebert/ponytail) via a progressive-disclosure addon.
+  Users without ponytail installed are unaffected.
+
 ## v1.2.0 (2026-07-17)
 
 ### New Skills

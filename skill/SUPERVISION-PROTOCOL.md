@@ -178,9 +178,40 @@ cd skill && bash run-evals.sh -k "TestPrompt1aEvals or TestPrompt1bEvals"
 - All previously passing scenarios must still pass
 - If a scenario flips from pass to fail:
   1. Check whether the failure is caused by your change or pre-existing rubric variance
-  2. Re-run the scenario 1–3 times — LLM-judge scores vary naturally
+  2. **Attribute it with an interleaved A/B — never a single run, and never two sequential
+     batches** (see below)
   3. If the rubric is misapplying a criterion, fix the rubric (targeted change only) and re-run
 - Do not commit prompt or rubric changes that regress a passing scenario
+
+### 5. Attributing a Failure to Your Change
+
+**A single eval run cannot tell you whether your edit caused a failure.** Scenarios fail on prompt
+text nobody changed: `3-all-complete` was measured failing 3 of 18 runs against an unmodified
+master. Sequential batches cannot tell you either — API-side variation drifts over minutes, so
+"control first, treatment second" confounds the change with the clock.
+
+```bash
+cd skill && bash run-ab-eval.sh \
+  --master "3. Check/3. Completeness Check.md" \
+  --control /tmp/control.md --treatment "../3. Check/3. Completeness Check.md" \
+  --test 'tests/test_evals.py::TestPrompt3Evals::test_3_scenario[3-all-complete]' --pairs 6
+```
+
+It alternates arms within each pair, rebuilds between them, and reports a Fisher exact p-value.
+Read the p-value, not the two raw pass rates.
+
+**Two traps, both hit in practice:**
+
+- **Eyeballed p-values are wrong.** A 15/18-vs-7/12 comparison was reported as "p ≈ 0.11" by
+  estimation. It is 0.21. Use `eval/abstats.py`; do not estimate.
+- **An arm that cannot run looks like an arm that failed.** A misconfigured A/B once returned
+  0/8 vs 8/8 at p = 0.0002 because one arm's `uv` invocation failed before pytest started. The
+  script now aborts on pytest exit > 1 rather than scoring it. **If a result is far cleaner than
+  every prior measurement of the same thing, suspect the harness before publishing the finding.**
+
+**Null results are results.** If the p-value says the arms are indistinguishable, do not rewrite
+the line you suspected. That conclusion has already been reached twice here on changes that turned
+out to be innocent.
 
 ---
 
