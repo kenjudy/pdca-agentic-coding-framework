@@ -70,7 +70,7 @@ PONYTAIL_SOURCE_FILES = [
 # Optional third-party addons. Each slug's source files must exist, and every
 # SKILL.md reference to that slug must be marked Optional. Add a slug here
 # (plus an ADDON_SOURCE_FILES entry) when a new addon lands.
-ADDON_SLUGS = ["beads"]
+ADDON_SLUGS = ["beads", "ponytail"]
 
 ADDON_SOURCE_FILES = {
     "beads": BEADS_SOURCE_FILES,
