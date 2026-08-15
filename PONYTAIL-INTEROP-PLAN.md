@@ -8,12 +8,8 @@
 > fold it back in before merging to `main`.
 > **Produced by:** PDCA PLAN phase (1a analysis + 1b plan), Opus 5, 2026-08-14
 >
-> **Progress:** Steps 0–8 complete (`a408ca8`), unit gates green (134 passed, 153 subtests,
-> ruff clean). Next: Step 9.
->
-> ⚠️ **Eval gate is outstanding.** Step 8 was executed in a session with no `ANTHROPIC_API_KEY`,
-> so `TestPrompt3Evals` could not be re-run — see "Step 8 eval debt" below. Step 9 needs
-> `TestPrompt2Evals`; run it in a session that has the key, and clear the Step 8 debt there too.
+> **Progress:** Steps 0–9 complete (`ebf6b71`), unit gates green (134 passed, 153 subtests,
+> ruff clean). Eval gates run for both phases — see "Eval findings" below. Next: Step 10 (docs).
 
 ---
 
@@ -136,8 +132,8 @@ review after each step** — do not batch.
 | 5b | `refactor:` | Sonnet 5 | **Generalize the copy-fidelity test** (see "Coverage gap" below): rewrite `test_beads_addon_files_match_source` → `test_addon_files_match_source`, deriving its map from `ADDON_SOURCE_FILES` (packaged path is `references/<source filename>`) instead of a hand-written beads dict | Green before and after. **Then prove it covers ponytail**: temporarily corrupt a byte in the packaged `references/ponytail-setup.md`, confirm the test fails naming that file, restore. A refactor that stays green does not by itself prove new coverage |
 | 6 | `test:` **RED** | Sonnet 5 | Add `"ponytail"` to `ADDON_SLUGS` — this is the step that arms the optionality check | Expected failure, **one test**: `test_addon_references_are_optional` — `No ponytail references found in SKILL.md` (the `len > 0` assert). Verified by simulation on 2026-08-14 |
 | 7 | `feat:` GREEN | Sonnet 5 | SKILL.md → "Ponytail Integration (Optional)" section, mirroring the beads section | Passes; SKILL.md stays under the 500-line cap |
-| 8 | `feat:` **master** | Opus 5 | ⚠️ **DONE, EVAL DEBT** (`a408ca8`) — `/ponytail-review` added to the tool-check line; `# ponytail:` reconciliation line added under the no-TODO assertion. Rebuilt; unit gates green. `TestPrompt3Evals` **not run** — no API key in that session | Rebuild; re-run `TestPrompt3Evals`; all previously passing scenarios still pass |
-| 9 | `feat:` **master** | Opus 5 | `2. Do/2. Test Drive the Change.md`: `**If ponytail is active**` guard clause + the three precedence rules | Rebuild; re-run `TestPrompt2Evals`; no regression vs. baseline |
+| 8 | `feat:` **master** | Opus 5 | ✅ **DONE** (`a408ca8`) — `/ponytail-review` added to the tool-check line; `# ponytail:` reconciliation line added under the no-TODO assertion | `TestPrompt3Evals` run: `3-todos-remaining` **1.00** and `3-missing-documentation` **0.90** (both at or above baseline); `3-all-complete` failed but is not attributable — see Eval findings. Wording kept as committed |
+| 9 | `feat:` **master** | Opus 5 | ✅ **DONE** (`ebf6b71`) — **scoped down** to a single pointer line, not the three rules inline. `06b3221` adds the `2-ponytail-precedence` scenario as a green regression guard | `TestPrompt2Evals` run: 4/5 first pass; interleaved A/B on the failing scenario gave control 6/6 vs. step-9 5/6, Fisher p=1.0 — no regression |
 | 10 | `docs:` | Opus 5 | `README.md`, `skill/README.md`, `CLAUDE.md`, `CHANGELOG.md` | Ponytail appears alongside beads as an optional integration |
 
 Steps 8 and 9 are **separate commits with separate eval runs** — one discrete change per
@@ -182,34 +178,54 @@ zip until Step 5 lands the build change. Generalizing the test before then would
 alongside Step 4's presence check — two tests red at once, the same violation the Step 1b
 correction fixed. Sequencing it after Step 5 keeps it a genuine green-to-green refactor.
 
-### Step 8 eval debt (found during Step 8)
+### Eval findings (Steps 8–9, measured with a live API key)
 
-Step 8 landed as specified, but its acceptance criterion — "re-run `TestPrompt3Evals`" — could not
-be met: the executing session had no `ANTHROPIC_API_KEY`, and `skill/eval/results/` is gitignored,
-so even the Step-0 baseline reports were not present locally. Unit gates were run instead
-(`134 passed, 153 subtests, ruff clean`), which prove the build still packages correctly but say
-nothing about model behavior.
+Both eval gates were run. Neither produced a clean verdict on the first try, and chasing both
+failures produced the most useful output of this cycle.
 
-**What actually landed** (both lines guarded, so a non-ponytail session reads them as inapplicable):
+**1. `3-all-complete` is not a usable regression gate.** Step 8's first `TestPrompt3Evals` run
+failed it. The plan predicted that a Step 8 regression would implicate the `# ponytail:`
+sub-bullet — **that prediction was wrong, and the plan should not have been written that way.**
+36 runs across three batches:
 
-1. Under `- [ ] No TODO implementations remaining created by this test driving`, a sub-bullet:
-   *If ponytail is active:* `# ponytail:` markers count here — run `/ponytail-debt` and record each
-   under **Outstanding items**. A marker left over untested logic is an unfinished implementation
-   and blocks close.
-2. Tool-check line: `/ponytail-review` added beside `/simplify`, conditioned on ponytail being
-   installed.
+| Arm | Pass rate |
+|---|---|
+| Unmodified CHECK master (control) | 15/18 (83%) |
+| Step 8 build | 7/12 (58%) |
+| Step 8 line moved outside the fenced template | 4/6 (67%) |
 
-**The specific eval risk to look for** when the evals do run: the `3-todos-remaining` scenario
-requires the model to flag TODOs and *not* emit `Status: Complete`. Addition #1 introduces the only
-sentence in the CHECK prompt that discusses a class of marker as deliberate. It was worded to
-tighten rather than loosen the assertion ("count here", "blocks close"), but the failure mode to
-watch for is a model reading it as permission to wave TODOs through. If `3-todos-remaining`
-regresses below its 0.90 baseline, that sub-bullet is the cause — revert `a408ca8` alone and
-re-word, rather than touching Step 9's work.
+Fisher exact control vs. Step 8: **p ≈ 0.11**, not significant. The control's measured pass rate
+*fell* as samples accumulated (5/5 → 5/6 → 4/6), and two interleaved pairs failed on both arms at
+once. The scenario fails on unmodified text. Filed as
+[#111](https://github.com/kenjudy/pdca-agentic-coding-framework/issues/111); wording kept as
+committed rather than rewritten on the strength of noise.
 
-**Baseline to compare against** (from Step 0, 2026-08-14): `TestPrompt3Evals` 3/3 passed, scores
-0.67±0.35 / 0.90 / 0.90±0.0 against a 0.50 threshold. Note the ±0.35 spread on the first scenario —
-a single sub-threshold run there is variance, not necessarily regression; re-run before concluding.
+The other two CHECK scenarios went the opposite way from the predicted risk: `3-todos-remaining`
+scored **1.00** (baseline 0.90) and `3-missing-documentation` **0.90**. The ponytail line made the
+TODO assertion stricter, not looser.
+
+**2. The three precedence rules were already enforced, so Step 9 shrank.** The
+`2-ponytail-precedence` scenario was written as Step 9's RED. It measured **4/4 passing at 1.00
+against the unmodified DO master** — given a human invoking ponytail's trivial-one-liner
+exemption, the agent already refused it by name, produced a full called shot, and targeted the
+existing fixture. Each rule maps to something the file already says:
+
+| Precedence rule | Already enforced by |
+|---|---|
+| Ordering wins for PDCA | mandatory CALLED SHOT + `Red phase: Write the failing test first (NO exceptions)` |
+| No trivial-code exemption | "NO exceptions" + Process Police alert |
+| Fixtures win for PDCA | line 20, "add tests to existing fixtures … rather than proliferate new test files" |
+
+So Step 9 landed as a single pointer line naming which framework governs which concern, rather
+than restating three rules that would then live in the prompt, the addon file, and SKILL.md at
+once. The scenario is kept as a green-on-arrival regression guard (`06b3221`), explicitly not as
+evidence that Step 9 changed behavior.
+
+**3. Method note for the next master edit.** A single eval run cannot attribute a failure to a
+prompt change — this harness is noisy enough that sequential batches mislead. Use an interleaved
+A/B (alternate control and treatment within each pair, rebuilding between arms) so API-side drift
+hits both arms equally. Scripts used are in the session scratchpad and are worth re-creating as a
+committed dev tool if this recurs.
 
 ### Model-switch note
 
@@ -312,8 +328,10 @@ Step 10; it is not required for the feature to work.
 
 ## Definition of Done
 
-- [ ] `cd skill && bash run-tests.sh` green (ruff + pytest)
-- [ ] `TestPrompt2Evals` and `TestPrompt3Evals` at or above the Step-0 baseline
+- [x] `cd skill && bash run-tests.sh` green (ruff + pytest) — 134 passed, 153 subtests, ruff clean
+- [x] `TestPrompt2Evals` and `TestPrompt3Evals` run; no attributable regression (see Eval findings).
+      Note the criterion "at or above the Step-0 baseline" turned out to be unmeasurable as written
+      for `3-all-complete` — it is not stable enough to compare against
 - [ ] A non-ponytail user's built `plan-prompts.md` is byte-for-byte unchanged
 - [ ] Docs updated (README, skill/README, CLAUDE.md, CHANGELOG)
 - [ ] Pushed to `claude/pdca-ponytail-interop-r5u670`
@@ -330,8 +348,15 @@ actually landed in the CHECK master.
 Retrospective (5–10 min). Specifically:
 
 - Did "reference, don't vendor" hold up, or did we end up wanting the ladder inline after all?
+  (Step 9's finding is evidence for reference-don't-vendor: even the *precedence rules* turned out
+  to be duplication.)
 - Was two addon files the right call, or does PLAN want its own?
+- **Is the DO-master guard clause earning its place at all?** The eval says agent behavior is
+  unchanged without it. The argument for keeping it is the human reader, not the agent.
+- **Should plan steps carry predicted failure modes at all?** This plan predicted the wrong cause
+  for a Step 8 regression and would have sent a less careful session off rewriting a correct line.
 - File the `build-skill.ps1` drift as a follow-up issue.
+- Flaky eval scenario filed as #111 during this session.
 - `bd` is not installed in the environment where this plan was written and there is no
   `.beads/` directory — if beads is available in the executing session, file the follow-ups
   there; otherwise record them in `CHANGELOG.md` or as a GitHub issue.
