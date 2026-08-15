@@ -61,7 +61,8 @@ def check_mechanical(output: str, signals: dict) -> list[CheckResult]:
             "Expected failure:",
             "Why this test first:",
         ]
-        missing = [f for f in required_fields if f not in output]
+        normalized_output = _normalize(output)
+        missing = [f for f in required_fields if _normalize(f) not in normalized_output]
         passed = len(missing) == 0
         results.append(CheckResult(
             field="called_shot: all four fields",
