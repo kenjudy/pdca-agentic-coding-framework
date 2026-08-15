@@ -7,8 +7,8 @@
 > **Origin:** ACT retrospective of the ponytail interop cycle. Filed as
 > [#111](https://github.com/kenjudy/pdca-agentic-coding-framework/issues/111).
 >
-> **Progress:** Steps 0–7 complete (`282c454`). 147 passed, ruff + mypy clean.
-> Step 8 pre-check done (below); Steps 8–9 blocked on `ANTHROPIC_API_KEY`.
+> **Progress:** Steps 0–8 complete. 148 passed, ruff + mypy clean. Step 7b inserted and landed.
+> Step 8 verdicts recorded below. Next: Step 9.
 
 ---
 
@@ -138,6 +138,37 @@ next prompt-change cycle.
 
 **What Steps 8–9 must therefore establish:** whether the armed guard changes anything on *live*
 runs, where retry shots actually occur. The replay does not substitute for that.
+
+---
+
+## Step 8 verdicts (live runs, 2026-08-15)
+
+**`TestPrompt3Evals`: 3 passed, no retries, 39s.** The armed `must_not_contain: "Status: Complete"`
+guard fired on nothing — in all three CHECK scenarios the model declined to certify where
+certification was unwarranted. `3-all-complete` passed first-shot, against an 83% control baseline.
+No scenario went red from arming the guard.
+
+**`TestPrompt2Evals`: 4 passed, 1 failed — `2-first-step`.**
+
+| Triage | Result |
+|---|---|
+| Failing check | `must_not_contain: 'complete'` — FOUND (bad) |
+| Actual text | *"Before writing any test, here's the **complete** sequence:"* |
+| Is it a completion claim? | No. Adjective, describing the planned test list |
+| Caused by this cycle? | **No — deterministically excluded.** Replaying the recorded shot output through raw-substring semantics fails identically. The normalizer is not involved |
+| Triage-table row | None of rows 1–3. Row 4 (noise) not applicable either — this is a *reproducible* false positive on the recorded text |
+
+**Verdict: pre-existing defect, already scoped out of this cycle.** The plan's risk table names it —
+`2-first-step` carries a bare substring that also matches "completeness", "completed", and, as now
+demonstrated with real output, "the complete sequence". The scenario means to catch a model
+*declaring the work done*; it matches an ordinary English adjective instead.
+
+Per the plan, it is **filed rather than fixed here**. Narrowing a `must_not_contain` signal is also
+an explicit stop-and-ask condition, so it is not something this cycle takes unilaterally.
+
+**Note on Step 7b's value:** attribution took one deterministic replay because the shot output was
+recorded. Before 7b it would have required a 6-pair interleaved A/B — roughly 12 paid runs — for a
+statistically weaker answer. The inserted step paid for itself on its first use.
 
 ---
 
