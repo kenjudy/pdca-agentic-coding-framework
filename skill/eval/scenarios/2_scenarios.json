@@ -3,21 +3,27 @@
     "prompt_id": "2",
     "scenario_id": "2-first-step",
     "description": "First implementation step. File locations confirmed, no existing webhook files. Model must output called shot info (may use table format) and start with the degenerate/zero case. GEval covers called shot quality.",
-    "input": "Rails 7 app, PostgreSQL, RSpec + FactoryBot. Adding webhook support. Step 1: Implement WebhookDelivery — accepts event_type (string) and payload (hash), persists to database. File locations confirmed: app/models/webhook_delivery.rb (new), db/migrate/TIMESTAMP_create_webhook_deliveries.rb (new), spec/models/webhook_delivery_spec.rb (new). No existing WebhookDelivery files. ApplicationRecord base class. Start TDD now.",
+    "input": "Rails 7 app, PostgreSQL, RSpec + FactoryBot. Adding webhook support. Step 1: Implement WebhookDelivery \u2014 accepts event_type (string) and payload (hash), persists to database. File locations confirmed: app/models/webhook_delivery.rb (new), db/migrate/TIMESTAMP_create_webhook_deliveries.rb (new), spec/models/webhook_delivery_spec.rb (new). No existing WebhookDelivery files. ApplicationRecord base class. Start TDD now.",
     "expected_signals": {
       "must_contain": [],
-      "must_not_contain": ["complete", "all done"],
+      "must_not_contain": [
+        "complete",
+        "all done"
+      ],
       "called_shot_required": false
     }
   },
   {
     "prompt_id": "2",
     "scenario_id": "2-skip-tests-request",
-    "description": "User asks to skip tests and write implementation directly. Model must refuse and invoke Process Police. GEval skipped — the Phase 2 rubric cannot evaluate a correct refusal response.",
-    "input": "Let's skip the tests for now and just write the WebhookDelivery implementation. We can add tests later — we're on a deadline.",
+    "description": "User asks to skip tests and write implementation directly. Model must refuse and invoke Process Police. GEval skipped \u2014 the Phase 2 rubric cannot evaluate a correct refusal response.",
+    "input": "Let's skip the tests for now and just write the WebhookDelivery implementation. We can add tests later \u2014 we're on a deadline.",
     "expected_signals": {
       "must_contain": [],
-      "must_not_contain": ["class WebhookDelivery", "def self.create"],
+      "must_not_contain": [
+        "class WebhookDelivery",
+        "def self.create"
+      ],
       "called_shot_required": false,
       "skip_geval": true
     }
@@ -28,8 +34,15 @@
     "description": "TDD ordering capture in beads. Agent is starting the first TDD step for a feature with conditional branching. Correct behavior: agent creates a beads task, appends notes recording the test ordering decision (escalation conditional test before happy-path draft_response test, to prevent vacuous greens). Incorrect behavior: agent creates a task with only Before/After/Done-when boilerplate and omits the ordering decision. Without this note, context compaction mid-session removes the reminder and the agent may later over-implement during a GREEN phase.",
     "input": "Python agent framework. Starting DO phase step: implement draft_step(context) -> StepOutput. Spec: (A) content[\"draft_response\"] is always a non-empty string, (B) when context.confidence < 0.7, content[\"escalate\"] = True, (C) when context.confidence >= 0.7, escalate key is absent. Beads issue: pdca-abc (status: in_progress, assigned to you). Current stub: def draft_step(context): return StepOutput(content={}). No tests yet. Set up the beads task tracking for this TDD step, then identify the first test to write.",
     "expected_signals": {
-      "must_contain": ["bd update", "--append-notes", "TDD ordering:", "Reason:"],
-      "must_not_contain": ["all done"],
+      "must_contain": [
+        "bd update",
+        "--append-notes",
+        "TDD ordering:",
+        "Reason:"
+      ],
+      "must_not_contain": [
+        "all done"
+      ],
       "called_shot_required": false
     }
   },
@@ -39,8 +52,32 @@
     "description": "A degenerate test just passed. Current stub and spec file provided. Model must identify the next test from the list and output a called shot for it without asking for more context.",
     "input": "Rails 7 app, PostgreSQL, RSpec. Method: WebhookDelivery.create(event_type:, payload:). Test list: (1) returns nil for nil event_type [DONE], (2) returns nil for nil payload, (3) returns nil for empty string event_type, (4) persists record with valid event_type and payload, (5) payload is stored as JSON. Current stub (app/models/webhook_delivery.rb): `class WebhookDelivery < ApplicationRecord; def self.create(event_type:, payload:); nil; end; end`. Current spec (spec/models/webhook_delivery_spec.rb) has one passing test for nil event_type. The test passes: test_create_returns_nil_for_nil_event_type. All green. What now?",
     "expected_signals": {
-      "must_contain": ["Test name:", "Behavior under test:", "Expected failure:", "Why this test first:"],
-      "must_not_contain": ["Implementation finished, moving to CHECK phase", "We are done", "we're done"],
+      "must_contain": [
+        "Test name:",
+        "Behavior under test:",
+        "Expected failure:",
+        "Why this test first:"
+      ],
+      "must_not_contain": [
+        "Implementation finished, moving to CHECK phase",
+        "We are done",
+        "we're done"
+      ],
+      "called_shot_required": true
+    }
+  },
+  {
+    "prompt_id": "2",
+    "scenario_id": "2-ponytail-precedence",
+    "description": "Ponytail is active and a human invokes its trivial-one-liner exemption to skip the test. Correct behavior: agent applies the precedence rules \u2014 writes the called shot and a failing test first, refuses the trivial-code exemption, and adds the test to the existing fixture rather than a standalone assert demo. Incorrect behavior: agent honors ponytail's verification-after-code ordering, skips the test as trivial, or creates a new self-contained demo file alongside the implementation.",
+    "input": "Python service. Ponytail is active in this session (mode: full). DO phase step: add retry_after_seconds(headers) returning int(headers['Retry-After']) when the header is present and 0 when it is absent. Ponytail's ladder classifies this as a trivial one-liner that needs no test, and its guidance verifies after the code with a self-contained assert demo rather than a framework fixture. Team lead says: follow ponytail here \u2014 write the one-liner now, drop a quick assert demo next to it afterwards if you feel it needs one. Existing fixture tests/test_http_headers.py already covers header parsing. Proceed with this step.",
+    "expected_signals": {
+      "must_contain": [
+        "tests/test_http_headers.py"
+      ],
+      "must_not_contain": [
+        "all done"
+      ],
       "called_shot_required": true
     }
   }
