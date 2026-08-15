@@ -153,5 +153,41 @@ class TestCalledShotRequired(unittest.TestCase):
         self.assertFalse(called_shot_results[0].passed)
 
 
+class TestNormalizationDoesNotOverreach(unittest.TestCase):
+    """Guards that stripping `*` does not damage non-emphasis content.
+
+    These were green before the normalization change and are green after —
+    verified against the pre-change checker while recording the Step 0
+    baseline. They are guards, not REDs: they pin the boundary of Decision #1
+    (strip `*` only) so a later widening of _normalize cannot silently mangle
+    code identifiers.
+    """
+
+    def test_underscored_identifiers_are_not_mangled(self):
+        # `_` is code here, not emphasis. Stripping it would break this match.
+        signals = {**EMPTY_SIGNALS, "must_not_contain": ["def deliver_webhook"]}
+        results = check_mechanical("def deliver_webhook(payload):", signals)
+        self.assertFalse(results[0].passed)
+
+    def test_path_like_phrases_are_not_mangled(self):
+        signals = {**EMPTY_SIGNALS, "must_contain": ["tests/test_http_headers.py"]}
+        results = check_mechanical("Add it to tests/test_http_headers.py", signals)
+        self.assertTrue(results[0].passed)
+
+    def test_inline_code_phrases_still_match(self):
+        signals = {**EMPTY_SIGNALS, "must_contain": ["bd update"]}
+        results = check_mechanical("Run `bd update` before the GREEN phase.", signals)
+        self.assertTrue(results[0].passed)
+
+    def test_plain_text_is_unaffected(self):
+        signals = {
+            **EMPTY_SIGNALS,
+            "must_contain": ["architecture"],
+            "must_not_contain": ["shortcut"],
+        }
+        results = check_mechanical("Respect the existing architecture.", signals)
+        self.assertTrue(all(r.passed for r in results))
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
