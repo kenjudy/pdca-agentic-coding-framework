@@ -64,7 +64,9 @@ does not.
 Gathered during the ponytail cycle, 2026-08-15:
 
 - 36 runs of `3-all-complete`: unmodified control 15/18 (83%), i.e. it fails on prompt text nobody
-  changed. Two interleaved A/B pairs failed on *both* arms simultaneously.
+  changed. Two interleaved A/B pairs failed on *both* arms simultaneously. Control vs. the Step 8
+  build, Fisher exact: **p = 0.2098** — not attributable. (Originally reported as "p ≈ 0.11" by
+  estimation; that number was wrong, which is why `eval/abstats.py` now exists.)
 - `TestPrompt2Evals` `2-after-passing-test`: GEval passed 3/3 while mechanical passed 1/3.
 - Full signal inventory: 51 phrases across the 5 scenario files (see Step 0).
 
@@ -148,8 +150,8 @@ Each step is one commit. **Stop for human review after each step** — do not ba
 | 5 | `test:` **RED** | Sonnet 5 | Test list #3 — `called_shot_required` against a called shot written `**Test name**:` | Expected failure, **one test** |
 | 6 | `feat:` GREEN | Sonnet 5 | Apply `_normalize` in the `called_shot_required` probe | Step-5 test passes |
 | 7 | `test:` guard | Sonnet 5 | Test list #4–6 as regression guards, in one commit | Green on arrival — **say so in the commit message** |
-| 8 | `fix:`/`docs:` **judgment** | **Opus 5** | Re-run `TestPrompt3Evals` and `TestPrompt2Evals`. The `Status: Complete` guard is now armed in two scenarios. For each failure, decide: is the model genuinely rubber-stamping (finding — the prompt needs work), or is the scenario wrong? | A written verdict per failure. Do **not** silence a guard to get green |
-| 9 | `fix:` scenario | **Opus 5** | Repair `3-all-complete`: its input asserts completeness with no evidence for 5 of the Process Audit items, so declining to certify is the honest answer and the scenario punishes it. Add the missing evidence, or split the skeptical path into its own scenario | Interleaved A/B vs. the current scenario shows a materially better pass rate. Single runs prove nothing |
+| 8 | `fix:`/`docs:` **judgment** | Sonnet 5 | Re-run `TestPrompt3Evals` and `TestPrompt2Evals`. The `Status: Complete` guard is now armed in two scenarios. For each failure, decide: is the model genuinely rubber-stamping (finding — the prompt needs work), or is the scenario wrong? | A written verdict per failure. Do **not** silence a guard to get green |
+| 9 | `fix:` scenario | Sonnet 5 | Repair `3-all-complete`: its input asserts completeness with no evidence for 5 of the Process Audit items, so declining to certify is the honest answer and the scenario punishes it. Add the missing evidence, or split the skeptical path into its own scenario | Interleaved A/B vs. the current scenario shows a materially better pass rate. Single runs prove nothing |
 | 10 | `docs:` | Sonnet 5 | `skill/SUPERVISION-PROTOCOL.md`: record that prompt-change regressions are attributed by interleaved A/B, never a single run. `CHANGELOG.md`. Close #111 | Method note lands where the next session will find it |
 
 ### Full-cycle scope (per CLAUDE.md planning discipline)
@@ -168,16 +170,54 @@ Named explicitly rather than assumed:
 
 ## Model selection
 
-| Steps | Model | Why |
+**Sonnet 5 for every step**, on the strength of the three supports below. The original tagging
+put Steps 8–9 on Opus because they were specified as "use judgment." That was a smell: a step
+whose spec is a disposition rather than a procedure is under-planned, whatever model runs it.
+
+| Dimension | Rating | Note |
 |---|---|---|
-| 0–7 | **Sonnet 5** | Low implementation complexity, clear established pattern, narrow context (2 files), deterministic tests, no API. `test_mechanical.py` supplies the idiom to copy. This is exactly the work Sonnet does well |
-| 8–9 | **Opus 5** | Judgment, not implementation. Step 8 asks whether a newly-failing guard indicates a bad prompt or a bad scenario — a question about what the framework is *for*. Step 9 requires deciding what a defensible CHECK answer looks like when evidence is absent, then designing an experiment to prove the fix. The ponytail cycle showed both of these going wrong under an incorrect prior |
-| 10 | Sonnet 5 | Mechanical documentation once the decisions in 8–9 are made |
+| Implementation complexity | Low | One 45-line pure function plus a helper |
+| Pattern clarity | Clear | `tests/test_mechanical.py` supplies the idiom to copy |
+| Context scope | Narrow | Two files for the entire matcher repair |
+| Debugging likelihood | Low (0–7), Medium (8–9) | Deterministic units vs. live eval triage |
+| External integration | None until Step 8 | No API key needed for the matcher repair at all |
 
-Per the ponytail plan's model-switch note: prefer a **fresh thread per model** carrying this file,
-rather than switching inside one thread — caches are model-scoped.
+**What makes Steps 8–9 safe for Sonnet:**
 
----
+1. `skill/run-ab-eval.sh` (`910f647`) encodes the interleaved protocol and prints a Fisher
+   p-value with an explicit instruction not to act on a null result. The statistical judgment is
+   in the tool, not the operator.
+2. The Step 8 triage table below replaces "decide whether the prompt or the scenario is wrong"
+   with a lookup.
+3. The verdict-before-fix rule below removes the temptation to skip straight to green.
+
+**Residual risk that is not proceduralized:** Step 9 asks for a redesigned scenario input, which
+is open-ended authoring. Its acceptance criterion is objective — the A/B must show improvement —
+so a wrong answer is detectable rather than silently shipped, but **the human should read the
+rewritten scenario text personally** rather than accept it on the strength of a passing gate.
+
+### Step 8 triage table
+
+For each scenario that fails once the `Status: Complete` guard is armed, apply in order:
+
+| If the failing output… | Then | Action |
+|---|---|---|
+| Certifies completion while the scenario input states open items (TODOs, missing docs) | **Prompt finding** | Leave the scenario red. The CHECK prompt is not preventing rubber-stamping. Record it; fixing the prompt is a separate cycle |
+| Certifies completion where the input contains no open items | **Scenario finding** | The guard is mis-specified for this scenario — it was never meant to fire here. Narrow the signal, and say so in the commit |
+| Declines to certify, but is failing on a phrase the normalizer should have matched | **Normalizer gap** | A character beyond `*` is in play. Add it, with the failing string quoted in the commit message (see Decision #1) |
+| Fails intermittently across ≥6 interleaved pairs with p ≥ 0.05 | **Noise** | Not a finding. Record the p-value and move on. Do **not** edit anything |
+
+Anything that does not match a row is an escalation to the human, not an improvisation.
+
+### Verdict-before-fix rule
+
+The triage verdict lands as a **text-only commit** — plan file or CHANGELOG — *before* any commit
+that edits a signal, scenario, or prompt in response to it. No commit may both diagnose and fix
+the same failure.
+
+This exists because the cheapest route to green is always to weaken the check, and that route
+would restore the exact defect this cycle removes. Separating the two commits makes taking it a
+visible, deliberate act rather than a quiet one.
 
 ## Risks
 
@@ -186,7 +226,7 @@ rather than switching inside one thread — caches are model-scoped.
 | Arming the guard turns currently-green scenarios red | That is the intended effect. Step 8 triages each on its merits; Decision #5 forbids silencing |
 | Over-stripping mangles code identifiers | Decision #1 strips `*` only; test list #4 guards it |
 | `2-first-step` carries `must_not_contain: "complete"` — a bare substring that also matches "completeness", "completed" | **Separate latent defect, out of scope.** File as a follow-up during ACT; do not fix inside this cycle |
-| Eval re-runs in Steps 8–9 are noisy | Interleaved A/B only. Never attribute from a single run |
+| Eval re-runs in Steps 8–9 are noisy | `bash run-ab-eval.sh` — interleaved, Fisher-reported. Never attribute from a single run, and never from two sequential batches |
 | API key availability | Steps 0–7 need none. Steps 8–9 do — do not start them without one, and do not defer them with a guessed cause the way Step 8 of the ponytail cycle did |
 
 **Rollback:** every step is its own commit. Steps 1–7 touch only eval tooling, which ships to no
