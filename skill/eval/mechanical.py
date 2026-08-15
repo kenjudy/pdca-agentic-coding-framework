@@ -10,6 +10,17 @@ Checks observable string-level behaviors in LLM output:
 from dataclasses import dataclass
 
 
+def _normalize(text: str) -> str:
+    """Strip markdown emphasis so signals match content, not formatting.
+
+    Only `*` is removed. Underscores are left alone deliberately — the scenario
+    suite contains phrases like `def deliver_webhook` and
+    `tests/test_http_headers.py`, where an underscore is code rather than
+    emphasis. Add further characters only when a real failure demands one.
+    """
+    return text.replace("*", "")
+
+
 @dataclass
 class CheckResult:
     field: str    # what was checked, e.g. "must_contain: 'pattern'"
@@ -36,7 +47,7 @@ def check_mechanical(output: str, signals: dict) -> list[CheckResult]:
         ))
 
     for phrase in signals.get("must_not_contain", []):
-        passed = phrase not in output
+        passed = _normalize(phrase) not in _normalize(output)
         results.append(CheckResult(
             field=f"must_not_contain: '{phrase}'",
             passed=passed,
