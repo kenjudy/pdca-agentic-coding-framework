@@ -3,10 +3,17 @@
 > **Working artifact.** This file exists so the plan survives across sessions and threads.
 > Delete it before merging to `main`.
 >
-> **Branch:** `claude/pdca-ponytail-interop-r5u670` — all work lands here.
+> **Branch:** `claude/pdca-ponytail-interop-r5u670` carries Steps 0–7 (through `857f078`).
+> Step 8 landed on `claude/ponytail-plan-step-8-vtnfpn`, which is that branch plus one commit —
+> fold it back in before merging to `main`.
 > **Produced by:** PDCA PLAN phase (1a analysis + 1b plan), Opus 5, 2026-08-14
 >
-> **Progress:** Steps 0–3 complete (`5a62ffa`), all verified green. Next: Step 4.
+> **Progress:** Steps 0–8 complete (`a408ca8`), unit gates green (134 passed, 153 subtests,
+> ruff clean). Next: Step 9.
+>
+> ⚠️ **Eval gate is outstanding.** Step 8 was executed in a session with no `ANTHROPIC_API_KEY`,
+> so `TestPrompt3Evals` could not be re-run — see "Step 8 eval debt" below. Step 9 needs
+> `TestPrompt2Evals`; run it in a session that has the key, and clear the Step 8 debt there too.
 
 ---
 
@@ -129,7 +136,7 @@ review after each step** — do not batch.
 | 5b | `refactor:` | Sonnet 5 | **Generalize the copy-fidelity test** (see "Coverage gap" below): rewrite `test_beads_addon_files_match_source` → `test_addon_files_match_source`, deriving its map from `ADDON_SOURCE_FILES` (packaged path is `references/<source filename>`) instead of a hand-written beads dict | Green before and after. **Then prove it covers ponytail**: temporarily corrupt a byte in the packaged `references/ponytail-setup.md`, confirm the test fails naming that file, restore. A refactor that stays green does not by itself prove new coverage |
 | 6 | `test:` **RED** | Sonnet 5 | Add `"ponytail"` to `ADDON_SLUGS` — this is the step that arms the optionality check | Expected failure, **one test**: `test_addon_references_are_optional` — `No ponytail references found in SKILL.md` (the `len > 0` assert). Verified by simulation on 2026-08-14 |
 | 7 | `feat:` GREEN | Sonnet 5 | SKILL.md → "Ponytail Integration (Optional)" section, mirroring the beads section | Passes; SKILL.md stays under the 500-line cap |
-| 8 | `feat:` **master** | Opus 5 | `3. Check/3. Completeness Check.md`: add `/ponytail-review` to the tool-check line at :47; add one line reconciling `# ponytail:` markers with the no-TODO assertion at :26 | Rebuild; re-run `TestPrompt3Evals`; all previously passing scenarios still pass |
+| 8 | `feat:` **master** | Opus 5 | ⚠️ **DONE, EVAL DEBT** (`a408ca8`) — `/ponytail-review` added to the tool-check line; `# ponytail:` reconciliation line added under the no-TODO assertion. Rebuilt; unit gates green. `TestPrompt3Evals` **not run** — no API key in that session | Rebuild; re-run `TestPrompt3Evals`; all previously passing scenarios still pass |
 | 9 | `feat:` **master** | Opus 5 | `2. Do/2. Test Drive the Change.md`: `**If ponytail is active**` guard clause + the three precedence rules | Rebuild; re-run `TestPrompt2Evals`; no regression vs. baseline |
 | 10 | `docs:` | Opus 5 | `README.md`, `skill/README.md`, `CLAUDE.md`, `CHANGELOG.md` | Ponytail appears alongside beads as an optional integration |
 
@@ -174,6 +181,35 @@ rather than hand-writing a second dict. That is Step 5b.
 zip until Step 5 lands the build change. Generalizing the test before then would drive it red
 alongside Step 4's presence check — two tests red at once, the same violation the Step 1b
 correction fixed. Sequencing it after Step 5 keeps it a genuine green-to-green refactor.
+
+### Step 8 eval debt (found during Step 8)
+
+Step 8 landed as specified, but its acceptance criterion — "re-run `TestPrompt3Evals`" — could not
+be met: the executing session had no `ANTHROPIC_API_KEY`, and `skill/eval/results/` is gitignored,
+so even the Step-0 baseline reports were not present locally. Unit gates were run instead
+(`134 passed, 153 subtests, ruff clean`), which prove the build still packages correctly but say
+nothing about model behavior.
+
+**What actually landed** (both lines guarded, so a non-ponytail session reads them as inapplicable):
+
+1. Under `- [ ] No TODO implementations remaining created by this test driving`, a sub-bullet:
+   *If ponytail is active:* `# ponytail:` markers count here — run `/ponytail-debt` and record each
+   under **Outstanding items**. A marker left over untested logic is an unfinished implementation
+   and blocks close.
+2. Tool-check line: `/ponytail-review` added beside `/simplify`, conditioned on ponytail being
+   installed.
+
+**The specific eval risk to look for** when the evals do run: the `3-todos-remaining` scenario
+requires the model to flag TODOs and *not* emit `Status: Complete`. Addition #1 introduces the only
+sentence in the CHECK prompt that discusses a class of marker as deliberate. It was worded to
+tighten rather than loosen the assertion ("count here", "blocks close"), but the failure mode to
+watch for is a model reading it as permission to wave TODOs through. If `3-todos-remaining`
+regresses below its 0.90 baseline, that sub-bullet is the cause — revert `a408ca8` alone and
+re-word, rather than touching Step 9's work.
+
+**Baseline to compare against** (from Step 0, 2026-08-14): `TestPrompt3Evals` 3/3 passed, scores
+0.67±0.35 / 0.90 / 0.90±0.0 against a 0.50 threshold. Note the ±0.35 spread on the first scenario —
+a single sub-threshold run there is variance, not necessarily regression; re-run before concluding.
 
 ### Model-switch note
 
