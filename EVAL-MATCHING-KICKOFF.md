@@ -19,7 +19,7 @@ it. Read it end to end before touching anything.
 1. `EVAL-MATCHING-PLAN.md` — the plan. Goal, decisions, test list, ten steps, triage table.
 2. `CLAUDE.md` — repo conventions, commands, session-completion rules.
 3. `skill/SUPERVISION-PROTOCOL.md` — the human-supervision rules you are bound by.
-4. `skill/eval/mechanical.py` — the 45 lines you are changing.
+4. `skill/eval/mechanical.py` — 65 lines; `check_mechanical` (lines 20–65) is what you are changing.
 5. `skill/tests/test_mechanical.py` — the fixture you are adding to. **Add tests here. Do not
    create a new test file for the matcher work.**
 
