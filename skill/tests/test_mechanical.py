@@ -66,6 +66,14 @@ class TestMustContain(unittest.TestCase):
         self.assertIn(True, passed)
         self.assertIn(False, passed)
 
+    def test_must_contain_matches_across_bold_emphasis(self):
+        # "**Status**: Complete" — colon outside the bold. Cosmetic, and the
+        # model gave the verdict, but raw matching scores it as non-compliant.
+        signals = {**EMPTY_SIGNALS, "must_contain": ["Status:"]}
+        results = check_mechanical("**Status**: Complete", signals)
+        self.assertEqual(len(results), 1)
+        self.assertTrue(results[0].passed)
+
     def test_must_contain_result_field_names_check(self):
         signals = {**EMPTY_SIGNALS, "must_contain": ["architecture"]}
         results = check_mechanical("Check the architecture.", signals)
