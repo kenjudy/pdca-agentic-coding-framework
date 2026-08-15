@@ -7,7 +7,7 @@
 > **Origin:** ACT retrospective of the ponytail interop cycle. Filed as
 > [#111](https://github.com/kenjudy/pdca-agentic-coding-framework/issues/111).
 >
-> **Progress:** Not started.
+> **Progress:** Step 0 complete — baseline below. Next: Step 1.
 
 ---
 
@@ -69,6 +69,35 @@ Gathered during the ponytail cycle, 2026-08-15:
   estimation; that number was wrong, which is why `eval/abstats.py` now exists.)
 - `TestPrompt2Evals` `2-after-passing-test`: GEval passed 3/3 while mechanical passed 1/3.
 - Full signal inventory: 51 phrases across the 5 scenario files (see Step 0).
+
+---
+
+## Step 0 baseline (recorded 2026-08-15, before any matcher edit)
+
+**Unit gates:** 140 passed, 153 subtests passed, ruff clean, mypy clean across 19 source files.
+
+**Signal inventory:** 51 phrases across the 5 scenario files.
+
+| Category | Count | Exposure |
+|---|---|---|
+| Phrases ending in `:` | 19 | False negative — `**X**:` styling defeats the match |
+| Phrases containing `": "` | 2 | **False positive — the vacuous guard.** Both are `must_not_contain: "Status: Complete"`, in `3-todos-remaining` and `3-missing-documentation` |
+| Scenarios using `called_shot_required` | 2 | 4 colon-terminated fields each — `2-after-passing-test`, `2-ponytail-precedence` |
+
+**Test-list predictions verified against the live checker** (all five as the plan states):
+
+| Test | Pre-change | Plan says |
+|---|---|---|
+| #1 `must_not_contain` vs `**Status:** Complete` | `passed=True` | passes — the bug ✓ |
+| #2 `must_contain "Status:"` vs `**Status**: Complete` | `passed=False` | fails — the bug ✓ |
+| #3 `called_shot_required` vs `**Test name**:` | `passed=False` | fails — the bug ✓ |
+| #4 `def deliver_webhook` | `passed=True` | guard ✓ |
+| #5 inline-code `` `bd update` `` | `passed=True` | guard ✓ |
+
+**Plan defect found and corrected at Step 0.** Step 0 as written asked to record "which scenarios
+currently pass," which requires an API key — contradicting the plan's own claim that Steps 0–7 need
+none. The eval baseline is **deferred to Step 8**, where the key is required regardless. The
+deterministic baseline above is what Steps 1–7 actually need.
 
 ---
 
