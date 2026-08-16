@@ -35,8 +35,24 @@
 ### Optional ponytail interop
 
 - The pdca-framework skill now offers optional interoperation with
-  [ponytail](https://github.com/DietrichGebert/ponytail) via a progressive-disclosure addon.
-  Users without ponytail installed are unaffected.
+  [ponytail](https://github.com/DietrichGebert/ponytail) (MIT, © DietrichGebert), an AI-agent
+  minimalism framework. Mirrors the existing beads-addon pattern: `references/ponytail-setup.md`
+  and `references/ponytail-workflow.md`, surfaced via a "Ponytail Integration (Optional)" section
+  in `SKILL.md`. Never loaded unless ponytail is already active in the session.
+- Three precedence rules resolve the only real conflicts between ponytail's guidance and PDCA's
+  TDD discipline — ordering (red-green-refactor still comes first), no trivial-code exemption, and
+  existing-fixture preference over standalone assert demos. PDCA governs how work is verified;
+  ponytail governs what gets built and how complex it is.
+- `2. Do/2. Test Drive the Change.md` gains a one-line guard clause pointing to the addon.
+  Deliberately not the full three rules inline — measurement during this cycle showed the DO
+  master already enforces all three (a scenario invoking ponytail's trivial-one-liner exemption
+  scored 1.00 against the *unmodified* prompt), so restating them would only triplicate them
+  across the prompt, the addon, and `SKILL.md`.
+- `3. Check/3. Completeness Check.md` gains one line reconciling `# ponytail:` deferred-shortcut
+  markers with the existing "no TODO implementations remaining" assertion.
+- Users without ponytail installed are unaffected — the addon files are inert reference material,
+  the guard clauses read as inapplicable, and a non-ponytail user's built `plan-prompts.md` is
+  byte-for-byte unchanged.
 
 ## v1.2.0 (2026-07-17)
 

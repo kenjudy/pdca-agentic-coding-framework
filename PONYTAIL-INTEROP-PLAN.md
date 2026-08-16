@@ -8,8 +8,10 @@
 > fold it back in before merging to `main`.
 > **Produced by:** PDCA PLAN phase (1a analysis + 1b plan), Opus 5, 2026-08-14
 >
-> **Progress:** Steps 0–9 complete (`ebf6b71`), unit gates green (134 passed, 153 subtests,
-> ruff clean). Eval gates run for both phases — see "Eval findings" below. Next: Step 10 (docs).
+> **Progress:** Steps 0–10 complete. Unit gates green (148 passed, 153 subtests, ruff + mypy clean
+> — count includes the separate eval-matcher cycle done in the same branch). Eval gates run for
+> both phases — see "Eval findings" below. Docs landed in this commit. Remaining: branch
+> reconciliation with `claude/pdca-ponytail-interop-r5u670`, then human sign-off on CHECK and ACT.
 
 ---
 
@@ -332,9 +334,11 @@ Step 10; it is not required for the feature to work.
 - [x] `TestPrompt2Evals` and `TestPrompt3Evals` run; no attributable regression (see Eval findings).
       Note the criterion "at or above the Step-0 baseline" turned out to be unmeasurable as written
       for `3-all-complete` — it is not stable enough to compare against
-- [ ] A non-ponytail user's built `plan-prompts.md` is byte-for-byte unchanged
-- [ ] Docs updated (README, skill/README, CLAUDE.md, CHANGELOG)
-- [ ] Pushed to `claude/pdca-ponytail-interop-r5u670`
+- [x] A non-ponytail user's built `plan-prompts.md` is byte-for-byte unchanged — verified: no commit
+      on this branch touches `1. Plan/` (Decision #1: addon route, not an inline PLAN block)
+- [x] Docs updated (README, skill/README, CLAUDE.md, CHANGELOG) — Step 10, this commit
+- [ ] Pushed to `claude/pdca-ponytail-interop-r5u670` — currently on `claude/ponytail-plan-step-8-vtnfpn`,
+      which is that branch plus additional commits; needs reconciling before merge (see header)
 - [ ] Human has signed off on CHECK and ACT
 
 ## CHECK step
