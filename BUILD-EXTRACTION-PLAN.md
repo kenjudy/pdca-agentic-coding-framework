@@ -81,7 +81,7 @@ each RED can be checked out and verified in isolation.
 
 | # | Type | Model | Step | Called shot / acceptance |
 |---|---|---|---|---|
-| 0 | prep | — | Record the current bash build as reference: `unzip -Z` listing (names + permission bits) and SHA256 per member | Baseline captured before any change |
+| 0 | prep | — | ✅ **DONE** — bash-build baseline recorded below (16 members, modes + SHA256) | Captured 2026-08-17 before any change |
 | 1 | `test:` **RED** | Sonnet 5 | Add `tests/test_builder.py::test_builder_produces_expected_manifest` — imports `build`, calls its entry point into a temp dir, asserts the zip namelist equals `EXPECTED_FILES` | Expected failure, one test: `ModuleNotFoundError: No module named 'build'` |
 | 2 | `feat:` GREEN | **Opus 5** | Create `skill/build.py` implementing the full build per the table above | Step-1 test passes **and all 148 existing tests stay green**. Large by necessity — see note below |
 | 3 | `test:` **RED** | Sonnet 5 | Add `test_export_script_is_executable` — asserts the packaged `export-requirements.sh` has the owner-execute bit in `external_attr` | Expected failure: mode `0o644`, expected `0o755`. **Verify this fails before fixing** — if it passes, `zipfile` preserved the bit and the test is vacuous |
@@ -135,6 +135,48 @@ hash, not by inspection. Confirm the pwsh test ran rather than skipped, locally 
 
 Retrospective. Specifically: whether extraction actually removed the drift class or relocated
 it, and whether Step 2's single large GREEN was the right call or should have been decomposed.
+
+## Step 0 baseline — bash build, 2026-08-17
+
+Reference for every later comparison. Regenerate with:
+
+```bash
+rm -rf skill/pdca-framework/references && (cd skill && bash build-skill.sh) && python3 -c "
+import zipfile,hashlib
+z=zipfile.ZipFile('skill/pdca-framework.skill')
+for i in sorted(z.infolist(),key=lambda x:x.filename):
+    print(f'{i.filename:56} {oct((i.external_attr>>16)&0o777):7} {hashlib.sha256(z.read(i.filename)).hexdigest()[:16]} {i.file_size}')"
+```
+
+| member | mode | sha256[:16] | bytes |
+|---|---|---|---|
+| `pdca-framework/SKILL.md` | 0o644 | `39a61a85db76b84c` | 6197 |
+| `references/act-beads-addon.md` | 0o644 | `54bd380699db2b57` | 1860 |
+| `references/act-prompts.md` | 0o644 | `8423d99d685589b6` | 2155 |
+| `references/beads-setup.md` | 0o644 | `7267c2936542efc3` | 5858 |
+| `references/beads-workflow.md` | 0o644 | `e136b6870c2febbc` | 5555 |
+| `references/check-beads-addon.md` | 0o644 | `608143ef9ac921f4` | 1292 |
+| `references/check-prompts.md` | 0o644 | `1a2165a788144472` | 2398 |
+| `references/do-beads-addon.md` | 0o644 | `c2d8a40f968c94d9` | 2575 |
+| `references/do-prompts.md` | 0o644 | `54c880ac46ea5498` | 8638 |
+| `references/plan-beads-addon.md` | 0o644 | `7205a1dc09d6ba71` | 2011 |
+| `references/plan-prompts.md` | 0o644 | `3cec93ef304ccd7e` | 9440 |
+| `references/ponytail-setup.md` | 0o644 | `240d75cf9b290ee3` | 1837 |
+| `references/ponytail-workflow.md` | 0o644 | `82890b3388397f5f` | 2254 |
+| **`references/scripts/export-requirements.sh`** | **0o755** | `e2b173b1dcea9fc9` | 2394 |
+| `references/testing-anti-patterns.md` | 0o644 | `0b54d2c856951b13` | 4455 |
+| `references/working-agreements.md` | 0o644 | `d6ba52d593d88ea8` | 2168 |
+
+16 members. All paths are prefixed `pdca-framework/`; the table abbreviates after the first row.
+
+**`export-requirements.sh` at `0o755` is the only non-644 member** — this is the bit `zipfile`
+will drop, and the reason Steps 3–4 exist. Every other mode is uniform, so a single mismatch
+here is unambiguous.
+
+These hashes change legitimately whenever a master prompt or addon source is edited. They are a
+reference for *this cycle*, not a permanent fixture — do not turn them into a test.
+
+---
 
 ## Notes for the executing session
 
