@@ -73,6 +73,16 @@ COPIED_FROM_ADDON = {
 EXPORT_SCRIPT_SRC = "beads-addon/scripts/export-requirements.sh"
 EXPORT_SCRIPT_DEST = "scripts/export-requirements.sh"
 
+# The only manifest member that must carry a non-default zip permission. Set as
+# a literal, never derived from the on-disk mode: build.py writes every file
+# with write_text(), which truncates an existing file in place and leaves its
+# mode untouched, so a build that follows a bash-built tree would otherwise
+# silently inherit whatever chmod that run left behind (see "Stale-artifact
+# masking" in BUILD-EXTRACTION-PLAN.md). A literal keeps the package
+# deterministic regardless of build history.
+EXECUTABLE_MEMBER = f"references/{EXPORT_SCRIPT_DEST}"
+EXECUTABLE_MODE = 0o755
+
 # Injections are applied only to the four phase prompt files.
 INJECTED_FILES = (
     "plan-prompts.md",
@@ -188,7 +198,17 @@ def build(skill_dir: Path) -> Path:
             member_path = core_dir / member
             if not member_path.is_file():
                 raise BuildError(f"Manifest lists a file the build did not produce: {member_path}")
-            archive.write(member_path, arcname=f"{SKILL_NAME}/{member}")
+            arcname = f"{SKILL_NAME}/{member}"
+            if member == EXECUTABLE_MEMBER:
+                # ZipFile.write() derives external_attr from the file's on-disk
+                # mode, which is exactly the non-determinism described above.
+                # Build the ZipInfo by hand so the permission bit is a literal.
+                info = zipfile.ZipInfo.from_file(member_path, arcname=arcname)
+                info.external_attr = EXECUTABLE_MODE << 16
+                info.compress_type = archive.compression
+                archive.writestr(info, member_path.read_bytes())
+            else:
+                archive.write(member_path, arcname=arcname)
 
     return skill_file
 
