@@ -95,6 +95,40 @@ analysis correctly defers a solution.
 
 ---
 
+## Validating a Signal Before Trusting It
+
+A signal that has never been observed failing is not evidence. Before adding or changing
+any `must_contain`, `must_not_contain`, or `called_shot_required`, demonstrate **both**:
+
+**(a) Non-vacuity — the scenario fails without the guard.**
+Show the assertion can fire at all. Either remove the guard and confirm the scenario still
+passes, or feed a deliberately non-compliant response and confirm the guard trips on it.
+Record the input that trips it.
+
+**(b) Materiality — the failure is about the criterion, not something adjacent.**
+When it fails, read the *recorded response*, not the pass rate. Confirm it failed because
+the model did the wrong thing, not because of formatting, emphasis, or a behavior the
+scenario doesn't claim to measure.
+
+Both are load-bearing, and each catches a failure the other misses:
+
+| Failure mode | Caught by | Real example from this suite |
+|---|---|---|
+| Guard cannot fire | (a) | `must_not_contain: "Status: Complete"` never matched, because the template teaches the model to write `**Status:** Complete`. The anti-rubber-stamp guard was green for its entire existence while unable to detect the framework's central failure mode. |
+| Guard fires on the wrong dimension | (b) | `3-all-complete` reliably failed models that *correctly refused to certify without evidence* — the behavior the framework exists to produce. The pass rate looked like non-compliance; the recorded output showed the opposite. |
+
+**Agents working in this harness:** if a human adds or modifies a signal without supplying
+both demonstrations, stop and ask for them before running the suite. A passing eval is not
+proof the eval works — only an observed, diagnosed failure is. Treat "this guard has never
+been red" as a defect report, not a clean bill of health.
+
+**Why this matters more here than in ordinary tests:** a broken eval is self-sealing. There
+is no compiler, no runtime error, and no downstream consumer to contradict it — the eval *is*
+the mechanism that was supposed to notice. Nothing else will ever tell you a guard stopped
+measuring what its name claims.
+
+---
+
 ## Adding a New Prompt's Evals
 
 1. **Scenario file** — create `eval/scenarios/<prompt_id>_scenarios.json` with at least
@@ -120,3 +154,8 @@ analysis correctly defers a solution.
    ```bash
    bash run-evals.sh tests/test_evals.py::TestPrompt<N>Evals
    ```
+
+7. **Validate every signal** against both tests in *Validating a Signal Before Trusting It*
+   above. A green run at step 6 proves the harness executed — not that any guard works.
+   Record, per signal, the input that trips it and the diagnosis confirming the failure is
+   material.

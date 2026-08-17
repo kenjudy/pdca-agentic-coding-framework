@@ -238,3 +238,32 @@ class TestEvalReporter:
         assert "Shot 1" in content
         assert "Shot 2" in content
         assert "Shot 3" in content
+
+    def test_retried_result_includes_every_shot_output(self, tmp_path):
+        # Retry shots are where mechanical failures actually occur. Without
+        # their outputs, a failure cannot be diagnosed after the fact — you
+        # cannot tell a model certifying unfinished work from a model whose
+        # formatting defeated the matcher.
+        shot1 = _make_result(geval_passed=True, geval_score=0.90)
+        shot2 = _make_result(geval_passed=False, geval_score=0.20, mechanical_pass=False)
+        shot3 = _make_result(geval_passed=True, geval_score=0.80)
+        shot1["output"] = "SHOT1-DISTINCTIVE verdict text"
+        shot2["output"] = "SHOT2-DISTINCTIVE the failing response"
+        shot3["output"] = "SHOT3-DISTINCTIVE another verdict"
+        retried = {
+            **shot1,
+            "retried": True,
+            "shots": [shot1, shot2, shot3],
+            "shots_geval_passed": 2,
+            "shots_mech_passed": 2,
+            "shots_total": 3,
+            "geval_passed": True,
+        }
+        reporter = EvalReporter()
+        reporter.add(retried)
+        path = tmp_path / "report.md"
+        reporter.write_report(path)
+        content = path.read_text()
+        assert "SHOT1-DISTINCTIVE" in content
+        assert "SHOT2-DISTINCTIVE" in content
+        assert "SHOT3-DISTINCTIVE" in content

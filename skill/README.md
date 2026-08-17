@@ -24,9 +24,12 @@ A disciplined framework for AI-assisted code generation with strict TDD:
 - ✅ Core PDCA framework (Plan→Do→Check→Act)
 - ✅ Strict TDD discipline and working agreements
 - ✅ Beads integration files included (optional)
+- ✅ Ponytail integration files included (optional)
 - 📦 **Size**: ~20K
 
 **Beads** (by [Steve Yegge](https://github.com/steveyegge)) adds persistent task tracking across sessions. Optional — see [Beads Integration](#beads-integration) if you want it.
+
+**Ponytail** (by [DietrichGebert](https://github.com/DietrichGebert/ponytail)) is an AI-agent minimalism framework. If you already have it installed and active, PDCA reconciles its guidance with TDD discipline automatically — see [Ponytail Integration](#ponytail-integration). Nothing to install on PDCA's side.
 
 ---
 
@@ -96,7 +99,9 @@ unzip pdca-framework.skill -d ~/.claude/skills
 #       ├── check-beads-addon.md
 #       ├── act-beads-addon.md
 #       ├── beads-setup.md         (optional — first-time beads install)
-#       └── beads-workflow.md      (optional — per-session beads reference)
+#       ├── beads-workflow.md      (optional — per-session beads reference)
+#       ├── ponytail-setup.md      (optional — ponytail liveness check + mode)
+#       └── ponytail-workflow.md   (optional — precedence rules if ponytail is active)
 ```
 
 **Windows (PowerShell):**
@@ -794,6 +799,29 @@ bd close myproject-a1b2
 For detailed beads documentation, see:
 - `references/beads-setup.md` — first-time installation and MCP configuration
 - `references/beads-workflow.md` — per-phase commands for active sessions
+
+## Ponytail Integration
+
+**Optional** — the skill works without ponytail. [Ponytail](https://github.com/DietrichGebert/ponytail) (MIT, © DietrichGebert) is an AI-agent minimalism framework that climbs a decision ladder — YAGNI, reuse, stdlib, platform feature, dependency, one-liner, only then the minimum that works — before writing code.
+
+Unlike beads, there is **nothing to install on PDCA's side**. If you already run ponytail as a plugin in your agent platform, PDCA reads its presence and reconciles the two; if you don't, the addon files are simply never loaded.
+
+### Where the two disagree
+
+Ponytail governs what gets built and how complex it is; PDCA governs how it is verified. Three narrow precedence rules resolve the only real conflicts — everything else in ponytail (the ladder, root-cause fixes, shortest-correct-diff, `# ponytail:` deferred-shortcut markers) applies unchanged:
+
+1. **Ordering wins for PDCA.** Ponytail's verification-after-code yields to red-green-refactor. The CALLED SHOT still comes before any code.
+2. **No trivial-code exemption.** Ponytail's "trivial one-liners need no test" does not apply — PDCA CHECK asserts no untested implementation was committed.
+3. **Fixtures win for PDCA.** Ponytail's "no frameworks or fixtures required" yields to adding tests to existing fixtures rather than proliferating new test files.
+
+See `references/ponytail-workflow.md` for the full rules plus mode-to-phase guidance (which of ponytail's `lite`/`full`/`ultra` modes pairs well with which PDCA phase). PDCA reads ponytail's mode; it never sets or re-declares it.
+
+### Setup
+
+There's no PDCA-side install step. `references/ponytail-setup.md` covers:
+- A one-line liveness check to confirm ponytail is loaded in the current session
+- How ponytail's own mode is set (`/ponytail lite|full|ultra|off`) — stated as ponytail's mechanism, not PDCA's
+- A pointer to [ponytail's own repository](https://github.com/DietrichGebert/ponytail) for installation — PDCA does not vendor install instructions, since they'd drift from upstream
 
 ---
 

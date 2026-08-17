@@ -10,6 +10,17 @@ Checks observable string-level behaviors in LLM output:
 from dataclasses import dataclass
 
 
+def _normalize(text: str) -> str:
+    """Strip markdown emphasis so signals match content, not formatting.
+
+    Only `*` is removed. Underscores are left alone deliberately — the scenario
+    suite contains phrases like `def deliver_webhook` and
+    `tests/test_http_headers.py`, where an underscore is code rather than
+    emphasis. Add further characters only when a real failure demands one.
+    """
+    return text.replace("*", "")
+
+
 @dataclass
 class CheckResult:
     field: str    # what was checked, e.g. "must_contain: 'pattern'"
@@ -28,7 +39,7 @@ def check_mechanical(output: str, signals: dict) -> list[CheckResult]:
     results: list[CheckResult] = []
 
     for phrase in signals.get("must_contain", []):
-        passed = phrase in output
+        passed = _normalize(phrase) in _normalize(output)
         results.append(CheckResult(
             field=f"must_contain: '{phrase}'",
             passed=passed,
@@ -36,7 +47,7 @@ def check_mechanical(output: str, signals: dict) -> list[CheckResult]:
         ))
 
     for phrase in signals.get("must_not_contain", []):
-        passed = phrase not in output
+        passed = _normalize(phrase) not in _normalize(output)
         results.append(CheckResult(
             field=f"must_not_contain: '{phrase}'",
             passed=passed,
@@ -50,7 +61,8 @@ def check_mechanical(output: str, signals: dict) -> list[CheckResult]:
             "Expected failure:",
             "Why this test first:",
         ]
-        missing = [f for f in required_fields if f not in output]
+        normalized_output = _normalize(output)
+        missing = [f for f in required_fields if _normalize(f) not in normalized_output]
         passed = len(missing) == 0
         results.append(CheckResult(
             field="called_shot: all four fields",

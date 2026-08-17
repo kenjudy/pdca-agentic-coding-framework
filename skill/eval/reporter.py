@@ -92,6 +92,14 @@ class EvalReporter:
                     )
                     if shot.get("geval_reason"):
                         lines.append(f"> {shot['geval_reason'].strip()}")
+                    # Every shot's output is kept. The shots that fail are the
+                    # ones worth diagnosing, and a report that drops them makes
+                    # post-hoc attribution impossible.
+                    lines.append(f"\n<details><summary>Shot {i} output</summary>\n")
+                    lines.append("```")
+                    lines.append(shot["output"].strip())
+                    lines.append("```")
+                    lines.append("\n</details>")
                 lines.append("")
             else:
                 lines.append(

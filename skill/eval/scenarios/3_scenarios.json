@@ -2,10 +2,13 @@
   {
     "prompt_id": "3",
     "scenario_id": "3-all-complete",
-    "description": "All planned steps done, all tests passing. Model must work through the full checklist and produce a Status: Complete verdict with explicit Ready to close: reasoning.",
-    "input": "All 5 planned steps implemented. Tests: 47 passing, 0 failing. Manual smoke test completed. No TODOs remaining. Documentation updated in README. No regressions found.",
+    "description": "All planned steps done and the input supplies evidence for every checklist section: verification facts, TDD process evidence, coverage breakdown, and a structural finding that was committed separately. Model must work through the full checklist and produce a Status: Complete verdict with explicit Ready to close: reasoning. The evidence matters \u2014 an input that asserts completeness without it makes declining to certify the correct answer, which this scenario would then wrongly score as a failure.",
+    "input": "All 5 planned steps implemented. Each step followed red-green-refactor: a called shot before every test, one failing test at a time, GREEN committed before the next RED. Tests: 47 passing, 0 failing \u2014 covering the degenerate case (empty payload), three exception cases (missing id, malformed timestamp, oversized body), and the happy path. No implementation was committed without a test first. Manual smoke test completed against staging. No TODOs remaining. Documentation updated in README. No regressions found. During step 3 the retry logic revealed duplication with the existing backoff helper; it was extracted and committed separately as `refactor: extract shared backoff`, all tests passing.",
     "expected_signals": {
-      "must_contain": ["Status:", "Ready to close:"],
+      "must_contain": [
+        "Status:",
+        "Ready to close:"
+      ],
       "must_not_contain": [],
       "called_shot_required": false
     }
@@ -17,7 +20,9 @@
     "input": "Steps 1-4 done, step 5 partially done. Tests passing but there are 3 TODO comments in the implementation: TODO: add retry logic, TODO: handle timeout, TODO: log failure. No documentation updates yet.",
     "expected_signals": {
       "must_contain": [],
-      "must_not_contain": ["Status: Complete"],
+      "must_not_contain": [
+        "Status: Complete"
+      ],
       "called_shot_required": false
     }
   },
@@ -27,8 +32,14 @@
     "description": "All code complete and tested but documentation was not updated. Model must catch this in the Verification checklist and reflect it in the Status verdict.",
     "input": "All implementation steps complete. Tests: 23 passing. Smoke test done. No TODOs. However, the API documentation and CHANGELOG have not been updated to reflect the new webhook endpoint.",
     "expected_signals": {
-      "must_contain": ["Status:", "Ready to close:", "Documentation"],
-      "must_not_contain": ["Status: Complete"],
+      "must_contain": [
+        "Status:",
+        "Ready to close:",
+        "Documentation"
+      ],
+      "must_not_contain": [
+        "Status: Complete"
+      ],
       "called_shot_required": false
     }
   }

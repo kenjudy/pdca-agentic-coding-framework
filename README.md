@@ -17,6 +17,7 @@ A Claude skill for human-supervised AI-assisted software development using Plan-
 - **Token efficiency:** Loads only what's needed in background
 - **Maintenance:** Update once, improves everywhere
 - **Platforms:** macOS, Linux, Windows
+- **Also included:** optional [ponytail](https://github.com/DietrichGebert/ponytail) interop — if you already run ponytail, PDCA reconciles its minimalism guidance with TDD discipline automatically. Nothing extra to install; inert if you don't have ponytail.
 
 📦 **[Get started with Standard Skill →](skill/README.md)**
 

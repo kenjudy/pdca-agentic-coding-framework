@@ -24,6 +24,14 @@ CALLED_SHOT_MISSING_EXPECTED_FAILURE = """
 - **Behavior under test:** validate_scenario({}) raises ScenarioValidationError
 """
 
+# All four fields present, but bolded with the colon outside the emphasis
+CALLED_SHOT_COLON_OUTSIDE_EMPHASIS = """
+- **Test name**: test_rejects_empty_input
+- **Behavior under test**: validate_scenario({}) raises ScenarioValidationError
+- **Expected failure**: AssertionError: ScenarioValidationError not raised
+- **Why this test first**: degenerate case — establishes the API contract
+"""
+
 
 class TestDegenerateCase(unittest.TestCase):
     """Empty signals — establishes return type and API contract."""
@@ -66,6 +74,14 @@ class TestMustContain(unittest.TestCase):
         self.assertIn(True, passed)
         self.assertIn(False, passed)
 
+    def test_must_contain_matches_across_bold_emphasis(self):
+        # "**Status**: Complete" — colon outside the bold. Cosmetic, and the
+        # model gave the verdict, but raw matching scores it as non-compliant.
+        signals = {**EMPTY_SIGNALS, "must_contain": ["Status:"]}
+        results = check_mechanical("**Status**: Complete", signals)
+        self.assertEqual(len(results), 1)
+        self.assertTrue(results[0].passed)
+
     def test_must_contain_result_field_names_check(self):
         signals = {**EMPTY_SIGNALS, "must_contain": ["architecture"]}
         results = check_mechanical("Check the architecture.", signals)
@@ -84,6 +100,15 @@ class TestMustNotContain(unittest.TestCase):
     def test_must_not_contain_present_fails(self):
         signals = {**EMPTY_SIGNALS, "must_not_contain": ["complete"]}
         results = check_mechanical("The implementation is complete.", signals)
+        self.assertEqual(len(results), 1)
+        self.assertFalse(results[0].passed)
+
+    def test_must_not_contain_fires_across_bold_emphasis(self):
+        # The CHECK template teaches the model to write "**Status:** Complete".
+        # Raw substring matching does not see "Status: Complete" in that string,
+        # so the guard against certifying unfinished work never fires.
+        signals = {**EMPTY_SIGNALS, "must_not_contain": ["Status: Complete"]}
+        results = check_mechanical("**Status:** Complete", signals)
         self.assertEqual(len(results), 1)
         self.assertFalse(results[0].passed)
 
@@ -110,12 +135,58 @@ class TestCalledShotRequired(unittest.TestCase):
         self.assertEqual(len(called_shot_results), 1)
         self.assertFalse(called_shot_results[0].passed)
 
+    def test_called_shot_matches_across_bold_emphasis(self):
+        # Observed live: 2-after-passing-test shot 3 failed on
+        # "'Why this test first:' NOT found" while the GEval judge scored that
+        # same response 0.90 and praised its called-shot discipline.
+        signals = {**EMPTY_SIGNALS, "called_shot_required": True}
+        results = check_mechanical(CALLED_SHOT_COLON_OUTSIDE_EMPHASIS, signals)
+        called_shot_results = [r for r in results if "called_shot" in r.field]
+        self.assertEqual(len(called_shot_results), 1)
+        self.assertTrue(called_shot_results[0].passed)
+
     def test_called_shot_missing_all_fields_fails(self):
         signals = {**EMPTY_SIGNALS, "called_shot_required": True}
         results = check_mechanical("No called shot here at all.", signals)
         called_shot_results = [r for r in results if "called_shot" in r.field]
         self.assertEqual(len(called_shot_results), 1)
         self.assertFalse(called_shot_results[0].passed)
+
+
+class TestNormalizationDoesNotOverreach(unittest.TestCase):
+    """Guards that stripping `*` does not damage non-emphasis content.
+
+    These were green before the normalization change and are green after —
+    verified against the pre-change checker while recording the Step 0
+    baseline. They are guards, not REDs: they pin the boundary of Decision #1
+    (strip `*` only) so a later widening of _normalize cannot silently mangle
+    code identifiers.
+    """
+
+    def test_underscored_identifiers_are_not_mangled(self):
+        # `_` is code here, not emphasis. Stripping it would break this match.
+        signals = {**EMPTY_SIGNALS, "must_not_contain": ["def deliver_webhook"]}
+        results = check_mechanical("def deliver_webhook(payload):", signals)
+        self.assertFalse(results[0].passed)
+
+    def test_path_like_phrases_are_not_mangled(self):
+        signals = {**EMPTY_SIGNALS, "must_contain": ["tests/test_http_headers.py"]}
+        results = check_mechanical("Add it to tests/test_http_headers.py", signals)
+        self.assertTrue(results[0].passed)
+
+    def test_inline_code_phrases_still_match(self):
+        signals = {**EMPTY_SIGNALS, "must_contain": ["bd update"]}
+        results = check_mechanical("Run `bd update` before the GREEN phase.", signals)
+        self.assertTrue(results[0].passed)
+
+    def test_plain_text_is_unaffected(self):
+        signals = {
+            **EMPTY_SIGNALS,
+            "must_contain": ["architecture"],
+            "must_not_contain": ["shortcut"],
+        }
+        results = check_mechanical("Respect the existing architecture.", signals)
+        self.assertTrue(all(r.passed for r in results))
 
 
 if __name__ == "__main__":

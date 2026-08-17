@@ -47,6 +47,21 @@ bash run-evals.sh tests/test_evals.py::TestPrompt2Evals       # single class
 ```
 Note: use `tests/test_evals.py::ClassName` syntax, not `-k` — `-k` exits with code 5 (no tests collected).
 
+**A/B a master-prompt change (requires `ANTHROPIC_API_KEY`):**
+```bash
+git show <ref>:'3. Check/3. Completeness Check.md' > /tmp/control.md
+cd skill && bash run-ab-eval.sh \
+  --master "3. Check/3. Completeness Check.md" \
+  --control /tmp/control.md \
+  --treatment "../3. Check/3. Completeness Check.md" \
+  --test 'tests/test_evals.py::TestPrompt3Evals::test_3_scenario[3-all-complete]' \
+  --pairs 6
+```
+**A single eval run cannot tell you whether your prompt edit caused a failure.** Scenarios fail on
+prompt text nobody changed — `3-all-complete` was measured failing 3 of 18 runs against an
+unmodified master. Sequential batches cannot tell you either, because API-side variation drifts
+over minutes. Always interleave the arms and read the Fisher p-value, never two raw pass rates.
+
 ## Architecture
 
 ```
@@ -69,6 +84,7 @@ Human Working Agreements.md
 |---|---|
 | `1. Plan/1a...md` – `4. Act/...md` | pdca-framework master prompt content (source of truth) |
 | `skill/pdca-framework/SKILL.md` | Skill descriptor (manually maintained) |
+| `skill/pdca-framework/*-addon/sources/` | Optional third-party integration content (beads, ponytail) — copied into `references/` by `build-skill.sh`, never loaded unless the human opts in |
 | `skill/build-skill.sh` | Assembles pdca-framework.skill from masters |
 | `skill/eval/rubrics/rubric_*.py` | LLM-as-judge criteria per phase |
 | `skill/eval/scenarios/*.json` | Test inputs for each phase |
