@@ -50,9 +50,12 @@
   across the prompt, the addon, and `SKILL.md`.
 - `3. Check/3. Completeness Check.md` gains one line reconciling `# ponytail:` deferred-shortcut
   markers with the existing "no TODO implementations remaining" assertion.
-- Users without ponytail installed are unaffected — the addon files are inert reference material,
-  the guard clauses read as inapplicable, and a non-ponytail user's built `plan-prompts.md` is
-  byte-for-byte unchanged.
+- Users without ponytail installed pay a small, measured cost: four lines totalling ~580 bytes,
+  confined to two built prompt files (`check-prompts.md` +264 bytes, `do-prompts.md` +317 bytes),
+  where the guard clauses read as inapplicable. `plan-prompts.md`, `act-prompts.md`,
+  `working-agreements.md`, `testing-anti-patterns.md` and all six beads references are
+  byte-for-byte unchanged. The two ponytail addon files ship in the package but are never loaded
+  unless requested.
 
 ## v1.2.0 (2026-07-17)
 

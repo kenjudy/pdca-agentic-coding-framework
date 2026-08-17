@@ -20,8 +20,19 @@
 After this session, the pdca-framework skill offers **optional** interoperation with
 [ponytail](https://github.com/DietrichGebert/ponytail) through a progressive-disclosure addon,
 so a human who has ponytail installed gets explicit rules for how its minimalism guidance
-yields to PDCA's TDD discipline — and a human who does not have ponytail installed pays
-nothing for the feature.
+yields to PDCA's TDD discipline — and a human who does not have ponytail installed pays only
+for two guard clauses that read as inapplicable.
+
+**Measured cost to a non-ponytail user** (clean builds, `main` vs. this branch): four lines,
+~580 bytes, confined to two of the six built prompt files — `check-prompts.md` +264 bytes,
+`do-prompts.md` +317 bytes. `plan-prompts.md`, `act-prompts.md`, `working-agreements.md`,
+`testing-anti-patterns.md`, and all six beads files are byte-for-byte identical. The two addon
+files ship in the package but are never loaded unless requested.
+
+An earlier draft of this goal said "pays nothing for the feature." That was overstated — the
+guard-clause idiom this plan deliberately adopted (Decision #1, mirroring beads) puts a small
+cost in every user's context by design. That is the price of the addon being discoverable at
+all, and it should be stated, not rounded to zero.
 
 ---
 
@@ -334,8 +345,15 @@ Step 10; it is not required for the feature to work.
 - [x] `TestPrompt2Evals` and `TestPrompt3Evals` run; no attributable regression (see Eval findings).
       Note the criterion "at or above the Step-0 baseline" turned out to be unmeasurable as written
       for `3-all-complete` — it is not stable enough to compare against
-- [x] A non-ponytail user's built `plan-prompts.md` is byte-for-byte unchanged — verified: no commit
-      on this branch touches `1. Plan/` (Decision #1: addon route, not an inline PLAN block)
+- [x] A non-ponytail user's built `plan-prompts.md` is byte-for-byte unchanged — verified by
+      direct comparison of clean builds from `main` and this branch (`rm -rf references` before
+      each build; the directory is gitignored and never cleaned by `build-skill.sh`, so a stale
+      artifact will otherwise make the two builds look identical). `plan-prompts.md`,
+      `act-prompts.md`, `working-agreements.md`, `testing-anti-patterns.md` and all six beads
+      files: identical. `check-prompts.md` +264 bytes and `do-prompts.md` +317 bytes, by design.
+      **Note:** an earlier check used the proxy "no commit touches `1. Plan/`". That is necessary
+      but not sufficient — `plan-prompts.md` is also assembled from `claude-addon/injections/`
+      and by `build-skill.sh`, both of which this branch could have touched.
 - [x] Docs updated (README, skill/README, CLAUDE.md, CHANGELOG) — Step 10, this commit
 - [ ] Pushed to `claude/pdca-ponytail-interop-r5u670` — currently on `claude/ponytail-plan-step-8-vtnfpn`,
       which is that branch plus additional commits; needs reconciling before merge (see header)
