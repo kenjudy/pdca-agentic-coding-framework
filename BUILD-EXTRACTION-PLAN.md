@@ -115,11 +115,6 @@ on installation, so tests assert the *set* of member paths (`sorted(namelist) ==
 sorted(EXPECTED_FILES)`). An ordered assertion would let a correct package fail and invite
 someone to reorder a manifest for no functional reason.
 
-**Manifest assertions compare content and location, not order.** Zip member order has no bearing
-on installation, so tests assert the *set* of member paths (`sorted(namelist) ==
-sorted(EXPECTED_FILES)`). An ordered assertion would let a correct package fail and invite
-someone to reorder a manifest for no functional reason.
-
 ---
 
 ## Steps
