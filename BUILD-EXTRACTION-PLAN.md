@@ -145,10 +145,43 @@ rather than trusting the green.
 
 ---
 
+## Stale-artifact masking (found at Step 3 — read before Steps 4 and 6)
+
+`build.py` writes every file with `write_text()`, which **truncates an existing file in place and
+leaves its mode untouched**. `build-skill.sh` sets `0o755` on `export-requirements.sh` via
+`chmod +x`. So a build.py run that follows a bash run inherits `0o755` from disk:
+
+```
+after bash:     755      cp + chmod +x
+after build.py: 755      write_text() truncated, mode survived
+zip mode:      0o755     <-- masked; the missing external_attr is invisible
+```
+
+Run clean, the same code produces `0o644`. **The packaged permission depends on build history,
+not on the code.** Step 3's first draft passed for exactly this reason.
+
+Consequences:
+
+- **Step 4 must set `external_attr` to a literal `0o755`**, not read it from disk. Deriving it
+  from the on-disk mode inherits the non-determinism and the fix would silently depend on
+  whether a bash build ran first.
+- **Any test comparing builds must force a from-scratch write** — `unlink()` the member, or
+  `rm -rf references/` — or it risks a false pass. This applies to Step 6's pwsh parity test.
+- **The Step 0 baseline methodology is susceptible to the same effect.** The recorded baseline is
+  valid (it was captured after `rm -rf references`), but anyone re-deriving it without cleaning
+  first will measure the previous build, not the current one.
+
+Whether `build.py` should also normalise the on-disk mode is open. The zip is the deliverable and
+`references/` is a gitignored intermediate, so it is cosmetic — but a file whose mode depends on
+build order is a latent trap.
+
+---
+
 ## Risks
 
 | Risk | Mitigation |
 |---|---|
+| Stale-artifact masking hides a permission or content defect | See above. Force a from-scratch write in any comparison |
 | Silent behavior change in license stripping or injection | The 148-test suite asserts packaged content against sources; Step 0's SHA256 baseline catches anything it misses |
 | `zipfile` drops the exec bit | Steps 3–4 exist specifically for this. **It must be seen red first** — a passing Step 3 means the test is vacuous |
 | `pwsh` absent in CI → Step 6 skips forever | Step 8. A skipped parity test is indistinguishable from no test |
