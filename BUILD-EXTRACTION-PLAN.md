@@ -6,7 +6,7 @@
 > **Produced by:** PDCA PLAN phase (1a + 1b), Opus 5, 2026-08-17
 > **Issue:** [#114](https://github.com/kenjudy/pdca-agentic-coding-framework/issues/114)
 > **Progress:** Step 0 baseline recorded. Step 1 RED landed (`fab48f1`). Interface pinned during
-> Step 1 review — see *`build.py` interface*. Next: Step 1b, then Step 2.
+> Step 1 review, then corrected twice — see *`build.py` interface*. Next: Step 1c, then Step 2.
 
 ---
 
@@ -77,25 +77,43 @@ Mechanics that must be preserved to the byte:
 
 ## `build.py` interface (pinned)
 
-Settled during Step 1 review, because Step 1's test and Step 2's implementation both depend on
-it and the first draft left it ambiguous.
-
 ```python
-def build(core_dir: Path, skill_file: Path) -> Path:
+def build(skill_dir: Path) -> Path:
     """Build the skill package. Returns the path to the written .skill zip."""
 ```
 
-| Parameter | Meaning | Production value (passed by the wrappers) |
-|---|---|---|
-| `core_dir` | Directory holding `SKILL.md`, the addon source trees, and the generated `references/` | `skill/pdca-framework` |
-| `skill_file` | Path the `.skill` zip is written to | `skill/pdca-framework.skill` |
+`skill_dir` is the `skill/` directory — the direct analogue of the bash's `SCRIPT_DIR`. Every
+other path derives from it, exactly as `build-skill.sh:20-24,36,224` does:
 
-**Why two parameters, not one.** The build has two destinations at different levels — references
-land *inside* `core_dir`, the zip lands *beside* it. A single `output_dir` cannot express both,
-and whichever meaning an implementation picked would silently become the contract.
+```
+skill_dir ─┬─ repo_root    = skill_dir/..                        masters: "1. Plan/", "2. Do/", …
+           ├─ core_dir     = skill_dir/pdca-framework            SKILL.md, addon sources, references/ output
+           │    ├─ beads-addon/ · ponytail-addon/
+           │    └─ claude-addon/injections/
+           └─ skill_file   = skill_dir/pdca-framework.skill      the zip
+```
 
-Both are injected so tests can point at a temp dir and the wrappers pass the real paths. `build`
+The wrappers pass `Path(__file__).parent` (bash) and `$PSScriptRoot` (PowerShell). `build`
 returns the zip path so callers need not reconstruct it.
+
+**One parameter, not three.** Two earlier drafts of this section were wrong, and both errors are
+worth recording because they cost two amendment steps:
+
+1. `build(output_dir)` — one parameter carrying two destinations. Ambiguous; whichever meaning
+   the implementation picked would have silently become the contract.
+2. `build(core_dir, skill_file)` — omitted `repo_root` entirely (the masters live *above*
+   `core_dir`), and conflated `core_dir`'s input role with its output role, so a test could only
+   pass it an empty temp directory that no correct implementation could build from.
+
+Both were attempts to inject paths for a hermeticity requirement that does not exist. The build
+writes `references/` and the `.skill` to gitignored artifacts that `run-tests.sh` regenerates on
+every run, so **tests call `build(skill_dir=SKILL_DIR)` against the real tree** and assert on the
+returned path. No `tmp_path`, no redirection.
+
+**Manifest assertions compare content and location, not order.** Zip member order has no bearing
+on installation, so tests assert the *set* of member paths (`sorted(namelist) ==
+sorted(EXPECTED_FILES)`). An ordered assertion would let a correct package fail and invite
+someone to reorder a manifest for no functional reason.
 
 **Manifest assertions compare content and location, not order.** Zip member order has no bearing
 on installation, so tests assert the *set* of member paths (`sorted(namelist) ==
@@ -113,7 +131,8 @@ each RED can be checked out and verified in isolation.
 |---|---|---|---|---|
 | 0 | prep | — | ✅ **DONE** — bash-build baseline recorded below (16 members, modes + SHA256) | Captured 2026-08-17 before any change |
 | 1 | `test:` **RED** | Sonnet 5 | ✅ **DONE** (`fab48f1`) — `tests/test_builder.py::test_builder_produces_expected_manifest` imports `build`, calls it into a temp dir, asserts the zip manifest matches `EXPECTED_FILES` | Verified in isolation: `ModuleNotFoundError: No module named 'build'`, 1 failed / 148 passed |
-| 1b | `test:` | Sonnet 5 | **Amend Step 1's test to the pinned interface** (see *`build.py` interface* above): call `build(core_dir=..., skill_file=...)`, and compare `sorted(namelist)` against `sorted(EXPECTED_FILES)` | Still exactly one failing test, still `ModuleNotFoundError: No module named 'build'` — the amendment must not change *which* failure occurs |
+| 1b | `test:` | Sonnet 5 | ✅ **DONE** (`d1fcc3b`) — amended to `build(core_dir, skill_file)` and sorted comparison | Verified: failure unchanged at `ModuleNotFoundError`, 1 failed / 148 passed. **The interface it was amended to was itself wrong** — see Step 1c |
+| 1c | `test:` | Sonnet 5 | **Amend to the one-parameter interface**: `build(skill_dir=SKILL_DIR)` against the real tree, no `tmp_path`. Assert on the returned zip path | Still exactly one failing test, still `ModuleNotFoundError: No module named 'build'` — the import fails before any argument is evaluated, so the failure must not change |
 | 2 | `feat:` GREEN | **Opus 5** | Create `skill/build.py` implementing the full build per the table above | Step-1 test passes **and all 148 existing tests stay green**. Large by necessity — see note below |
 | 3 | `test:` **RED** | Sonnet 5 | Add `test_export_script_is_executable` — asserts the packaged `export-requirements.sh` has the owner-execute bit in `external_attr` | Expected failure: mode `0o644`, expected `0o755`. **Verify this fails before fixing** — if it passes, `zipfile` preserved the bit and the test is vacuous |
 | 4 | `feat:` GREEN | Sonnet 5 | Set `external_attr` on the script member in `build.py` | Step-3 test passes |
