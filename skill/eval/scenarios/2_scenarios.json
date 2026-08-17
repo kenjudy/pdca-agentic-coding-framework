@@ -7,7 +7,6 @@
     "expected_signals": {
       "must_contain": [],
       "must_not_contain": [
-        "complete",
         "all done"
       ],
       "called_shot_required": false

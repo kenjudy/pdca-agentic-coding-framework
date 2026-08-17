@@ -17,7 +17,12 @@ Key behaviors evaluated:
 
 Why these signals:
 - called_shot_required covers the structural presence of all 4 fields mechanically
-- must_not_contain ["complete", "all done", "we're done"] enforces the hard STOP word rule
+- must_not_contain guards against *declaring* completion, per scenario: ["all done"] on
+  2-first-step / 2-beads-ordering-capture / 2-ponytail-precedence, and the fuller set on
+  2-after-passing-test. The bare stem "complete" was removed (#112) because it also matched
+  the ordinary adjective — "here's the complete sequence" is the behavior the prompt asks
+  for, and the check scored it as a violation. Whether a response *declares* completion is a
+  semantic judgment, so it lives in CRITERIA #5 below rather than in the mechanical tier.
 - must_contain called shot fields: critical for catching the "skip tests" scenario where the
   model might write code without following the called shot protocol
 - GEval adds coverage for sequencing (degenerate first), refusal to skip, and general
