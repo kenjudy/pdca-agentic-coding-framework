@@ -27,6 +27,18 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 WARN_ONLY="${WARN_ONLY:-0}"
 
+# Provision the venv this script's own tools live in (issue #89). Without this,
+# `uv run` auto-creates a venv containing only the project package -- ruff and
+# pytest are in optional extras it does not install. On a fresh clone that fails
+# outright; worse, if an ambient ruff exists on PATH, `uv run ruff` silently uses
+# it and the lint gate reports green while running a version below the floor
+# pyproject.toml declares. CI never caught either, because its workflows sync the
+# extras before calling this script -- so the script only ever ran pre-provisioned.
+# Syncing here makes it self-contained and identical in both places.
+echo "=== Syncing dependencies ==="
+(cd "$SCRIPT_DIR" && uv sync --locked --extra test --extra lint)
+
+echo ""
 echo "=== Building PDCA Framework Skill ==="
 bash "$SCRIPT_DIR/build-skill.sh"
 

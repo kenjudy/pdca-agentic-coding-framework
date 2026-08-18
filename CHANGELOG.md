@@ -1,6 +1,11 @@
 # PDCA Framework Skill - Update Summary
 
-## Unreleased
+## v1.3.0 (2026-08-18)
+
+> **Windows builders:** `build-skill.ps1` now requires a Python 3 interpreter on `PATH` as
+> `python3` or `python`. It is a thin wrapper over `build.py` and no longer carries its own
+> PowerShell implementation of the build. The published `.skill` package is unaffected — this
+> matters only if you build from source on Windows.
 
 ### Build system — shared `build.py` extraction (#114)
 
@@ -30,6 +35,55 @@
   gracefully for contributors without PowerShell installed.
 - `mypy` coverage widened from `eval tests` to `eval tests build.py` so the new module is
   type-checked in CI.
+
+### Dependencies — lockfile corrected and pinned (#113)
+
+- **`skill/uv.lock` could not satisfy `skill/pyproject.toml`.** Five declared floors were
+  violated at once: `anthropic` 0.99.0 against `>=0.120.2`, `deepeval` 3.9.9 against `>=4.1.4`,
+  `mypy` 1.20.2 against `>=2.3.0`, `pytest` 9.0.3 against `>=9.1.1`, and `ruff` 0.15.12 against
+  `>=0.16.0`. Every `uv run` therefore re-resolved and rewrote the lockfile, leaving a ~450-line
+  dependency diff in the working tree of anyone who ran the test suite — and a routine
+  `git commit -a` would sweep a dependency upgrade into an unrelated change.
+- Relocked deliberately as its own commit, and `run-tests.sh` now uses `uv run --locked` so
+  future drift is a hard failure rather than a silent rewrite. Deliberately *not* `--frozen`,
+  which stops the churn by skipping the staleness check entirely — that would have hidden the
+  condition permanently instead of fixing it.
+
+### Repository hygiene — gates that could not fail
+
+Several checks in this repo reported green without ever having been capable of failing. Each is
+now backed by a mechanism:
+
+- **`run-tests.sh` never provisioned its own venv (#89).** It called `uv run` and relied on
+  something else having synced the extras — which both CI workflows do, which is why the script
+  was never observed running unprovisioned. On a fresh clone it fails with `No module named
+  pytest`; worse, where an ambient `ruff` exists on `PATH` the lint gate reports green while
+  running a version *below* the floor `pyproject.toml` declares. The script now syncs
+  `--extra test --extra lint` itself, so local and CI runs provision identically.
+- **The release checklist's "update `skill/README.md`" step had nothing behind it.** It was
+  skipped at v1.2.0 and nothing failed. `TestReadme::test_current_version_matches_changelog` now
+  ties the README's version to the newest released `CHANGELOG.md` heading.
+- **A matching README and CHANGELOG can still disagree with the tag**, and no unit test can see
+  a tag. `skill/check_release_version.py` runs in the release workflow against
+  `github.ref_name` and reports every disagreement between the tag and both files in one pass.
+- **Nothing exercised the eval harness's third-party surface (#122).** `eval/executor.py`
+  imports `anthropic` lazily and `tests/test_evals.py` is excluded from the default run, so the
+  `deepeval` major-version bump above could have broken the harness with every test still green.
+  `tests/test_eval_imports.py` constructs `AnthropicModel`, `GEval`, and `LLMTestCase` — no API
+  calls, no secret — run by a dedicated `eval-imports` CI job. It is not skip-guarded: a skipped
+  smoke test is indistinguishable from a passing one.
+
+### Documentation
+
+- **`BUILD.md` carried the same `skill/src` assumption that caused #114**, instructing
+  maintainers to edit `build-skill.sh` and `build-skill.ps1` separately for master paths and
+  packaging. Rewritten against the real tree, with a new Architecture section covering the
+  pinned `build(skill_dir) -> Path` interface and the stale-artifact masking hazard.
+- **`AGENTS.md` described a `skill/src/core/` layout** that has not existed since the rename,
+  and carried a "⚠️ Dual build scripts — update BOTH" warning instructing exactly the practice
+  that caused #114.
+- `BUILD.md`'s Git Strategy recommended committing generated files while `.gitignore` ignores
+  them; stale `pdca-code-generation-process` links, which 404, now point at the current repo.
 
 ### Eval harness — mechanical matching repair
 

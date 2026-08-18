@@ -38,7 +38,11 @@ ignore_missing_imports = true
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-addopts = "--ignore=tests/test_evals.py"
+# test_evals.py makes real API calls; test_eval_imports.py needs the `eval` extra, which
+# the default `test`/`lint` sync does not install. Both are excluded here and run by their
+# own means -- run-evals.sh and the eval-imports CI job respectively -- rather than being
+# guarded by in-test skips, which would be indistinguishable from passing.
+addopts = "--ignore=tests/test_evals.py --ignore=tests/test_eval_imports.py"
 markers = [
     "eval: marks tests as LLM evaluation tests (require ANTHROPIC_API_KEY, incur API costs — run with: uv run ./run-evals.sh)",
 ]
