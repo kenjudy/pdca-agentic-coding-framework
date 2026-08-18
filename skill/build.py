@@ -78,8 +78,8 @@ EXPORT_SCRIPT_DEST = "scripts/export-requirements.sh"
 # with write_text(), which truncates an existing file in place and leaves its
 # mode untouched, so a build that follows a bash-built tree would otherwise
 # silently inherit whatever chmod that run left behind (see "Stale-artifact
-# masking" in BUILD-EXTRACTION-PLAN.md). A literal keeps the package
-# deterministic regardless of build history.
+# masking" in BUILD.md). A literal keeps the package deterministic regardless
+# of build history.
 EXECUTABLE_MEMBER = f"references/{EXPORT_SCRIPT_DEST}"
 EXECUTABLE_MODE = 0o755
 

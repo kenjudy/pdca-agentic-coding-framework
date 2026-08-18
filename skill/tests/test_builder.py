@@ -3,14 +3,14 @@ Tests for the shared builder extraction (issue #114): build.py, and parity
 between build-skill.sh and build-skill.ps1, both thin wrappers over it.
 
 `build.py` exposes the pinned one-parameter interface
-`build(skill_dir: Path) -> Path` (see "build.py interface (pinned)" in
-BUILD-EXTRACTION-PLAN.md).
+`build(skill_dir: Path) -> Path` (see "The build.py interface" under
+Architecture in BUILD.md).
 
 The build writes references/ and the .skill zip to gitignored artifacts
 that run-tests.sh regenerates every run, so these tests call build() (or
 run the wrapper scripts) against the real skill/ directory (CLAUDE_SKILL_DIR
 from test_build.py) rather than redirecting into a temp dir -- there is
-nothing hermetic to protect. See "Stale-artifact masking" in the plan for
+nothing hermetic to protect. See "Stale-artifact masking" in BUILD.md for
 why builds must still force a from-scratch state before any comparison.
 """
 
@@ -42,10 +42,10 @@ def test_export_script_is_executable():
     """The packaged export-requirements.sh must retain the owner-execute bit.
 
     Python's zipfile drops permissions unless external_attr is set explicitly
-    on the ZipInfo member (see "Behavior build.py must reproduce exactly" in
-    BUILD-EXTRACTION-PLAN.md). The bash build produces 0o755 for this member
-    (Step 0 baseline); build.py does not yet set external_attr, so this is
-    expected to fail until Step 4.
+    on the ZipInfo member (see "Stale-artifact masking" under Architecture in
+    BUILD.md, and the EXECUTABLE_MODE handling in build.py). The bash build
+    produces 0o755 for this member; build.py reproduces it by setting
+    external_attr as a literal rather than deriving it from disk.
 
     The generated file is removed first so the assertion reflects build.py's
     own permission handling rather than inheriting the mode of a stale file
@@ -68,14 +68,16 @@ def test_export_script_is_executable():
     mode = (info.external_attr >> 16) & 0o777
     assert mode == 0o755, (
         f"{member} has mode {oct(mode)} in the package, expected 0o755 "
-        "(owner-execute bit) -- zipfile dropped the permission bit because "
-        "build.py does not set external_attr on this member"
+        "(owner-execute bit) -- the packaged member does not carry the "
+        "owner-execute bit that this file must ship with"
     )
 
 
 def _find_pwsh() -> str | None:
     """Locate a pwsh executable: PATH first (how CI will have it), then the
-    fixed install path from BUILD-EXTRACTION-PLAN.md's setup instructions."""
+    fixed path a manual local install lands at when following PowerShell's
+    own tarball installation instructions (extract, then chmod +x) rather
+    than a package manager."""
     on_path = shutil.which("pwsh")
     if on_path:
         return on_path
@@ -89,13 +91,13 @@ def _clean_build_artifacts() -> None:
     """Remove every artifact either build script can leave behind, so the
     next build starts from scratch.
 
-    Per "Stale-artifact masking" in BUILD-EXTRACTION-PLAN.md: build.py
+    Per "Stale-artifact masking" under Architecture in BUILD.md: build.py
     writes files in place (write_text() truncates an existing file rather
     than recreating it), so leftovers from a previous run -- of either
     script -- can silently survive into the next build and make two
     different builds look identical when they are not. A parity test that
     doesn't force a from-scratch state on both sides of the comparison
-    risks exactly the false pass that happened at Step 3.
+    risks exactly the false pass this project already had once.
     """
     references = CLAUDE_SKILL_DIR / SKILL_NAME / "references"
     if references.exists():
