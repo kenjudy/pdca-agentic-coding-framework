@@ -502,7 +502,7 @@ Help improve the framework:
 
 ## Version Information
 
-**Current Version:** v1.1.0
+**Current Version:** v1.2.0
 **License:** CC BY 4.0 (documentation & prompts) / MIT (source code)
 **Attribution:** Ken Judy with Claude Anthropic 4
 **Last Updated:** 2026-05-28
