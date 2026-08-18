@@ -278,6 +278,31 @@ class TestProjectSetup(unittest.TestCase):
             "run-tests.sh must invoke 'uv run pytest', not bare 'python3'",
         )
 
+    def test_run_tests_script_syncs_its_own_dependencies(self):
+        """run-tests.sh must install the test and lint extras, not assume a provisioned venv.
+
+        Issue #89. `uv run` auto-creates a venv holding only the project package —
+        ruff and pytest live in optional extras it does not install. That fails outright
+        on a fresh clone, and fails worse when an ambient ruff exists on PATH: the lint
+        gate reports green while running a version below pyproject.toml's own declared
+        floor. CI never caught either because its workflows sync the extras first.
+        """
+        script = (CLAUDE_SKILL_DIR / "run-tests.sh").read_text()
+        self.assertIn(
+            "uv sync",
+            script,
+            "run-tests.sh never runs 'uv sync' -- it relies on the venv being provisioned "
+            "elsewhere, so a fresh clone has no ruff/pytest and an ambient ruff is used "
+            "silently instead (issue #89)",
+        )
+        for extra in ("--extra test", "--extra lint"):
+            self.assertIn(
+                extra,
+                script,
+                f"run-tests.sh's sync does not request '{extra}', so the tools it then "
+                "invokes with 'uv run' may resolve outside the venv (issue #89)",
+            )
+
 
 class TestReadme(unittest.TestCase):
     """Validate README quality for marketplace distribution."""
