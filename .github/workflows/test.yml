@@ -30,3 +30,27 @@ jobs:
 
       - name: Build and test
         run: bash skill/run-tests.sh
+
+  # The unit suite never imports anthropic or deepeval -- executor.py imports anthropic
+  # lazily inside a function, and test_evals.py is excluded from the default run -- so a
+  # dependency upgrade can break the eval harness with every test still green (issue #122).
+  # This job installs the eval extra and exercises the harness's third-party surface. It
+  # makes no API calls and needs no secret, so it runs on every push and pull request.
+  eval-imports:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          python-version: "3.11"
+
+      - name: Install eval dependencies
+        run: uv sync --locked --extra test --extra eval
+        working-directory: skill
+
+      - name: Eval harness import smoke test
+        run: uv run --locked python -m pytest tests/test_eval_imports.py -v
+        working-directory: skill

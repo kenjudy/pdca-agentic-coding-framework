@@ -698,6 +698,29 @@ class TestHookInfrastructure(unittest.TestCase):
             "install-hooks.sh missing at repo root — needed to install hooks into .git/hooks/",
         )
 
+    def test_ci_runs_the_eval_import_smoke_test(self):
+        """test.yml must have a job that installs the eval extra and runs the smoke test.
+
+        tests/test_eval_imports.py is excluded from the default suite, so nothing runs it
+        unless CI does. An excluded test with no job behind it is worse than no test --
+        it looks like coverage while providing none (issue #122).
+        """
+        workflow = REPO_ROOT / ".github" / "workflows" / "test.yml"
+        self.assertTrue(workflow.exists(), ".github/workflows/test.yml missing")
+        content = workflow.read_text()
+        self.assertIn(
+            "tests/test_eval_imports.py",
+            content,
+            "no CI job runs tests/test_eval_imports.py, which the default suite excludes -- "
+            "the eval harness's dependency surface would be untested everywhere",
+        )
+        self.assertIn(
+            "--extra eval",
+            content,
+            "CI runs the eval import smoke test without syncing '--extra eval', so it would "
+            "fail on a missing deepeval rather than testing anything",
+        )
+
     def test_release_workflow_checks_version_consistency(self):
         """release.yml must run check_release_version.py against the tag it is building.
 
