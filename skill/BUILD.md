@@ -216,61 +216,34 @@ Rebuild the skill whenever you update any of these master files:
 
 ## Git Strategy
 
-### Option 1: Commit Generated Files (Recommended)
+This repo does not commit generated files. `.gitignore` excludes `pdca-framework/references/`,
+`pdca-framework.skill`, and `pdca-framework-beads.skill` — a `git status` after building locally
+should show nothing to commit from the build itself.
 
-**Pros:**
-- Users can download the skill directly from GitHub
-- See exactly what's in the latest release
-- Easy to track changes in skill package
+Distribution happens through the release workflow instead: pushing a `v*.*.*` tag triggers
+`.github/workflows/release.yml`, which runs the test suite, builds the package, and attaches
+`pdca-framework.skill` to a GitHub Release as a downloadable artifact. That's what
+[GitHub Releases](https://github.com/kenjudy/pdca-agentic-coding-framework/releases) links to —
+not a checked-in copy of the build output.
 
-**Cons:**
-- Generated files tracked in git
+**Why:** committing generated files means every master-prompt edit produces a second diff (the
+regenerated `references/` and zip) that has to be reviewed alongside the real change, and it
+invites the two from drifting if a contributor edits the artifact directly instead of rebuilding.
+Keeping only source files in git and building on demand — locally for development, in CI for
+release — keeps the repo to one source of truth per file.
 
-**Setup (macOS/Linux):**
+**Local build (not committed):**
 ```bash
-# Build and commit
-./build-skill.sh
-git add pdca-framework/references/ pdca-framework.skill
-git commit -m "Rebuild skill from updated master prompts"
+./build-skill.sh   # macOS/Linux
+.\build-skill.ps1  # Windows
+# Use the skill but don't commit pdca-framework/references/ or pdca-framework.skill
 ```
 
-**Setup (Windows):**
-```powershell
-# Build and commit
-.\build-skill.ps1
-git add pdca-framework/references/ pdca-framework.skill
-git commit -m "Rebuild skill from updated master prompts"
-```
-
-### Option 2: Ignore Generated Files
-
-**Pros:**
-- Only source files in git
-- Build from masters on demand
-
-**Cons:**
-- Users must build locally
-- Can't download skill directly from GitHub
-
-**Setup:**
-Add to `.gitignore`:
-```gitignore
-# Build artifacts
-skill/pdca-framework/references/
-skill/pdca-framework.skill
-```
-
-Then build locally (macOS/Linux):
-```bash
-./build-skill.sh
-# Use the skill but don't commit it
-```
-
-Or build locally (Windows):
-```powershell
-.\build-skill.ps1
-# Use the skill but don't commit it
-```
+**If you're vendoring this framework into a repo without a release pipeline:** committing the
+generated files is a reasonable alternative — it lets users download the skill straight from
+your repo instead of from a Releases page. Build, then `git add pdca-framework/references/
+pdca-framework.skill` and remove the build-artifact lines from `.gitignore`. That is not what
+this repo does, so don't follow it here.
 
 ## Customizing the Build
 
