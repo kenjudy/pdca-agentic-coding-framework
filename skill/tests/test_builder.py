@@ -1,23 +1,21 @@
 """
-RED-step test for the shared builder extraction (issue #114).
+Tests for the shared builder extraction (issue #114): build.py, and parity
+between build-skill.sh and build-skill.ps1, both thin wrappers over it.
 
-Once `skill/build.py` exists (Step 2), it must expose the pinned
-one-parameter interface `build(skill_dir: Path) -> Path` (see "build.py
-interface (pinned)" in BUILD-EXTRACTION-PLAN.md) and produce a zip whose
-member set matches EXPECTED_FILES (imported from test_build.py -- not
-duplicated by hand). Member order is not asserted -- it has no bearing on
-installation.
+`build.py` exposes the pinned one-parameter interface
+`build(skill_dir: Path) -> Path` (see "build.py interface (pinned)" in
+BUILD-EXTRACTION-PLAN.md).
 
 The build writes references/ and the .skill zip to gitignored artifacts
-that run-tests.sh regenerates every run, so this test calls build() against
-the real skill/ directory (CLAUDE_SKILL_DIR from test_build.py) rather than
-redirecting into a temp dir -- there is nothing hermetic to protect.
-
-This test intentionally imports a module named `build` that does not exist
-yet. It is expected to fail with ModuleNotFoundError until Step 2 lands.
+that run-tests.sh regenerates every run, so these tests call build() (or
+run the wrapper scripts) against the real skill/ directory (CLAUDE_SKILL_DIR
+from test_build.py) rather than redirecting into a temp dir -- there is
+nothing hermetic to protect. See "Stale-artifact masking" in the plan for
+why builds must still force a from-scratch state before any comparison.
 """
 
 import hashlib
+import os
 import shutil
 import subprocess
 import zipfile
@@ -128,17 +126,29 @@ def test_powershell_build_matches_bash():
     packages (same members, same content) -- the parity guarantee this
     whole extraction exists to make structural rather than merely tested.
 
-    build-skill.ps1 currently builds from skill/src, a directory the repo
-    renamed to pdca-framework/ long ago (see BUILD-EXTRACTION-PLAN.md).
-    Until Step 7 rewrites it as a wrapper over build.py, this is expected
-    to fail structurally: bash produces 16 members under pdca-framework/,
-    ps1 produces 7 at the zip root with no pdca-framework/ prefix -- not a
-    handful of missing files or a content mismatch on matching paths.
+    build-skill.ps1 was rewritten at Step 7 as a thin wrapper over build.py,
+    the same implementation build-skill.sh wraps, so drift between the two
+    platforms is now structurally impossible rather than merely detectable.
+
+    Skipping when pwsh is absent is correct locally -- a contributor
+    without PowerShell should not be blocked. It is wrong in CI: a skip and
+    a pass are indistinguishable in pytest's summary line, so a CI runner
+    that silently lacks pwsh would let this test skip forever and put the
+    original undetected-drift condition right back in place. Under CI=true
+    (set by GitHub Actions), a missing pwsh is a hard failure instead.
     """
     pwsh = _find_pwsh()
     if pwsh is None:
+        if os.environ.get("CI") == "true":
+            pytest.fail(
+                "pwsh not found on PATH or at /opt/pwsh/pwsh, and CI=true -- "
+                "skipping here would be the exact blind spot this test exists "
+                "to close (a skipped parity test is indistinguishable from a "
+                "passing one in the summary line). The CI runner image must "
+                "provide pwsh; see .github/workflows/test.yml."
+            )
         pytest.skip("pwsh not found on PATH or at /opt/pwsh/pwsh -- cannot verify ps1/bash parity")
-    assert pwsh is not None  # narrows for mypy; pytest.skip() above always raises
+    assert pwsh is not None  # narrows for mypy; pytest.skip()/fail() above always raise
 
     try:
         _clean_build_artifacts()
