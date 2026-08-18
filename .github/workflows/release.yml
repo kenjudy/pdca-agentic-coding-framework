@@ -12,6 +12,13 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
+      # Fails fast, before tests or build spend time: the unit suite ties README.md
+      # to CHANGELOG.md but cannot see the tag, so both files can agree at one version
+      # while the release is tagged at another and every test stays green. stdlib-only,
+      # so it needs no uv setup and runs first.
+      - name: Check release version matches README and CHANGELOG
+        run: python3 skill/check_release_version.py "${{ github.ref_name }}"
+
       - name: Set up uv
         uses: astral-sh/setup-uv@v7
         with:

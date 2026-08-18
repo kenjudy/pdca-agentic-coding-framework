@@ -698,6 +698,29 @@ class TestHookInfrastructure(unittest.TestCase):
             "install-hooks.sh missing at repo root — needed to install hooks into .git/hooks/",
         )
 
+    def test_release_workflow_checks_version_consistency(self):
+        """release.yml must run check_release_version.py against the tag it is building.
+
+        The checker being correct is worth nothing if nothing calls it -- an unwired
+        guard is the same silent pass it exists to prevent. This asserts the wiring,
+        and that the tag is actually passed rather than the script being run bare.
+        """
+        workflow = REPO_ROOT / ".github" / "workflows" / "release.yml"
+        self.assertTrue(workflow.exists(), ".github/workflows/release.yml missing")
+        content = workflow.read_text()
+        self.assertIn(
+            "check_release_version.py",
+            content,
+            "release.yml does not run skill/check_release_version.py, so a tag that matches "
+            "neither README.md nor CHANGELOG.md would publish a mislabeled release",
+        )
+        self.assertIn(
+            "github.ref_name",
+            content,
+            "release.yml runs check_release_version.py without passing github.ref_name, "
+            "so it cannot compare anything against the tag being released",
+        )
+
     def test_github_actions_workflow_exists(self):
         workflow = REPO_ROOT / ".github" / "workflows" / "test.yml"
         self.assertTrue(
