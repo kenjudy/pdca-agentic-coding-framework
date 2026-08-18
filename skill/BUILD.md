@@ -493,7 +493,7 @@ git push --tags
 ```
 
 The Action runs automatically. The release appears at:
-`https://github.com/kenjudy/pdca-code-generation-process/releases`
+`https://github.com/kenjudy/pdca-agentic-coding-framework/releases`
 
 The README's download link uses `/releases/latest/download/pdca-framework.skill` and
 resolves to the newest release automatically — no link update needed.
