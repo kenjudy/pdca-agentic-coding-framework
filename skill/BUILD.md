@@ -93,8 +93,11 @@ skill_dir ─┬─ repo_root    = skill_dir/..                        masters: 
            └─ skill_file   = skill_dir/pdca-framework.skill      the zip
 ```
 
-`build-skill.sh` passes `Path(__file__).parent`; `build-skill.ps1` passes `$PSScriptRoot`. `build`
-returns the zip path so callers need not reconstruct it.
+Neither wrapper passes `skill_dir` — `build.py`'s own `main()` derives it as
+`Path(__file__).parent`, so the build always locates itself from where `build.py` lives rather
+than from the caller's working directory or from anything a wrapper computes. The wrappers only
+find an interpreter and hand it the path to `build.py`. `build` returns the zip path so
+programmatic callers, which do pass `skill_dir` explicitly, need not reconstruct it.
 
 #### Stale-artifact masking
 
