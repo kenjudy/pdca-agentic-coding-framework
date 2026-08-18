@@ -2,6 +2,35 @@
 
 ## Unreleased
 
+### Build system — shared `build.py` extraction (#114)
+
+- **Fixed silent drift between the two build scripts.** `build-skill.ps1` still targeted
+  `skill/src`, a directory renamed to `skill/pdca-framework` long ago: it shipped 7 of 16 files at
+  the wrong ZIP root, with raw `CLAUDE_INJECT` markers unreplaced and license/attribution blocks
+  unstripped in 5 files, and it created an untracked `skill/src/` on every Windows build. Nothing
+  caught it because nothing ever ran it — there was no test that executed `build-skill.ps1`.
+- **Extracted the build into `skill/build.py`**, a single stdlib-only implementation. Both
+  `build-skill.sh` and `build-skill.ps1` are now thin wrappers that locate a Python interpreter
+  and call `build(skill_dir) -> Path`; neither carries composition, license-stripping, injection,
+  or packaging logic of its own, so the two platforms can no longer diverge — there is only one
+  place a fix or a mistake can happen.
+- **Added `tests/test_builder.py::test_powershell_build_matches_bash`**, a parity test that runs
+  both `build-skill.sh` and `build-skill.ps1` from a clean tree and asserts the resulting packages
+  have identical member names and per-member SHA-256 hashes. Both builds now force a from-scratch
+  state before comparison — `build.py` writes generated files via `write_text()`, which truncates
+  an existing file in place but leaves its mode untouched, so a build that reuses a tree left over
+  from an earlier build can inherit that build's file permissions and mask a defect in the current
+  one. This is not hypothetical: the packaged-executable-bit test (`test_export_script_is_executable`)
+  passed on its first draft for exactly this reason, before `build.py` actually set the permission
+  bit itself. `BUILD.md` documents this as "Stale-artifact masking."
+- **CI now hard-fails rather than skips the parity test when `pwsh` is missing.** A silently
+  skipped parity test is indistinguishable from a passing one in pytest's summary line — exactly
+  the blind spot that let the original drift go undetected — so under `CI=true` a missing `pwsh`
+  is treated as a test failure, not a skip. Locally, without `CI=true`, the test still skips
+  gracefully for contributors without PowerShell installed.
+- `mypy` coverage widened from `eval tests` to `eval tests build.py` so the new module is
+  type-checked in CI.
+
 ### Eval harness — mechanical matching repair
 
 - **Fixed a defect that made the anti-rubber-stamp guard inoperable.** `check_mechanical` compared

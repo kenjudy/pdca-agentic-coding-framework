@@ -50,32 +50,90 @@ bash run-evals.sh
 
 ## Overview
 
-The skill package is automatically composed from your master prompt files located in the repository root:
+The skill package is automatically composed from your master prompt files located in the repository root. `build-skill.sh` (macOS/Linux) and `build-skill.ps1` (Windows) are thin wrappers — all of the actual composition logic lives in one place, `build.py` (see [Architecture](#architecture) below):
 
 ```
-Master Sources → Build Script → Skill Package → Installation
+Master Sources → build.py → Skill Package → Installation
 ├── 1. Plan/1a...md       ─┐
-├── 1. Plan/1b...md       ─┤→ src/references/plan-prompts.md  ─┐
-├── 2. Do/2...md          ─┤→ src/references/do-prompts.md     │
-├── 3. Check/3...md       ─┤→ src/references/check-prompts.md  ├→ pdca-framework.skill
-├── 4. Act/4...md         ─┤→ src/references/act-prompts.md    │                         │
-└── Human Working Agr...  ─┤→ src/references/working-agr...md  │                         │
-                          └→ src/SKILL.md (manually maintained) ─┘                         │
-                                                                                            │
-For Claude.ai: Upload .skill file ←───────────────────────────────────────────────────────┘
-For Claude Code: Extract to ~/.claude/skills/ ←───────────────────────────────────────────┘
-For Codex: Extract to ~/.agents/skills/ ←─────────────────────────────────────────────────┘
+├── 1. Plan/1b...md       ─┤→ pdca-framework/references/plan-prompts.md  ─┐
+├── 2. Do/2...md          ─┤→ pdca-framework/references/do-prompts.md     │
+├── 3. Check/3...md       ─┤→ pdca-framework/references/check-prompts.md  ├→ pdca-framework.skill
+├── 4. Act/4...md         ─┤→ pdca-framework/references/act-prompts.md    │
+└── Human Working Agr...  ─┤→ pdca-framework/references/working-agr...md  │
+                          └────────────────────────────────────────────────┘
+   (pdca-framework/SKILL.md is manually maintained, not generated, but
+    ships in the same package)
+
+For Claude.ai: Upload .skill file
+For Claude Code: Extract to ~/.claude/skills/
+For Codex: Extract to ~/.agents/skills/
 ```
+
+### Architecture
+
+`skill/build.py` is the single implementation of the build (issue #114). `build-skill.sh` and
+`build-skill.ps1` are thin wrappers — they locate a Python interpreter and call `build.py`, and
+carry no build logic of their own — so macOS/Linux and Windows cannot drift apart the way they
+did before this extraction: there is only one place mistakes, or fixes, can happen.
+
+#### The `build.py` interface
+
+```python
+def build(skill_dir: Path) -> Path:
+    """Build the skill package. Returns the path to the written .skill zip."""
+```
+
+`skill_dir` is the `skill/` directory. Every other path derives from it:
+
+```
+skill_dir ─┬─ repo_root    = skill_dir/..                        masters: "1. Plan/", "2. Do/", …
+           ├─ core_dir     = skill_dir/pdca-framework            SKILL.md, addon sources, references/ output
+           │    ├─ beads-addon/ · ponytail-addon/
+           │    └─ claude-addon/injections/
+           └─ skill_file   = skill_dir/pdca-framework.skill      the zip
+```
+
+Neither wrapper passes `skill_dir` — `build.py`'s own `main()` derives it as
+`Path(__file__).parent`, so the build always locates itself from where `build.py` lives rather
+than from the caller's working directory or from anything a wrapper computes. The wrappers only
+find an interpreter and hand it the path to `build.py`. `build` returns the zip path so
+programmatic callers, which do pass `skill_dir` explicitly, need not reconstruct it.
+
+#### Stale-artifact masking
+
+`build.py` writes every generated file with `write_text()`, which **truncates an existing file in
+place and leaves its mode untouched.** That is harmless for content — the new text always fully
+replaces the old — but it is not harmless for permissions: a build that follows an earlier build
+can inherit filesystem state the earlier build left behind. Concretely, if a prior run had set
+`export-requirements.sh` to `0o755` on disk, a `build.py` run over that same tree would produce a
+correctly-executable file *even if `build.py` never set `external_attr` on the zip member itself*
+— the file on disk was already executable, `write_text()` didn't change that, and the resulting
+package would look right by accident.
+
+This actually happened during this extraction's Step 3: the first draft of the executable-bit test
+passed against a tree still holding a leftover `0o755` from an earlier bash build — a real false
+pass, not a hypothetical. It is why:
+
+- **`EXECUTABLE_MODE` is a literal `0o755` in `build.py`**, not derived from the on-disk mode of
+  `export-requirements.sh`. Deriving it from disk would silently reintroduce the same
+  build-history dependency the bug exploited.
+- **The PowerShell/bash parity test (`test_powershell_build_matches_bash` in
+  `tests/test_builder.py`) calls `_clean_build_artifacts()` before *each* side of the
+  comparison** — once before the bash build, once before the ps1 build — removing
+  `pdca-framework/references/`, the stale `skill/src/` a pre-extraction `build-skill.ps1` used to
+  leave behind, and the `.skill` file itself. Comparing two builds without forcing both to start
+  from scratch risks the same false pass.
 
 ## Prerequisites
 
 **macOS/Linux:**
 - Bash shell (built-in)
-- `zip` command (pre-installed)
+- Python 3 (`build.py` is stdlib-only — no `uv`/venv needed to build, just to run the test suite)
 - Master source files in their expected locations
 
 **Windows:**
 - PowerShell 5.1 or later (built-in on Windows 10+)
+- A working Python 3 interpreter on `PATH` as `python3` or `python`
 - Master source files in their expected locations
 
 ## Building the Skill
@@ -98,30 +156,51 @@ cd skill
 
 ### What the Build Script Does
 
-1. **Verifies** all master source files exist
-2. **Composes** reference files:
+Both `build-skill.sh` and `build-skill.ps1` do nothing but locate a Python interpreter and invoke
+`build.py`, which then:
+
+1. **Verifies** the required source files exist (`SKILL.md`, the addon injections directory)
+2. **Composes** reference files into `pdca-framework/references/`:
    - Combines `1a` and `1b` into `plan-prompts.md`
-   - Copies other phase files to `references/`
-3. **Creates** the skill package (ZIP with `.skill` extension)
-4. **Reports** the package size and contents
+   - Strips the license/attribution block from the phase prompt masters and working agreements
+   - Applies `<!-- CLAUDE_INJECT: key -->` replacements to the four phase prompt files
+   - Copies the beads/ponytail addon sources and `testing-anti-patterns.md` in verbatim (not
+     license-stripped — see `COPIED_FROM_MASTER` / `COPIED_FROM_ADDON` in `build.py`)
+3. **Creates** the skill package (a ZIP with a `.skill` extension, rooted at `pdca-framework/`)
+4. **Reports** the package size and file count
 
 ### Build Output
 
 ```
 skill/
-├── build-skill.sh              # The build script (macOS/Linux)
-├── build-skill.ps1             # The build script (Windows)
-├── install-skill.sh            # Installation script (macOS/Linux)
-├── install-skill.ps1           # Installation script (Windows)
-├── pdca-framework.skill       # Generated (can be committed or ignored)
-└── src/                        # Generated source files
-    ├── SKILL.md               # Manually maintained
-    └── references/            # Auto-generated from masters
+├── build-skill.sh               # Thin wrapper (macOS/Linux): locates python3, calls build.py
+├── build-skill.ps1              # Thin wrapper (Windows): locates python3/python, calls build.py
+├── build.py                     # The build implementation — the only place build logic lives
+├── install-skill.sh             # Installation script (macOS/Linux)
+├── install-skill.ps1            # Installation script (Windows)
+├── pdca-framework.skill         # Generated: the installable zip
+└── pdca-framework/
+    ├── SKILL.md                 # Manually maintained
+    ├── beads-addon/sources/     # Manually maintained (optional beads integration)
+    ├── ponytail-addon/sources/  # Manually maintained (optional ponytail integration)
+    ├── claude-addon/injections/ # Manually maintained (CLAUDE_INJECT content)
+    └── references/              # Generated by build.py — gitignored, never edit directly
         ├── plan-prompts.md
         ├── do-prompts.md
         ├── check-prompts.md
         ├── act-prompts.md
-        └── working-agreements.md
+        ├── working-agreements.md
+        ├── testing-anti-patterns.md
+        ├── plan-beads-addon.md
+        ├── do-beads-addon.md
+        ├── check-beads-addon.md
+        ├── act-beads-addon.md
+        ├── beads-setup.md
+        ├── beads-workflow.md
+        ├── ponytail-setup.md
+        ├── ponytail-workflow.md
+        └── scripts/
+            └── export-requirements.sh   # Packaged with the owner-execute bit set
 ```
 
 ## When to Rebuild
@@ -137,103 +216,82 @@ Rebuild the skill whenever you update any of these master files:
 
 ## Git Strategy
 
-### Option 1: Commit Generated Files (Recommended)
+This repo does not commit generated files. `.gitignore` excludes `pdca-framework/references/`,
+`pdca-framework.skill`, and `pdca-framework-beads.skill` — a `git status` after building locally
+should show nothing to commit from the build itself.
 
-**Pros:**
-- Users can download the skill directly from GitHub
-- See exactly what's in the latest release
-- Easy to track changes in skill package
+Distribution happens through the release workflow instead: pushing a `v*.*.*` tag triggers
+`.github/workflows/release.yml`, which runs the test suite, builds the package, and attaches
+`pdca-framework.skill` to a GitHub Release as a downloadable artifact. That's what
+[GitHub Releases](https://github.com/kenjudy/pdca-agentic-coding-framework/releases) links to —
+not a checked-in copy of the build output.
 
-**Cons:**
-- Generated files tracked in git
+**Why:** committing generated files means every master-prompt edit produces a second diff (the
+regenerated `references/` and zip) that has to be reviewed alongside the real change, and it
+invites the two from drifting if a contributor edits the artifact directly instead of rebuilding.
+Keeping only source files in git and building on demand — locally for development, in CI for
+release — keeps the repo to one source of truth per file.
 
-**Setup (macOS/Linux):**
+**Local build (not committed):**
 ```bash
-# Build and commit
-./build-skill.sh
-git add src/references/ pdca-framework.skill
-git commit -m "Rebuild skill from updated master prompts"
+./build-skill.sh   # macOS/Linux
+.\build-skill.ps1  # Windows
+# Use the skill but don't commit pdca-framework/references/ or pdca-framework.skill
 ```
 
-**Setup (Windows):**
-```powershell
-# Build and commit
-.\build-skill.ps1
-git add src/references/ pdca-framework.skill
-git commit -m "Rebuild skill from updated master prompts"
-```
-
-### Option 2: Ignore Generated Files
-
-**Pros:**
-- Only source files in git
-- Build from masters on demand
-
-**Cons:**
-- Users must build locally
-- Can't download skill directly from GitHub
-
-**Setup:**
-Add to `.gitignore`:
-```gitignore
-# Build artifacts
-skill/src/references/
-skill/pdca-framework.skill
-skill/temp_package/
-```
-
-Then build locally (macOS/Linux):
-```bash
-./build-skill.sh
-# Use the skill but don't commit it
-```
-
-Or build locally (Windows):
-```powershell
-.\build-skill.ps1
-# Use the skill but don't commit it
-```
+**If you're vendoring this framework into a repo without a release pipeline:** committing the
+generated files is a reasonable alternative — it lets users download the skill straight from
+your repo instead of from a Releases page. Build, then `git add pdca-framework/references/
+pdca-framework.skill` and remove the build-artifact lines from `.gitignore`. That is not what
+this repo does, so don't follow it here.
 
 ## Customizing the Build
 
 ### Change Master File Locations
 
-**For macOS/Linux:** Edit `build-skill.sh` and update these variables:
+There is one place to edit, not two: `build-skill.sh` and `build-skill.ps1` carry no master
+paths of their own — they call straight into `build.py`. Edit the `MASTER_*` constants near the
+top of `skill/build.py`:
 
-```bash
-MASTER_1A="$REPO_ROOT/1. Plan/1a Analyze..."
-MASTER_1B="$REPO_ROOT/1. Plan/1b Create..."
-# etc.
+```python
+MASTER_1A = "1. Plan/1a Analyze to determine approach for achieving the goal.md"
+MASTER_1B = "1. Plan/1b Create a detailed implementation plan.md"
+MASTER_DO = "2. Do/2. Test Drive the Change.md"
+MASTER_ANTI_PATTERNS = "2. Do/Testing Anti-Patterns.md"
+MASTER_CHECK = "3. Check/3. Completeness Check.md"
+MASTER_ACT = "4. Act/4. Retrospect for continuous improvement.md"
+MASTER_WORKING_AGREEMENTS = "Human Working Agreements.md"
 ```
 
-**For Windows:** Edit `build-skill.ps1` and update these variables:
-
-```powershell
-$Master1A = Join-Path (Join-Path $RepoRoot "1. Plan") "1a Analyze..."
-$Master1B = Join-Path (Join-Path $RepoRoot "1. Plan") "1b Create..."
-# etc.
-```
+These are relative to `repo_root` (the directory above `skill/`). The change applies to both
+platforms automatically since both wrappers invoke the same `build.py`.
 
 ### Add Additional Files
 
-To include more files in the skill package:
+To include another file in the skill package, everything happens in `skill/build.py` and
+`skill/tests/test_build.py` — nothing in either wrapper script needs to change:
 
-1. Add the source to `src/references/`
-2. Update the packaging command:
+1. **Add the file to one of `build.py`'s copy/strip dicts**, depending on how it should be
+   produced:
+   - `STRIPPED_FROM_MASTER` — copied from a repo-root master with the license/attribution block
+     stripped (e.g. the phase prompts, working agreements)
+   - `COPIED_FROM_MASTER` — copied from a repo-root master verbatim, no stripping
+   - `COPIED_FROM_ADDON` — copied verbatim from a source under `pdca-framework/*-addon/sources/`
+     (e.g. a new beads or ponytail file)
 
-**In `build-skill.sh`:**
-```bash
-zip -r "$SKILL_FILE" \
-    SKILL.md \
-    references/plan-prompts.md \
-    references/your-new-file.md \  # Add here
-    ...
-```
+   Each entry maps the destination filename under `references/` to its source path.
 
-**In `build-skill.ps1`:**
-```powershell
-Copy-Item $YourNewFile -Destination $tempReferencesDir -Force
-```
+2. **Add the destination path to `MANIFEST`** in `build.py` — this tuple is what actually gets
+   zipped, in addition to driving which files the copy dicts above are expected to produce. A
+   file present in a copy dict but missing from `MANIFEST` will not ship; a file listed in
+   `MANIFEST` that no copy dict (or the plan-prompts/injection/export-script special cases)
+   produces will fail the build with `BuildError`.
+
+3. **Add the packaged path to `EXPECTED_FILES`** in `skill/tests/test_build.py`, so the test
+   suite's manifest assertion — and `test_builder_produces_expected_manifest` in
+   `tests/test_builder.py` — stay in sync with what the build actually produces.
+
+4. Rebuild (`bash build-skill.sh`) and re-run the test suite.
 
 ### Customize the Package Structure
 
@@ -259,8 +317,8 @@ After building:
 
 3. **Review generated files:**
    ```bash
-   ls -lh src/references/
-   cat src/references/plan-prompts.md  # Check composition
+   ls -lh pdca-framework/references/
+   cat pdca-framework/references/plan-prompts.md  # Check composition
    ```
 
 ## Troubleshooting
@@ -269,7 +327,8 @@ After building:
 
 **Cause:** Master files moved or renamed
 
-**Solution:** Update the paths in `build-skill.sh` (macOS/Linux) or `build-skill.ps1` (Windows)
+**Solution:** Update the `MASTER_*` constants in `skill/build.py` — see
+[Change Master File Locations](#change-master-file-locations). There is only one place to edit.
 
 ### Build succeeds but skill doesn't work
 
@@ -300,17 +359,14 @@ Or run with bypass:
 powershell -ExecutionPolicy Bypass -File .\build-skill.ps1
 ```
 
-### "NotSupportedArchiveFileExtension" error (Windows)
+### "No working Python interpreter found" (Windows)
 
-**Cause:** Old version of the script trying to create .skill directly
+**Cause:** `build-skill.ps1` probes `python3` then `python` on `PATH`, running each with
+`--version` before trusting it — this rejects Microsoft Store stub executables that resolve via
+`Get-Command` but aren't real interpreters. Neither candidate produced a working interpreter.
 
-**Solution:** Update to the latest `build-skill.ps1` which creates .zip first, then renames
-
-### Path not found errors (Windows)
-
-**Cause:** Spaces in paths not properly quoted
-
-**Solution:** The script handles this automatically, but ensure you're using the latest version
+**Solution:** Install Python 3.11+ and ensure a real interpreter (not the Store stub) is on
+`PATH`.
 
 ### ZIP file seems wrong
 
@@ -338,7 +394,7 @@ Automatically rebuild when masters change:
 # .git/hooks/pre-commit
 #!/bin/bash
 cd skill && ./build-skill.sh
-git add src/references/ pdca-framework.skill
+git add pdca-framework/references/ pdca-framework.skill
 ```
 
 ### CI/CD (GitHub Actions)
@@ -372,7 +428,7 @@ skill:
 .PHONY: skill-clean
 skill-clean:
 	rm -f skill/pdca-framework.skill
-	rm -rf skill/src/references/
+	rm -rf skill/pdca-framework/references/
 ```
 
 Usage: `make skill`
@@ -410,7 +466,7 @@ git push --tags
 ```
 
 The Action runs automatically. The release appears at:
-`https://github.com/kenjudy/pdca-code-generation-process/releases`
+`https://github.com/kenjudy/pdca-agentic-coding-framework/releases`
 
 The README's download link uses `/releases/latest/download/pdca-framework.skill` and
 resolves to the newest release automatically — no link update needed.

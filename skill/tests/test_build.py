@@ -226,6 +226,7 @@ class TestSkillMdSource(unittest.TestCase):
 
 
 README_FILE = CLAUDE_SKILL_DIR / "README.md"
+CHANGELOG_FILE = REPO_ROOT / "CHANGELOG.md"
 
 
 EVAL_SCENARIOS_DIR = CLAUDE_SKILL_DIR / "eval" / "scenarios"
@@ -308,6 +309,43 @@ class TestReadme(unittest.TestCase):
             self.content,
             r"v\d+\.\d+\.\d+",
             "README must contain a semantic version (e.g. v1.0.0)",
+        )
+
+    def test_current_version_matches_changelog(self):
+        """README's Current Version must match the newest released version in CHANGELOG.md.
+
+        The release checklist lists "update skill/README.md" as a manual step with nothing
+        behind it -- it can be skipped and the release workflow still goes green. This test
+        is the mechanism that step was missing.
+        """
+        readme_match = re.search(r"\*\*Current Version:\*\*\s*v(\d+\.\d+\.\d+)", self.content)
+        self.assertIsNotNone(
+            readme_match,
+            "README.md has no '**Current Version:** vX.Y.Z' line to check",
+        )
+        assert readme_match is not None
+        readme_version = readme_match.group(1)
+
+        self.assertTrue(CHANGELOG_FILE.exists(), "CHANGELOG.md not found at repo root")
+        changelog_content = CHANGELOG_FILE.read_text()
+        # The newest RELEASED version is the first "## vX.Y.Z" heading. CHANGELOG.md
+        # starts with "## Unreleased" (no version number, doesn't match) and later has
+        # non-version "## " headings further down (e.g. "## What Changed") that also
+        # don't match -- so the first match here is unambiguously the latest release.
+        changelog_match = re.search(r"^## v(\d+\.\d+\.\d+)", changelog_content, re.MULTILINE)
+        self.assertIsNotNone(
+            changelog_match,
+            "CHANGELOG.md has no '## vX.Y.Z' released-version heading to compare against",
+        )
+        assert changelog_match is not None
+        changelog_version = changelog_match.group(1)
+
+        self.assertEqual(
+            readme_version,
+            changelog_version,
+            f"README Current Version (v{readme_version}) does not match the newest "
+            f"released version in CHANGELOG.md (v{changelog_version}) -- update "
+            "skill/README.md's '**Current Version:**' line",
         )
 
 

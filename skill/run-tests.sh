@@ -13,6 +13,13 @@
 #
 # For LLM eval tests (requires ANTHROPIC_API_KEY, incurs API cost):
 #   bash run-evals.sh
+#
+# Both `uv run` calls below use --locked: plain `uv run` silently re-resolves
+# and rewrites uv.lock when it drifts from pyproject.toml's constraints,
+# dirtying the contributor's working tree with an unrelated dependency diff
+# instead of telling them anything is wrong. --locked fails loudly instead
+# ("The lockfile at uv.lock needs to be updated") so drift is caught here,
+# not discovered later as a stray diff in someone else's commit.
 
 set -e
 
@@ -26,14 +33,14 @@ bash "$SCRIPT_DIR/build-skill.sh"
 echo ""
 echo "=== Lint (ruff) ==="
 set +e
-(cd "$SCRIPT_DIR" && uv run ruff check .) 2>&1
+(cd "$SCRIPT_DIR" && uv run --locked ruff check .) 2>&1
 RUFF_EXIT=$?
 set -e
 
 echo ""
 echo "=== Running Test Suite ==="
 set +e
-(cd "$SCRIPT_DIR" && uv run python -m pytest tests/ -v) 2>&1
+(cd "$SCRIPT_DIR" && uv run --locked python -m pytest tests/ -v) 2>&1
 TEST_EXIT=$?
 set -e
 

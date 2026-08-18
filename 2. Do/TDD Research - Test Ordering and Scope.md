@@ -2,7 +2,7 @@
 
 **Purpose:** Reference for improving TDD guidance in the PDCA framework
 **Research date:** 2026-03-20
-**Related issue:** [#6 — Rework TDD description](https://github.com/kenjudy/pdca-code-generation-process/issues/6)
+**Related issue:** [#6 — Rework TDD description](https://github.com/kenjudy/pdca-agentic-coding-framework/issues/6)
 
 ---
 
