@@ -21,7 +21,7 @@ eval = [
 ]
 lint = [
     "ruff>=0.16.0",
-    "mypy>=2.3.0",
+    "mypy>=2.3.1",
 ]
 
 [tool.ruff]
