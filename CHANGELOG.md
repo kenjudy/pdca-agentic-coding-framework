@@ -16,6 +16,53 @@
   That covers the API surface, not scoring behaviour.
 - setuptools `>=83.0.0` → `>=84.0.0`.
 
+### Bug Fixes
+
+- **A dead eval harness could not be told apart from a failing scenario.** A shot that
+  dies before reaching the API — missing build artifact, absent key, network failure —
+  produces no scored result, but pytest exits non-zero either way, so a caller counting
+  exit codes reported a crash and a genuine failure identically. This was not
+  hypothetical: the first eval run of #131's Step 0 reported `5 shot(s); 5 did not pass`
+  from a harness that never called the API once, and it read exactly like a confirmed
+  hypothesis. `eval/README.md`'s thesis is that a broken eval is self-sealing, since the
+  eval *is* the mechanism meant to notice.
+- **`skill/check_eval_ran.py`** distinguishes them. The evidence was already in the
+  reports — a crashed shot leaves a Summary table with a header, a separator and no data
+  rows — so the check is a pure function over report text, needing no API key, no network
+  and no live run. That is deliberate: it has to work in exactly the conditions where the
+  harness cannot. `run-evals.sh` now exits **2** when nothing was measured, distinct from
+  **1** for a real scenario failure, and scopes the check to reports from the current run
+  so an earlier scored report cannot mask a run that scored nothing.
+- **`evals.yml` counts the two separately** and fails loudly on a harness error rather
+  than folding it into a "did not pass" tally.
+
+- **The pre-commit mypy hook had never been able to run on any machine but one.**
+  `.claude/settings.json` is checked in, and its `PreToolUse` hook `cd`-ed to an absolute
+  path under one contributor's home directory. Everywhere else the `cd` failed, the `&&`
+  chain short-circuited, and the trailing `exit 0` reported success — an advisory gate
+  that looked configured to everyone and could fire for no one. Found during a review of
+  #139, and a better instance of that PR's own subject than the PR contained.
+- **`skill/typecheck.sh` is now the single mypy invocation**, called by both CI and the
+  hook. They previously held separate argument lists and had already diverged: the hook
+  named `eval tests/test_build.py` while CI named six targets. That is #114 in miniature —
+  two copies of one procedure drifting silently because only one of them ever ran.
+- The hook now resolves the repository from `CLAUDE_PROJECT_DIR`, falling back to
+  `git rev-parse`, and **reports explicitly when it cannot locate the script** rather than
+  skipping in silence. `test_settings_json_has_no_machine_specific_path` asserts no
+  home-directory path returns.
+
+- **`run-evals.sh` never built the skill or synced the eval extra.** The harness reads the
+  built prompt files under `pdca-framework/references/`, which are gitignored artifacts. On
+  any tree without a prior build every scenario died with `FileNotFoundError` on
+  `do-prompts.md` before reaching the API — and each dead shot was reported as "did not
+  pass", indistinguishable in a summary count from the model actually failing the scenario.
+  A harness that cannot run must not read like a harness delivering a verdict. Same shape
+  as #89, in the script next door.
+- **Eval reports are now echoed into the CI job log**, not only uploaded as an artifact.
+  Artifact download is authenticated, so for any consumer that cannot reach one the shot
+  count was the sole readable output — precisely the number `eval/README.md` says never to
+  trust alone.
+
 ### Optional superpowers interop (#131)
 
 - The pdca-framework skill now offers optional interoperation with
@@ -77,20 +124,6 @@
   because the check needs a diff; a unit test could at most assert that some `##
   Unreleased` section exists, which stays true forever after one entry and is blind to the
   PR that forgot. Dependabot is exempt — its bumps are summarised once at release time.
-
-### Bug Fixes
-
-- **`run-evals.sh` never built the skill or synced the eval extra.** The harness reads the
-  built prompt files under `pdca-framework/references/`, which are gitignored artifacts. On
-  any tree without a prior build every scenario died with `FileNotFoundError` on
-  `do-prompts.md` before reaching the API — and each dead shot was reported as "did not
-  pass", indistinguishable in a summary count from the model actually failing the scenario.
-  A harness that cannot run must not read like a harness delivering a verdict. Same shape
-  as #89, in the script next door.
-- **Eval reports are now echoed into the CI job log**, not only uploaded as an artifact.
-  Artifact download is authenticated, so for any consumer that cannot reach one the shot
-  count was the sole readable output — precisely the number `eval/README.md` says never to
-  trust alone.
 
 ## v1.3.0 (2026-08-18)
 

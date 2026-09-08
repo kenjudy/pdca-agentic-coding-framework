@@ -694,6 +694,123 @@ class TestHookInfrastructure(unittest.TestCase):
             "run-evals.sh does not sync the eval extra, so deepeval/anthropic may be absent",
         )
 
+    def test_settings_json_has_no_machine_specific_path(self):
+        """.claude/settings.json is checked in, so it must run on every clone.
+
+        Its PreToolUse hook contained an absolute path to one contributor's Mac. On any
+        other machine the `cd` fails, the `&&` chain short-circuits, and the trailing
+        `exit 0` reports success -- an advisory mypy gate that has never been able to fire
+        anywhere but one laptop, while looking configured to everyone.
+        """
+        settings = REPO_ROOT / ".claude" / "settings.json"
+        self.assertTrue(settings.exists(), ".claude/settings.json missing")
+        content = settings.read_text()
+        for home_prefix in ("/Users/", "/home/", "C:\\Users"):
+            with self.subTest(prefix=home_prefix):
+                self.assertNotIn(
+                    home_prefix,
+                    content,
+                    f"settings.json hardcodes a machine-specific path containing "
+                    f"'{home_prefix}'. It is checked in, so it must resolve paths relative "
+                    "to the repository -- otherwise the hook silently no-ops for everyone else",
+                )
+
+    def test_typecheck_invocation_is_shared(self):
+        """CI and the pre-commit hook must type-check via one shared script.
+
+        They previously carried separate mypy argument lists and had already diverged --
+        the hook still named `tests/test_build.py` while CI named six targets. That is
+        #114 in miniature: two copies of one procedure, drifting silently because only one
+        of them ever ran.
+        """
+        script = CLAUDE_SKILL_DIR / "typecheck.sh"
+        self.assertTrue(script.exists(), "skill/typecheck.sh missing -- no shared invocation")
+
+        workflow = (REPO_ROOT / ".github" / "workflows" / "test.yml").read_text()
+        self.assertIn("typecheck.sh", workflow, "CI does not use the shared typecheck script")
+
+        settings = (REPO_ROOT / ".claude" / "settings.json").read_text()
+        self.assertIn(
+            "typecheck.sh",
+            settings,
+            "the pre-commit hook does not use the shared typecheck script, so its module "
+            "list can drift from CI's again",
+        )
+
+    def test_ci_mypy_covers_every_top_level_module(self):
+        """typecheck.sh must name every top-level module under skill/.
+
+        The list is hand-maintained, so a new module is type-checked only if someone
+        remembers to widen it. build.py went unchecked until #126 noticed, and
+        check_changelog.py was never added at all -- it shipped in #134 having been run
+        only locally. Both are the same slip: a gate whose coverage silently fails to grow
+        with the code it guards. Asserted against typecheck.sh rather than the workflow,
+        since that script is now the single invocation CI and the hook both call.
+        """
+        invocation = (CLAUDE_SKILL_DIR / "typecheck.sh").read_text()
+
+        modules = sorted(
+            p.name for p in CLAUDE_SKILL_DIR.glob("*.py") if not p.name.startswith("_")
+        )
+        self.assertTrue(modules, "no top-level modules found to check")
+        for module in modules:
+            with self.subTest(module=module):
+                self.assertIn(
+                    module,
+                    invocation,
+                    f"{module} exists under skill/ but is absent from typecheck.sh, so it "
+                    "is never type-checked -- by CI or by the pre-commit hook",
+                )
+
+    def test_run_evals_script_distinguishes_a_dead_harness(self):
+        """run-evals.sh must classify "nothing was measured" apart from "a scenario failed".
+
+        A shot that dies before reaching the API produces no scored result, but pytest
+        exits non-zero either way -- so a caller counting exit codes reports a crash and
+        a genuine failure identically. That is how "5 shot(s); 5 did not pass" came to be
+        reported for a harness that never called the API once (#131 Step 0), reading
+        exactly like a confirmed hypothesis.
+        """
+        script = (CLAUDE_SKILL_DIR / "run-evals.sh").read_text()
+        self.assertIn(
+            "check_eval_ran.py",
+            script,
+            "run-evals.sh does not check whether the harness actually produced a verdict, "
+            "so a crash and a scenario failure are indistinguishable in its exit code",
+        )
+        self.assertIn(
+            "-newer",
+            script,
+            "the check must be scoped to reports from THIS run; eval/results/ accumulates, "
+            "so an earlier scored report would mask a run that scored nothing",
+        )
+
+    def test_eval_workflow_separates_harness_errors_from_failures(self):
+        """evals.yml must count a dead harness separately from a failing scenario.
+
+        run-evals.sh exits 2 when it produced no verdict and 1 when a scenario genuinely
+        failed. The workflow has to act on that distinction; counting every non-zero exit
+        as "did not pass" is the wording that made a harness which never called the API
+        report "5 shot(s); 5 did not pass" and read as a confirmed hypothesis.
+
+        Asserting on the exit code rather than on the word "harness": the word already
+        appeared in an unrelated warning string, so a keyword check passed vacuously.
+        """
+        workflow = REPO_ROOT / ".github" / "workflows" / "evals.yml"
+        content = workflow.read_text()
+        self.assertIn(
+            "harness_errors",
+            content,
+            "evals.yml does not track harness errors separately from scenario failures, "
+            "so a run that measured nothing is reported as a run that measured failure",
+        )
+        self.assertIn(
+            "-eq 2",
+            content,
+            "evals.yml does not branch on run-evals.sh's exit code 2, which is how a "
+            "harness that produced no verdict is signalled",
+        )
+
     def test_run_evals_script_uses_eval_marker(self):
         script = CLAUDE_SKILL_DIR / "run-evals.sh"
         if not script.exists():

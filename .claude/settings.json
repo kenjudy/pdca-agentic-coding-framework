@@ -7,7 +7,7 @@
           {
             "type": "command",
             "statusMessage": "Running mypy before commit...",
-            "command": "cmd=$(jq -r '.tool_input.command // \"\"' 2>/dev/null); echo \"$cmd\" | grep -qE 'git commit' || exit 0; cd '/Users/kenjudy/Library/Mobile Documents/iCloud~md~obsidian/Documents/PDCA Process/skill' && uv run mypy eval tests/test_build.py 2>&1 | python3 -c \"import sys, json; output = sys.stdin.read().strip(); print(json.dumps({'hookSpecificOutput':{'hookEventName':'PreToolUse','additionalContext':'mypy (advisory — commit will proceed):\\n' + output}})) if output else None\"; exit 0"
+            "command": "cmd=$(jq -r '.tool_input.command // \"\"' 2>/dev/null); echo \"$cmd\" | grep -qE 'git commit' || exit 0; root=\"${CLAUDE_PROJECT_DIR:-$(git rev-parse --show-toplevel 2>/dev/null)}\"; [ -n \"$root\" ] && [ -x \"$root/skill/typecheck.sh\" ] || { echo '{\"hookSpecificOutput\":{\"hookEventName\":\"PreToolUse\",\"additionalContext\":\"mypy hook skipped: could not locate skill/typecheck.sh from this directory.\"}}'; exit 0; }; output=$(bash \"$root/skill/typecheck.sh\" 2>&1 || true); printf '%s' \"$output\" | python3 -c \"import sys, json; o = sys.stdin.read().strip(); print(json.dumps({'hookSpecificOutput':{'hookEventName':'PreToolUse','additionalContext':'mypy (advisory \u2014 commit will proceed):\\n' + o}})) if o else None\"; exit 0"
           }
         ]
       }

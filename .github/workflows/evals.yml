@@ -62,15 +62,36 @@ jobs:
           esac
           # Each shot is a separate invocation so one failing shot does not abort the
           # rest: attribution needs the whole distribution, not the first failure.
+          #
+          # run-evals.sh exits 2 when it produced no verdict at all and 1 when a scenario
+          # genuinely failed. Counting both as "did not pass" is exactly how a harness
+          # that never called the API once reported "5 shot(s); 5 did not pass" and read
+          # as a confirmed hypothesis. They are counted separately here.
           failures=0
+          harness_errors=0
           for i in $(seq 1 "$shots"); do
             echo "::group::Shot $i of $shots"
-            bash run-evals.sh "${{ inputs.test_id }}" || failures=$((failures + 1))
+            set +e
+            bash run-evals.sh "${{ inputs.test_id }}"
+            shot_exit=$?
+            set -e
+            if [ "$shot_exit" -eq 2 ]; then
+              harness_errors=$((harness_errors + 1))
+            elif [ "$shot_exit" -ne 0 ]; then
+              failures=$((failures + 1))
+            fi
             echo "::endgroup::"
           done
-          echo "Completed $shots shot(s); $failures did not pass."
-          echo "A non-zero count is data, not necessarily a defect - read the recorded"
-          echo "responses in the artifact before attributing anything."
+
+          echo "Completed $shots shot(s): $failures scenario failure(s), $harness_errors harness error(s)."
+          if [ "$harness_errors" -gt 0 ]; then
+            echo "::error::$harness_errors shot(s) produced no verdict at all. Those shots" \
+                 "measured NOTHING - do not read them as scenario failures. Fix the harness" \
+                 "and re-run before drawing any conclusion."
+            exit 1
+          fi
+          echo "A non-zero failure count is data, not necessarily a defect - read the"
+          echo "recorded responses below before attributing anything."
 
       # Echoed into the log as well as uploaded. The reports carry the recorded model
       # responses, and eval/README.md requires diagnosing a failure from the response
