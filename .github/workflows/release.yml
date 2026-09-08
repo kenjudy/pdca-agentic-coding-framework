@@ -9,6 +9,15 @@ jobs:
   release:
     runs-on: ubuntu-latest
 
+    # Required by softprops/action-gh-release to create the Release and upload the
+    # .skill asset. Without it GITHUB_TOKEN takes the repository default, which is
+    # read-only, and the final step fails with "403 Resource not accessible by
+    # integration". Every release run in this repo's history failed that way; each
+    # release was then published by hand, so the red workflow blocked nothing and
+    # there was never a reason to open the log.
+    permissions:
+      contents: write
+
     steps:
       - uses: actions/checkout@v7
 

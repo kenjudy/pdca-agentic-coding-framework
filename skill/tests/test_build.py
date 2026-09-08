@@ -744,6 +744,31 @@ class TestHookInfrastructure(unittest.TestCase):
             "so it cannot compare anything against the tag being released",
         )
 
+    def test_release_workflow_grants_contents_write(self):
+        """release.yml's job must declare permissions: contents: write.
+
+        Without it GITHUB_TOKEN gets the repository default (read-only) and
+        softprops/action-gh-release fails with "403 Resource not accessible by
+        integration - create-a-release". Every release run in this repo's history
+        failed exactly this way and each release was published by hand instead, so
+        the red workflow never blocked anything and nobody had reason to look.
+        """
+        workflow = REPO_ROOT / ".github" / "workflows" / "release.yml"
+        self.assertTrue(workflow.exists(), ".github/workflows/release.yml missing")
+        content = workflow.read_text()
+        self.assertIn(
+            "permissions:",
+            content,
+            "release.yml declares no 'permissions:' block, so GITHUB_TOKEN falls back to the "
+            "repository default (read-only) and creating the GitHub Release 403s",
+        )
+        self.assertRegex(
+            content,
+            r"permissions:\s*\n\s+contents:\s*write",
+            "release.yml does not grant 'contents: write', which is the permission "
+            "softprops/action-gh-release needs to create a release and upload the .skill asset",
+        )
+
     def test_github_actions_workflow_exists(self):
         workflow = REPO_ROOT / ".github" / "workflows" / "test.yml"
         self.assertTrue(
