@@ -694,6 +694,83 @@ class TestHookInfrastructure(unittest.TestCase):
             "run-evals.sh does not sync the eval extra, so deepeval/anthropic may be absent",
         )
 
+    def test_ci_mypy_covers_every_top_level_module(self):
+        """CI's mypy invocation must name every top-level module under skill/.
+
+        The invocation is a hand-maintained list, so a new module is type-checked only if
+        someone remembers to widen it. build.py went unchecked until #126 noticed, and
+        check_changelog.py was never added at all -- it shipped in #134 having been run
+        only locally. Both are the same slip: a gate whose coverage silently fails to grow
+        with the code it guards.
+        """
+        workflow = (REPO_ROOT / ".github" / "workflows" / "test.yml").read_text()
+        mypy_line = next(
+            (line for line in workflow.splitlines() if "mypy" in line and "run:" in line), ""
+        )
+        self.assertTrue(mypy_line, "no mypy invocation found in test.yml")
+
+        modules = sorted(
+            p.name for p in CLAUDE_SKILL_DIR.glob("*.py") if not p.name.startswith("_")
+        )
+        self.assertTrue(modules, "no top-level modules found to check")
+        for module in modules:
+            with self.subTest(module=module):
+                self.assertIn(
+                    module,
+                    mypy_line,
+                    f"{module} exists under skill/ but is absent from CI's mypy invocation, "
+                    "so it is never type-checked in CI",
+                )
+
+    def test_run_evals_script_distinguishes_a_dead_harness(self):
+        """run-evals.sh must classify "nothing was measured" apart from "a scenario failed".
+
+        A shot that dies before reaching the API produces no scored result, but pytest
+        exits non-zero either way -- so a caller counting exit codes reports a crash and
+        a genuine failure identically. That is how "5 shot(s); 5 did not pass" came to be
+        reported for a harness that never called the API once (#131 Step 0), reading
+        exactly like a confirmed hypothesis.
+        """
+        script = (CLAUDE_SKILL_DIR / "run-evals.sh").read_text()
+        self.assertIn(
+            "check_eval_ran.py",
+            script,
+            "run-evals.sh does not check whether the harness actually produced a verdict, "
+            "so a crash and a scenario failure are indistinguishable in its exit code",
+        )
+        self.assertIn(
+            "-newer",
+            script,
+            "the check must be scoped to reports from THIS run; eval/results/ accumulates, "
+            "so an earlier scored report would mask a run that scored nothing",
+        )
+
+    def test_eval_workflow_separates_harness_errors_from_failures(self):
+        """evals.yml must count a dead harness separately from a failing scenario.
+
+        run-evals.sh exits 2 when it produced no verdict and 1 when a scenario genuinely
+        failed. The workflow has to act on that distinction; counting every non-zero exit
+        as "did not pass" is the wording that made a harness which never called the API
+        report "5 shot(s); 5 did not pass" and read as a confirmed hypothesis.
+
+        Asserting on the exit code rather than on the word "harness": the word already
+        appeared in an unrelated warning string, so a keyword check passed vacuously.
+        """
+        workflow = REPO_ROOT / ".github" / "workflows" / "evals.yml"
+        content = workflow.read_text()
+        self.assertIn(
+            "harness_errors",
+            content,
+            "evals.yml does not track harness errors separately from scenario failures, "
+            "so a run that measured nothing is reported as a run that measured failure",
+        )
+        self.assertIn(
+            "-eq 2",
+            content,
+            "evals.yml does not branch on run-evals.sh's exit code 2, which is how a "
+            "harness that produced no verdict is signalled",
+        )
+
     def test_run_evals_script_uses_eval_marker(self):
         script = CLAUDE_SKILL_DIR / "run-evals.sh"
         if not script.exists():

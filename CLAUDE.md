@@ -152,6 +152,15 @@ See `skill/SUPERVISION-PROTOCOL.md` for the full protocol. Key rules:
 - All code changes require a failing test first (TDD, no exceptions)
 - Do not batch multiple steps without human confirmation between them
 
+**Establish the ground before the first action, not after the failed one:**
+
+- **Verify state before acting.** Use absolute paths; the working directory is not where you
+  assume. Search existing issues before filing one, and check what already exists before
+  building it.
+- **Design observability before the first run.** Before anything slow or costly, confirm you
+  will be able to read its result. A run whose output you cannot inspect has to be repeated,
+  and a broken mechanism reports a number that looks exactly like a measurement.
+
 ## Validating Prompt Changes
 
 Any edit to master prompt files or eval rubrics requires:

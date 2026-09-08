@@ -2,6 +2,26 @@
 
 ## Unreleased
 
+### Bug Fixes
+
+- **A dead eval harness could not be told apart from a failing scenario.** A shot that
+  dies before reaching the API — missing build artifact, absent key, network failure —
+  produces no scored result, but pytest exits non-zero either way, so a caller counting
+  exit codes reported a crash and a genuine failure identically. This was not
+  hypothetical: the first eval run of #131's Step 0 reported `5 shot(s); 5 did not pass`
+  from a harness that never called the API once, and it read exactly like a confirmed
+  hypothesis. `eval/README.md`'s thesis is that a broken eval is self-sealing, since the
+  eval *is* the mechanism meant to notice.
+- **`skill/check_eval_ran.py`** distinguishes them. The evidence was already in the
+  reports — a crashed shot leaves a Summary table with a header, a separator and no data
+  rows — so the check is a pure function over report text, needing no API key, no network
+  and no live run. That is deliberate: it has to work in exactly the conditions where the
+  harness cannot. `run-evals.sh` now exits **2** when nothing was measured, distinct from
+  **1** for a real scenario failure, and scopes the check to reports from the current run
+  so an earlier scored report cannot mask a run that scored nothing.
+- **`evals.yml` counts the two separately** and fails loudly on a harness error rather
+  than folding it into a "did not pass" tally.
+
 ### Optional superpowers interop (#131)
 
 - The pdca-framework skill now offers optional interoperation with

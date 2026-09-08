@@ -25,7 +25,7 @@ jobs:
         working-directory: skill
 
       - name: Type check (mypy)
-        run: uv run mypy eval tests build.py check_release_version.py
+        run: uv run mypy eval tests build.py check_changelog.py check_eval_ran.py check_release_version.py
         working-directory: skill
 
       - name: Build and test
