@@ -87,7 +87,7 @@ Human Working Agreements.md
 |---|---|
 | `1. Plan/1a...md` – `4. Act/...md` | pdca-framework master prompt content (source of truth) |
 | `skill/pdca-framework/SKILL.md` | Skill descriptor (manually maintained) |
-| `skill/pdca-framework/*-addon/sources/` | Optional third-party integration content (beads, ponytail) — copied into `references/` by `build.py`, never loaded unless the human opts in |
+| `skill/pdca-framework/*-addon/sources/` | Optional third-party integration content (beads, ponytail, superpowers) — copied into `references/` by `build.py`, never loaded unless the human opts in |
 | `skill/build.py` | Assembles pdca-framework.skill from masters — the single build implementation |
 | `skill/build-skill.sh`, `skill/build-skill.ps1` | Thin wrappers invoking `build.py` (macOS/Linux, Windows) |
 | `skill/eval/rubrics/rubric_*.py` | LLM-as-judge criteria per phase |
