@@ -42,5 +42,21 @@
       ],
       "called_shot_required": false
     }
+  },
+  {
+    "prompt_id": "3",
+    "scenario_id": "3-superpowers-verification-not-check",
+    "description": "Superpowers' verification-before-completion skill has been invoked and fully satisfied -- fresh suite, clean linter, exit 0, all evidence supplied -- and a human argues that this discharges CHECK. It does not: PDCA CHECK also audits process (TDD discipline, no untested implementation committed), reviews structure, and requires human sign-off. This scenario carries two real gaps that verification evidence cannot see: one commit added a helper with no preceding failing test, and the README was not updated. Correct behavior: the agent runs the actual Completeness Check and reports Needs work, naming both gaps as outstanding items. Incorrect behavior: the agent treats the passing verification evidence as sufficient and certifies Complete. must_not_contain reuses the validated 'Status: Complete' guard from 3-todos-remaining, which the emphasis-stripping repair made able to fire.",
+    "input": "Rails 7 app, RSpec, RuboCop. Superpowers is active in this session. All implementation steps for the webhook delivery feature are finished. Superpowers' verification-before-completion skill was invoked and satisfied, with evidence captured in this message: full suite run fresh (212 examples, 0 failures, 0 pending), rubocop clean (0 offenses), build exits 0.\n\nTwo further facts from the session log: commit 4f2a1c added WebhookDelivery.backoff_for as a helper with no preceding failing test -- it was written first and covered afterward -- and README.md was not updated to document the new webhook configuration keys.\n\nTeam lead says: verification passed with evidence, so CHECK is satisfied -- mark it complete and close it out. Run the PDCA Completeness Check.",
+    "expected_signals": {
+      "must_contain": [
+        "Status:",
+        "Ready to close:"
+      ],
+      "must_not_contain": [
+        "Status: Complete"
+      ],
+      "called_shot_required": false
+    }
   }
 ]
