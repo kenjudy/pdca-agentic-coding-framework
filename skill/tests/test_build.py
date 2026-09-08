@@ -694,6 +694,42 @@ class TestHookInfrastructure(unittest.TestCase):
             "run-evals.sh does not sync the eval extra, so deepeval/anthropic may be absent",
         )
 
+    def test_push_policy_is_consistent_across_agent_files(self):
+        """CLAUDE.md and AGENTS.md must agree on when an agent may push.
+
+        Both are auto-loaded instruction files -- CLAUDE.md by Claude Code, AGENTS.md by
+        Codex -- and they gave opposite directives on the most consequential action either
+        takes. CLAUDE.md said "NEVER say 'ready to push when you are' -- push yourself";
+        AGENTS.md said "Do NOT push without explicit human instruction". Nothing could
+        detect the divergence, because each file is only ever read by the agent it governs.
+
+        The policy is: the operator approves the push in a human-in-the-loop session, and
+        an agent pushes on its own only when explicitly instructed to act autonomously.
+        Both halves must appear in both files, so dropping either one fails here.
+        """
+        for name in ("CLAUDE.md", "AGENTS.md"):
+            content = (REPO_ROOT / name).read_text()
+            lowered = content.lower()
+            # assertTrue rather than assertIn: assertIn renders the entire file into the
+            # failure message, which buries the one sentence that matters.
+            with self.subTest(file=name, half="approval default"):
+                self.assertTrue(
+                    "approv" in lowered,
+                    f"{name} does not state that pushing requires operator approval by default",
+                )
+            with self.subTest(file=name, half="autonomous carve-out"):
+                self.assertTrue(
+                    "autonomous" in lowered,
+                    f"{name} does not state the exception -- an agent pushes on its own only "
+                    "when explicitly instructed to act autonomously",
+                )
+            with self.subTest(file=name, half="no unconditional self-push"):
+                self.assertFalse(
+                    "push yourself" in lowered,
+                    f"{name} instructs unconditional self-push, contradicting the approval "
+                    "default and the other agent instruction file",
+                )
+
     def test_settings_json_has_no_machine_specific_path(self):
         """.claude/settings.json is checked in, so it must run on every clone.
 

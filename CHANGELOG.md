@@ -39,6 +39,22 @@
   skipping in silence. `test_settings_json_has_no_machine_specific_path` asserts no
   home-directory path returns.
 
+### Bug Fixes
+
+- **`CLAUDE.md` and `AGENTS.md` gave opposite instructions on pushing.** Both are
+  auto-loaded agent instruction files — `CLAUDE.md` for Claude Code, `AGENTS.md` for Codex
+  — and on the most consequential action either agent takes they disagreed outright:
+  `CLAUDE.md` said *"NEVER say 'ready to push when you are' — push yourself"*, while
+  `AGENTS.md` said *"Do NOT push without explicit human instruction"*. Nothing could detect
+  the divergence, since each file is only ever read by the agent it governs.
+- Both now state the same policy: **the operator approves the push in a human-in-the-loop
+  session, and an agent pushes on its own initiative only when explicitly instructed to act
+  autonomously.** `CLAUDE.md`'s Session Completion sequence gains an approval step;
+  `AGENTS.md` gains the autonomous carve-out it lacked.
+- `test_push_policy_is_consistent_across_agent_files` asserts both halves appear in both
+  files, so dropping either one — or reintroducing an unconditional self-push instruction —
+  now fails the suite.
+
 ### Optional superpowers interop (#131)
 
 - The pdca-framework skill now offers optional interoperation with
