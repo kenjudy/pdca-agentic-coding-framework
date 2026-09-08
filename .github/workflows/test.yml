@@ -80,3 +80,12 @@ jobs:
       - name: Eval harness import smoke test
         run: uv run --locked python -m pytest tests/test_eval_imports.py -v
         working-directory: skill
+
+      # The reporter records the installed deepeval and anthropic versions into every
+      # report, so a report can be used as a baseline (issue #122). The default suite
+      # installs neither package, so there those assertions only ever exercise the
+      # "not installed" branch. Running them here, with the eval extra synced, is the
+      # only place the real version-recording path executes. No API calls.
+      - name: Reporter provenance against installed eval dependencies
+        run: uv run --locked python -m pytest tests/test_evals_reporter.py -v
+        working-directory: skill

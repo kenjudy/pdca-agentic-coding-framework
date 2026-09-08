@@ -1,7 +1,28 @@
 """EvalReporter: collects scenario results and writes a Markdown report."""
 
+import importlib.metadata
 import textwrap
 from pathlib import Path
+
+# Recorded in every report. A report that does not say what produced it cannot serve
+# as a baseline: issue #122 asked whether deepeval 3.9.9 -> 4.x changed scenario
+# scoring, and the question was unanswerable because every report on record carried a
+# timestamp and nothing else. No run could be attributed to a version.
+PROVENANCE_PACKAGES = ("deepeval", "anthropic")
+
+
+def _installed_version(package: str) -> str:
+    """Version of an installed distribution, without importing it.
+
+    importlib.metadata reads distribution metadata off disk, so the reporter stays
+    importable in the default unit suite, which installs neither of these. "not
+    installed" is recorded rather than omitted -- a missing line reads as an older
+    report format, while an explicit one records that the package genuinely was absent.
+    """
+    try:
+        return importlib.metadata.version(package)
+    except importlib.metadata.PackageNotFoundError:
+        return "not installed"
 
 
 def compute_shot_stats(shot_scores: list[float]) -> dict:
@@ -46,6 +67,11 @@ class EvalReporter:
 
         from datetime import datetime
         lines.append(f"# PDCA Eval Report — {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
+
+        # Before the results, not after: this is the line that tells a reader whether
+        # the scores below are comparable to the ones they are comparing them against.
+        versions = ", ".join(f"{p}: {_installed_version(p)}" for p in PROVENANCE_PACKAGES)
+        lines.append(f"**Environment:** {versions}\n")
 
         # Summary table
         lines.append("## Summary\n")
