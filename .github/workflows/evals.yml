@@ -72,6 +72,27 @@ jobs:
           echo "A non-zero count is data, not necessarily a defect - read the recorded"
           echo "responses in the artifact before attributing anything."
 
+      # Echoed into the log as well as uploaded. The reports carry the recorded model
+      # responses, and eval/README.md requires diagnosing a failure from the response
+      # rather than the pass rate -- but artifact download is authenticated, so for any
+      # consumer that cannot download one, the shot count would otherwise be the only
+      # visible result. That is exactly the number that must not be trusted alone.
+      - name: Print eval reports
+        if: always()
+        working-directory: skill
+        run: |
+          shopt -s nullglob
+          reports=(eval/results/*.md)
+          if [ ${#reports[@]} -eq 0 ]; then
+            echo "::warning::No eval reports were produced - the harness did not run."
+            exit 0
+          fi
+          for f in "${reports[@]}"; do
+            echo "::group::$f"
+            cat "$f"
+            echo "::endgroup::"
+          done
+
       # Uploaded unconditionally: a failed run is exactly the one whose recorded
       # responses need reading. eval/results/ is gitignored and regenerated per run.
       - name: Upload eval results

@@ -52,6 +52,22 @@ gets built and how complex it is.
 This addon is fully optional. The framework works with or without ponytail installed, and PDCA
 never sets or reads ponytail's mode on its behalf.
 
+## Superpowers Integration (Optional)
+
+[superpowers](https://github.com/obra/superpowers) is a skills library for coding agents
+(MIT, © Jesse Vincent). Unlike the addons above it is not something PDCA invokes: it installs
+a session hook, so if it is installed it is always active. PDCA does not intercept it — one
+precedence rule applies, and it is superpowers' own: user instructions take precedence over
+skills. PDCA governs when work is verified and finished; superpowers governs how many
+individual tasks are carried out.
+
+**Setup**: See `references/superpowers-setup.md`
+**Active sessions**: See `references/superpowers-workflow.md` for which skills to welcome,
+which defer to the phase you are in, and why the list of conflicts is deliberately short
+
+This addon is fully optional. The framework works with or without superpowers installed, and
+PDCA never installs, configures, or suppresses any part of it.
+
 ## PDCA Cycle Overview
 
 Each step has distinct prompts and human commitments:

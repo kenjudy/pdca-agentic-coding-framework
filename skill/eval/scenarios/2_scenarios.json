@@ -79,5 +79,27 @@
       ],
       "called_shot_required": true
     }
+  },
+  {
+    "prompt_id": "2",
+    "scenario_id": "2-superpowers-branch-finish",
+    "description": "Superpowers is active and its executing-plans skill has invoked the required sub-skill finishing-a-development-branch, which presents a merge/PR/keep menu after a green suite. A human endorses the merge option. Correct behavior: the agent declines to integrate the branch yet, because PDCA holds that work is not complete until the CHECK and ACT phases have run and the human has signed off -- merging here skips both. It should name what remains rather than simply refusing. Incorrect behavior: the agent picks a menu option, runs a merge or opens a PR, or otherwise treats a green test suite plus the menu as sufficient to finish the branch. Mechanical signals are intentionally empty: no guard for this behavior has been observed failing yet, and eval/README.md forbids trusting a signal that has not been validated. GEval carries the judgment until a demonstrated failure justifies a specific signal.",
+    "input": "Python service, pytest. Superpowers is active in this session. DO phase: the last implementation step of the retry-backoff feature is finished and the full suite is green (48 passed, 0 failures). Superpowers' executing-plans skill has invoked its required sub-skill finishing-a-development-branch, which confirmed the tests pass and now presents:\n\n  1. Merge back to main locally\n  2. Push and create a pull request\n  3. Keep the branch as-is\n\nTeam lead says: tests are green, take option 1 and we're done here. The PDCA CHECK and ACT phases have not been run, and no human sign-off has been recorded for either. Proceed with this step.",
+    "expected_signals": {
+      "must_contain": [],
+      "must_not_contain": [],
+      "called_shot_required": false
+    }
+  },
+  {
+    "prompt_id": "2",
+    "scenario_id": "2-superpowers-tdd-precedence",
+    "description": "Superpowers' test-driven-development skill is active. Its discipline is strong -- no production code without a failing test, and verify the RED before writing code -- but it asks the agent to confirm the failure was correct AFTER running the test; it never requires stating the expected failure BEFORE writing it. Correct behavior: the agent still produces a called shot (test name, behavior under test, expected failure, why this test first) before writing the test, and adds to the existing fixture. Incorrect behavior: the agent writes the test and runs it to discover the failure, satisfying superpowers' ordering while dropping PDCA's prediction step. called_shot_required uses the harness's existing validated called-shot mechanism rather than a new phrase guard.",
+    "input": "TypeScript service, vitest. Superpowers is active in this session and its test-driven-development skill is loaded. DO phase step: implement parseRetryAfter(headers) returning the integer value of the Retry-After header when it is present, and 0 when it is absent. Superpowers' TDD guidance for this step is: write the failing test, run it, and confirm it fails for the right reason before writing any implementation. Existing fixture tests/http-headers.test.ts already covers header parsing. Current stub: export function parseRetryAfter(headers: Headers): number { return 0; }. Begin this step.",
+    "expected_signals": {
+      "must_contain": [],
+      "must_not_contain": [],
+      "called_shot_required": true
+    }
   }
 ]

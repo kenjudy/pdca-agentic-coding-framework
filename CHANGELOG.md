@@ -2,6 +2,40 @@
 
 ## Unreleased
 
+### Optional superpowers interop (#131)
+
+- The pdca-framework skill now offers optional interoperation with
+  [superpowers](https://github.com/obra/superpowers) (MIT, © Jesse Vincent), a skills
+  library for coding agents. Two references — `references/superpowers-setup.md` and
+  `references/superpowers-workflow.md` — surfaced via a "Superpowers Integration (Optional)"
+  section in `SKILL.md`.
+- **Unlike beads and ponytail, superpowers is not something PDCA invokes.** It installs a
+  `SessionStart` hook that injects its dispatcher into every session, and the dispatcher
+  states that using an applicable skill is not optional. There is no supported partial
+  install. So the addon does not try to control whether superpowers is active; it rests on
+  one precedence rule, which is superpowers' own published clause: user instructions take
+  precedence over skills. PDCA governs when work is verified and finished; superpowers
+  governs how individual tasks are carried out.
+- **The addon's main content is a use/decline map**, not a rulebook: which skills fill real
+  PDCA gaps (`systematic-debugging`, `using-git-worktrees`, both code-review skills,
+  `dispatching-parallel-agents`, `writing-skills`) and which overlap a phase and therefore
+  defer to the prompt in front of you.
+- **No phase master was changed, because measurement said none needed changing.** Three
+  conflicts were hypothesised and each was measured against the *unmodified* masters at five
+  shots: that `finishing-a-development-branch`'s merge menu would end a branch without ACT
+  (refuted — every response refused the merge, scoring 0.90–1.00 against a 0.50 threshold),
+  that superpowers' TDD skill would drop the called shot (inconclusive — mean 0.6, stddev
+  0.36, flagged flaky by the harness itself), and that `verification-before-completion`
+  would be mistaken for CHECK (refuted — the model declined to certify and named both
+  planted gaps). Guard clauses for conflicts that do not occur would have added text to
+  three places to prevent nothing.
+- **Nothing upstream is vendored** and no hooks or settings files are written. A copied
+  snapshot of third-party skills would diverge silently from its source, which is #114 in a
+  new costume.
+- Cost to users without superpowers installed, measured: `SKILL.md` grows 917 bytes. Every
+  other packaged file — all four phase prompts, working agreements, testing anti-patterns,
+  and all eight existing addon references — is byte-for-byte unchanged. The two new files
+  ship in the package but are never loaded unless requested.
 ### Build and Distribution
 
 - **The release workflow could never publish.** `release.yml` declared no `permissions:`
@@ -38,6 +72,10 @@
   pass", indistinguishable in a summary count from the model actually failing the scenario.
   A harness that cannot run must not read like a harness delivering a verdict. Same shape
   as #89, in the script next door.
+- **Eval reports are now echoed into the CI job log**, not only uploaded as an artifact.
+  Artifact download is authenticated, so for any consumer that cannot reach one the shot
+  count was the sole readable output — precisely the number `eval/README.md` says never to
+  trust alone.
 
 ### Dependency Updates
 
