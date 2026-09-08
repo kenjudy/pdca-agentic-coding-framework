@@ -275,6 +275,7 @@ class TestEvalScenarios(unittest.TestCase):
             (s for s in scenarios if s.get("scenario_id") == "3-all-complete"), None
         )
         self.assertIsNotNone(all_complete, "3-all-complete scenario not found in 3_scenarios.json")
+        assert all_complete is not None
         self.assertIn(
             "critic pass",
             all_complete["input"].lower(),
