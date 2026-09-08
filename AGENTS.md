@@ -33,6 +33,9 @@ bd sync               # Sync with git
 
 **CRITICAL RULES:**
 - Do NOT push without explicit human instruction ("go ahead and push", "push it", etc.)
+- The single exception: when the operator has explicitly instructed you to act
+  autonomously for this session, push without waiting. Absent that instruction, the
+  human-in-the-loop default above applies.
 - Present git status and the proposed push command; wait for a clear go-ahead
 - If push fails, report the error and wait for human direction before retrying
 

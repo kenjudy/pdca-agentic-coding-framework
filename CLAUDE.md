@@ -127,16 +127,24 @@ Work is **not complete** until `git push` succeeds and the human has signed off 
 1. File beads issues for any remaining work
 2. Run quality gates if code changed: `cd skill && bash run-tests.sh`
 3. Close finished issues, update in-progress ones
-4. Push:
+4. **Prepare the push and get approval** — stage, commit, then show the operator what
+   would be pushed and wait:
    ```bash
    git pull --rebase
    bd sync
-   git push
-   git status  # must show "up to date with origin"
+   git status  # show the operator exactly what will be pushed
    ```
-5. Hand off — provide context for next session
+5. **Push once approved** — `git push`, then `git status` must show "up to date with origin"
+6. Hand off — provide context for next session
 
-**NEVER** say "ready to push when you are" — push yourself. If push fails, resolve and retry.
+**Pushing is the operator's call.** In a human-in-the-loop session, present the committed
+work and wait for a clear go-ahead ("push it", "go ahead and push"). Push on your own
+initiative **only** when explicitly instructed to act autonomously. If an approved push
+fails, resolve and retry rather than handing back a broken state.
+
+This matches `AGENTS.md`, which governs Codex sessions. The two files previously gave
+opposite instructions here, and `tests/test_build.py::test_push_policy_is_consistent_across_agent_files`
+now asserts they cannot diverge again.
 
 ## Planning Discipline
 
@@ -151,6 +159,15 @@ See `skill/SUPERVISION-PROTOCOL.md` for the full protocol. Key rules:
 - **STOP and present to the human** before writing code, committing, pushing, or closing issues
 - All code changes require a failing test first (TDD, no exceptions)
 - Do not batch multiple steps without human confirmation between them
+
+**Establish the ground before the first action, not after the failed one:**
+
+- **Verify state before acting.** Use absolute paths; the working directory is not where you
+  assume. Search existing issues before filing one, and check what already exists before
+  building it.
+- **Design observability before the first run.** Before anything slow or costly, confirm you
+  will be able to read its result. A run whose output you cannot inspect has to be repeated,
+  and a broken mechanism reports a number that looks exactly like a measurement.
 
 ## Validating Prompt Changes
 

@@ -31,8 +31,41 @@ echo "=== Running PDCA Prompt Evaluations ==="
 echo "Judge model: claude-haiku-4-5-20251001"
 echo ""
 
+# Marker for "reports written by THIS run". eval/results/ accumulates across runs,
+# so checking the whole directory would let an earlier scored report mask a run that
+# scored nothing -- the stale-artifact hazard BUILD.md documents for the build.
+MARKER="$(mktemp)"
+trap 'rm -f "$MARKER"' EXIT
+
+set +e
 if [ $# -gt 0 ]; then
   (cd "$SCRIPT_DIR" && uv run python -m pytest -m eval -v "$@")
 else
   (cd "$SCRIPT_DIR" && uv run python -m pytest tests/test_evals.py -m eval -v)
 fi
+PYTEST_EXIT=$?
+set -e
+
+# A shot that dies before reaching the API produces no scored result, but pytest
+# exits non-zero either way -- so a caller counting exit codes reports a crash and a
+# real scenario failure identically. That is how "5 shot(s); 5 did not pass" was
+# reported for a harness that never called the API once (#131 Step 0). Distinguish
+# them here, where the reports are, rather than leaving every caller to guess.
+NEW_REPORTS=$(find "$SCRIPT_DIR/eval/results" -name '*.md' -newer "$MARKER" 2>/dev/null || true)
+
+echo ""
+if [ -z "$NEW_REPORTS" ]; then
+  echo "=== Harness check ==="
+  echo "✗ This run wrote no report at all. Nothing was measured." >&2
+  echo "  Do not read the exit code below as a scenario verdict." >&2
+  exit 2
+fi
+
+echo "=== Harness check ==="
+# shellcheck disable=SC2086
+if ! (cd "$SCRIPT_DIR" && python3 check_eval_ran.py $NEW_REPORTS); then
+  echo "  Exit code 2 means the harness did not run -- distinct from 1, a scenario failure." >&2
+  exit 2
+fi
+
+exit "$PYTEST_EXIT"
