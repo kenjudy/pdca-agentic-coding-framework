@@ -2,6 +2,20 @@
 
 ## Unreleased
 
+### Dependency Updates
+
+- Floors raised and the lockfile relocked in one pass, superseding four separate dependabot
+  PRs (#127, #128, #129, #130): `anthropic >=1.0.0` (resolved 1.4.0, up from 0.122.0),
+  `deepeval >=4.1.10` (4.2.2), `ruff >=0.16.4` (0.16.6), `mypy >=2.3.1` (2.3.1, already
+  satisfied). Batched deliberately: each PR bumps a floor in
+  `[project.optional-dependencies]` without touching `uv.lock`, so each would fail CI under
+  `uv run --locked` on its own, and merging them one at a time would conflict on the lock.
+- **`anthropic` crossed a major version**, which is the risk #122 was filed for.
+  `tests/test_eval_imports.py` — added for exactly this — passes against 1.4.0: the client
+  class, `AnthropicModel`, `GEval`, `LLMTestCase` and the rubric modules all still construct.
+  That covers the API surface, not scoring behaviour.
+- setuptools `>=83.0.0` → `>=84.0.0`.
+
 ### Bug Fixes
 
 - **A dead eval harness could not be told apart from a failing scenario.** A shot that
@@ -22,8 +36,6 @@
 - **`evals.yml` counts the two separately** and fails loudly on a harness error rather
   than folding it into a "did not pass" tally.
 
-### Bug Fixes
-
 - **The pre-commit mypy hook had never been able to run on any machine but one.**
   `.claude/settings.json` is checked in, and its `PreToolUse` hook `cd`-ed to an absolute
   path under one contributor's home directory. Everywhere else the `cd` failed, the `&&`
@@ -38,6 +50,18 @@
   `git rev-parse`, and **reports explicitly when it cannot locate the script** rather than
   skipping in silence. `test_settings_json_has_no_machine_specific_path` asserts no
   home-directory path returns.
+
+- **`run-evals.sh` never built the skill or synced the eval extra.** The harness reads the
+  built prompt files under `pdca-framework/references/`, which are gitignored artifacts. On
+  any tree without a prior build every scenario died with `FileNotFoundError` on
+  `do-prompts.md` before reaching the API — and each dead shot was reported as "did not
+  pass", indistinguishable in a summary count from the model actually failing the scenario.
+  A harness that cannot run must not read like a harness delivering a verdict. Same shape
+  as #89, in the script next door.
+- **Eval reports are now echoed into the CI job log**, not only uploaded as an artifact.
+  Artifact download is authenticated, so for any consumer that cannot reach one the shot
+  count was the sole readable output — precisely the number `eval/README.md` says never to
+  trust alone.
 
 ### Optional superpowers interop (#131)
 
@@ -73,6 +97,7 @@
   other packaged file — all four phase prompts, working agreements, testing anti-patterns,
   and all eight existing addon references — is byte-for-byte unchanged. The two new files
   ship in the package but are never loaded unless requested.
+
 ### Build and Distribution
 
 - **The release workflow could never publish.** `release.yml` declared no `permissions:`
@@ -99,24 +124,6 @@
   because the check needs a diff; a unit test could at most assert that some `##
   Unreleased` section exists, which stays true forever after one entry and is blind to the
   PR that forgot. Dependabot is exempt — its bumps are summarised once at release time.
-
-### Bug Fixes
-
-- **`run-evals.sh` never built the skill or synced the eval extra.** The harness reads the
-  built prompt files under `pdca-framework/references/`, which are gitignored artifacts. On
-  any tree without a prior build every scenario died with `FileNotFoundError` on
-  `do-prompts.md` before reaching the API — and each dead shot was reported as "did not
-  pass", indistinguishable in a summary count from the model actually failing the scenario.
-  A harness that cannot run must not read like a harness delivering a verdict. Same shape
-  as #89, in the script next door.
-- **Eval reports are now echoed into the CI job log**, not only uploaded as an artifact.
-  Artifact download is authenticated, so for any consumer that cannot reach one the shot
-  count was the sole readable output — precisely the number `eval/README.md` says never to
-  trust alone.
-
-### Dependency Updates
-
-- setuptools `>=83.0.0` → `>=84.0.0`.
 
 ## v1.3.0 (2026-08-18)
 
