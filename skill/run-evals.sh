@@ -13,6 +13,20 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
+# The harness reads the BUILT prompt files under pdca-framework/references/, which
+# are gitignored artifacts. Without these two lines every scenario dies with
+# FileNotFoundError on do-prompts.md before reaching the API -- and each shot is then
+# reported as "did not pass", which in a summary count is indistinguishable from the
+# model actually failing the scenario. A harness that cannot run must not read like a
+# harness delivering a verdict. (Same shape as issue #89, in the script next door.)
+echo "=== Syncing eval dependencies ==="
+(cd "$SCRIPT_DIR" && uv sync --locked --extra test --extra eval)
+
+echo ""
+echo "=== Building PDCA Framework Skill ==="
+bash "$SCRIPT_DIR/build-skill.sh"
+
+echo ""
 echo "=== Running PDCA Prompt Evaluations ==="
 echo "Judge model: claude-haiku-4-5-20251001"
 echo ""
