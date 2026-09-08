@@ -744,6 +744,30 @@ class TestHookInfrastructure(unittest.TestCase):
             "so it cannot compare anything against the tag being released",
         )
 
+    def test_ci_enforces_the_changelog_rule_on_pull_requests(self):
+        """test.yml must run check_changelog.py against the PR base.
+
+        CONTRIBUTING.md's per-PR CHANGELOG rule had no mechanism behind it and was
+        routinely missed. The check needs a diff, which exists only on a pull request,
+        so it cannot live in the unit suite -- but the wiring can be asserted here.
+        fetch-depth: 0 is load-bearing: without full history the merge base is absent
+        and the diff would be wrong rather than absent, which is worse.
+        """
+        workflow = REPO_ROOT / ".github" / "workflows" / "test.yml"
+        content = workflow.read_text()
+        self.assertIn(
+            "check_changelog.py",
+            content,
+            "test.yml does not run check_changelog.py, so CONTRIBUTING.md's CHANGELOG "
+            "requirement stays a documented gate with nothing behind it",
+        )
+        self.assertIn(
+            "fetch-depth: 0",
+            content,
+            "the changelog job needs full history for the merge base; a shallow clone "
+            "produces a wrong diff rather than an obvious failure",
+        )
+
     def test_eval_workflow_exists_and_passes_api_key(self):
         """A dispatchable workflow must run the eval harness with the API key wired through.
 
