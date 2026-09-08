@@ -1,0 +1,83 @@
+name: Run PDCA Prompt Evals
+
+# Manual dispatch only. A full eval run costs roughly $2-5 in API spend, so this
+# must never fire on push or pull_request. The test suite asserts that.
+#
+# The point of running evals here rather than locally is that ANTHROPIC_API_KEY
+# stays in GitHub secrets: no contributor has to paste a live credential into a
+# terminal, a .env file, or an agent session to measure a prompt change.
+on:
+  workflow_dispatch:
+    inputs:
+      test_id:
+        description: >-
+          pytest target. Prefer a single parametrized scenario over a whole class -
+          a class runs every scenario in its file and costs proportionally more.
+          e.g. tests/test_evals.py::TestPrompt2Evals::test_2_scenario[2-first-step]
+        required: true
+        type: string
+      shots:
+        description: >-
+          How many times to run it. A single run cannot attribute a failure to a
+          prompt change - scenarios fail on text nobody touched. Use several when
+          the result will inform a decision.
+        required: false
+        default: "1"
+        type: string
+
+jobs:
+  evals:
+    runs-on: ubuntu-latest
+
+    # Read-only: this job checks out the repository and calls the Anthropic API.
+    # It never writes to the repository.
+    permissions:
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          python-version: "3.11"
+
+      - name: Install eval dependencies
+        run: uv sync --locked --extra test --extra eval
+        working-directory: skill
+
+      - name: Run evals
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        working-directory: skill
+        run: |
+          if [ -z "${ANTHROPIC_API_KEY}" ]; then
+            echo "::error::ANTHROPIC_API_KEY secret is not set for this repository." \
+                 "Add it under Settings > Secrets and variables > Actions."
+            exit 1
+          fi
+          shots="${{ inputs.shots }}"
+          case "$shots" in
+            ''|*[!0-9]*) echo "::error::shots must be a positive integer, got '$shots'"; exit 1 ;;
+          esac
+          # Each shot is a separate invocation so one failing shot does not abort the
+          # rest: attribution needs the whole distribution, not the first failure.
+          failures=0
+          for i in $(seq 1 "$shots"); do
+            echo "::group::Shot $i of $shots"
+            bash run-evals.sh "${{ inputs.test_id }}" || failures=$((failures + 1))
+            echo "::endgroup::"
+          done
+          echo "Completed $shots shot(s); $failures did not pass."
+          echo "A non-zero count is data, not necessarily a defect - read the recorded"
+          echo "responses in the artifact before attributing anything."
+
+      # Uploaded unconditionally: a failed run is exactly the one whose recorded
+      # responses need reading. eval/results/ is gitignored and regenerated per run.
+      - name: Upload eval results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: eval-results
+          path: skill/eval/results/
+          if-no-files-found: warn

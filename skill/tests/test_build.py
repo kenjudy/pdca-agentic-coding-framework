@@ -744,6 +744,42 @@ class TestHookInfrastructure(unittest.TestCase):
             "so it cannot compare anything against the tag being released",
         )
 
+    def test_eval_workflow_exists_and_passes_api_key(self):
+        """A dispatchable workflow must run the eval harness with the API key wired through.
+
+        The eval suite is the only mechanism that can tell us whether a prompt change
+        helped, and it needs a credential no contributor should paste into a session.
+        Running it from CI keeps ANTHROPIC_API_KEY in GitHub secrets. A workflow that
+        exists but never passes the secret through would look configured and fail only
+        after paying for checkout and dependency install, so both are asserted.
+        """
+        workflow = REPO_ROOT / ".github" / "workflows" / "evals.yml"
+        self.assertTrue(
+            workflow.exists(),
+            ".github/workflows/evals.yml missing - the eval harness has no way to run "
+            "without a contributor supplying a key by hand",
+        )
+        content = workflow.read_text()
+        self.assertIn(
+            "workflow_dispatch",
+            content,
+            "evals.yml must be manually dispatchable - eval runs cost money and must "
+            "never fire automatically on push or pull_request",
+        )
+        for forbidden in ("on: push", "pull_request:"):
+            self.assertNotIn(
+                forbidden,
+                content,
+                f"evals.yml declares '{forbidden}', which would spend API budget on every "
+                "push or PR; eval runs are manual by design",
+            )
+        self.assertIn(
+            "secrets.ANTHROPIC_API_KEY",
+            content,
+            "evals.yml does not pass secrets.ANTHROPIC_API_KEY, so the run would fail at "
+            "the first API call having already spent setup time",
+        )
+
     def test_github_actions_workflow_exists(self):
         workflow = REPO_ROOT / ".github" / "workflows" / "test.yml"
         self.assertTrue(
