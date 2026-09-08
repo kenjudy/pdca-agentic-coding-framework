@@ -22,6 +22,23 @@
 - **`evals.yml` counts the two separately** and fails loudly on a harness error rather
   than folding it into a "did not pass" tally.
 
+### Bug Fixes
+
+- **The pre-commit mypy hook had never been able to run on any machine but one.**
+  `.claude/settings.json` is checked in, and its `PreToolUse` hook `cd`-ed to an absolute
+  path under one contributor's home directory. Everywhere else the `cd` failed, the `&&`
+  chain short-circuited, and the trailing `exit 0` reported success — an advisory gate
+  that looked configured to everyone and could fire for no one. Found during a review of
+  #139, and a better instance of that PR's own subject than the PR contained.
+- **`skill/typecheck.sh` is now the single mypy invocation**, called by both CI and the
+  hook. They previously held separate argument lists and had already diverged: the hook
+  named `eval tests/test_build.py` while CI named six targets. That is #114 in miniature —
+  two copies of one procedure drifting silently because only one of them ever ran.
+- The hook now resolves the repository from `CLAUDE_PROJECT_DIR`, falling back to
+  `git rev-parse`, and **reports explicitly when it cannot locate the script** rather than
+  skipping in silence. `test_settings_json_has_no_machine_specific_path` asserts no
+  home-directory path returns.
+
 ### Optional superpowers interop (#131)
 
 - The pdca-framework skill now offers optional interoperation with
