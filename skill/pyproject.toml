@@ -15,13 +15,13 @@ test = [
 ]
 # Eval harness — install separately: uv sync --extra eval
 eval = [
-    "anthropic>=0.120.2",
-    "deepeval>=4.1.4",
+    "anthropic>=1.0.0",
+    "deepeval>=4.1.10",
     "python-dotenv>=1.2.2",
 ]
 lint = [
-    "ruff>=0.16.0",
-    "mypy>=2.3.0",
+    "ruff>=0.16.4",
+    "mypy>=2.3.1",
 ]
 
 [tool.ruff]
