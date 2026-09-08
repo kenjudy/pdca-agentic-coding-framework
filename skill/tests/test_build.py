@@ -910,6 +910,25 @@ class TestHookInfrastructure(unittest.TestCase):
             "fail on a missing deepeval rather than testing anything",
         )
 
+    def test_ci_exercises_the_reporter_against_installed_eval_dependencies(self):
+        """The eval-extra job must also run the reporter tests.
+
+        The reporter records the installed deepeval and anthropic versions so a report
+        can serve as a baseline (issue #122). The default suite installs neither, so
+        every provenance assertion there exercises only the "not installed" branch. If
+        no job runs those tests with the packages present, the branch that produces the
+        version string a human will actually read is never executed anywhere -- the
+        same shape as the pre-commit hook that could not run outside one machine (#142).
+        """
+        workflow = REPO_ROOT / ".github" / "workflows" / "test.yml"
+        content = workflow.read_text()
+        self.assertTrue(
+            "tests/test_evals_reporter.py" in content,
+            "no CI job runs tests/test_evals_reporter.py with the eval extra installed, so "
+            "the reporter's real version-recording path is never exercised -- it would only "
+            "ever be tested against absent packages",
+        )
+
     def test_release_workflow_checks_version_consistency(self):
         """release.yml must run check_release_version.py against the tag it is building.
 

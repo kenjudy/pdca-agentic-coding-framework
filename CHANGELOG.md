@@ -150,6 +150,18 @@
   Unreleased` section exists, which stays true forever after one entry and is blind to the
   PR that forgot. Dependabot is exempt — its bumps are summarised once at release time.
 
+- **Eval reports now record the dependency versions that produced them.** Every report
+  gains an `**Environment:**` line naming the installed `deepeval` and `anthropic`
+  versions, read via `importlib.metadata` so the reporter stays importable without the
+  eval extra. Reports previously carried a timestamp and nothing else, which is why #122
+  — did the `deepeval` 3.9.9 → 4.x bump change how scenarios score? — turned out to be
+  unanswerable in retrospect: no run on record could be attributed to a version, so there
+  was no before-state to compare against. This is what makes the *next* major bump
+  answerable without anyone remembering to write it down. `tests/test_evals_reporter.py`
+  now also runs in CI's `eval-imports` job: the default suite installs neither package, so
+  there the provenance assertions only ever exercise the "not installed" branch, and the
+  path that produces the string a human actually reads would run nowhere.
+
 ## v1.3.0 (2026-08-18)
 
 > **Windows builders:** `build-skill.ps1` now requires a Python 3 interpreter on `PATH` as

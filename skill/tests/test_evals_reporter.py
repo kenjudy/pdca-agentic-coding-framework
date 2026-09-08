@@ -267,3 +267,63 @@ class TestEvalReporter:
         assert "SHOT1-DISTINCTIVE" in content
         assert "SHOT2-DISTINCTIVE" in content
         assert "SHOT3-DISTINCTIVE" in content
+
+
+class TestReportProvenance:
+    """A report must record the dependency versions that produced it.
+
+    Issue #122 asked whether the `deepeval` 3.9.9 -> 4.x upgrade changed how scenarios
+    score. That question turned out to be unanswerable, and not because the runs were
+    missing: reports carried a timestamp and nothing else, so no recorded run could be
+    attributed to a `deepeval` version. There was no before-state to compare against.
+
+    Recording the versions in the report is what makes the *next* major bump answerable
+    without anyone having to remember to write it down.
+
+    `importlib.metadata.version` reads installed distribution metadata without importing
+    the package, so the reporter stays importable in the default unit suite, which
+    installs neither `deepeval` nor `anthropic`. In that suite these assertions exercise
+    the not-installed path; the `eval-imports` job exercises the real one. Real reports
+    are only ever written by `run-evals.sh`, which syncs the eval extra first.
+    """
+
+    @staticmethod
+    def _installed(name):
+        import importlib.metadata
+
+        try:
+            return importlib.metadata.version(name)
+        except importlib.metadata.PackageNotFoundError:
+            return None
+
+    def _report_text(self, tmp_path):
+        reporter = EvalReporter()
+        reporter.add(_make_result())
+        return reporter.write_report(tmp_path / "report.md").read_text()
+
+    def test_report_names_deepeval(self, tmp_path):
+        assert "deepeval" in self._report_text(tmp_path)
+
+    def test_report_names_anthropic(self, tmp_path):
+        assert "anthropic" in self._report_text(tmp_path)
+
+    def test_recorded_deepeval_version_matches_the_installed_one(self, tmp_path):
+        """Catches a hardcoded or stale value, which is the failure that would make
+        the provenance line worse than none at all."""
+        content = self._report_text(tmp_path)
+        installed = self._installed("deepeval")
+        expected = f"deepeval: {installed}" if installed else "deepeval: not installed"
+        assert expected in content
+
+    def test_recorded_anthropic_version_matches_the_installed_one(self, tmp_path):
+        content = self._report_text(tmp_path)
+        installed = self._installed("anthropic")
+        expected = f"anthropic: {installed}" if installed else "anthropic: not installed"
+        assert expected in content
+
+    def test_empty_report_still_records_provenance(self, tmp_path):
+        """A run that scored nothing is exactly the one whose environment is in
+        question -- see #141, where a harness that never called the API reported
+        '5 shot(s); 5 did not pass'."""
+        content = EvalReporter().write_report(tmp_path / "empty.md").read_text()
+        assert "deepeval" in content
