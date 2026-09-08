@@ -807,6 +807,26 @@ class TestHookInfrastructure(unittest.TestCase):
             "the first API call having already spent setup time",
         )
 
+    def test_eval_workflow_prints_reports_to_the_log(self):
+        """evals.yml must echo the eval reports into the job log, not only upload them.
+
+        The reports carry the recorded model responses, and eval/README.md requires
+        diagnosing a failure from the response rather than the pass rate. Uploading them
+        as an artifact alone puts them behind an authenticated download that agents and
+        CI consumers may not be able to reach -- leaving the shot count as the only
+        visible result, which is precisely the thing that must not be trusted alone.
+        """
+        workflow = REPO_ROOT / ".github" / "workflows" / "evals.yml"
+        self.assertTrue(workflow.exists(), ".github/workflows/evals.yml missing")
+        content = workflow.read_text()
+        self.assertIn(
+            "eval/results/*.md",
+            content,
+            "evals.yml never prints the eval reports, so the recorded responses are only "
+            "reachable via authenticated artifact download and the shot count becomes the "
+            "only readable result",
+        )
+
     def test_release_workflow_grants_contents_write(self):
         """release.yml's job must declare permissions: contents: write.
 
