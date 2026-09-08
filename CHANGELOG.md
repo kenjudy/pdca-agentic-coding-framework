@@ -2,6 +2,18 @@
 
 ## Unreleased
 
+### Documentation (#144)
+
+- Added anti-pattern #8 (Partial-Instance Coverage) to `testing-anti-patterns.md`: testing
+  the first edited instance of a repeated assumption (one step of a multi-step flow, one
+  file of a documented multi-file change) and closing the task, when the acceptance
+  criteria makes a whole-flow or whole-file claim. Found via a retrospective on a downstream
+  project where two fixes each passed their own tests but left the stated end-to-end claim
+  untested as a whole -- caught only by a fresh adversarial critic reading the whole
+  file/flow, not by Do-phase tests or the Check phase that followed.
+- Added matching checklist lines: `do-prompts.md`'s "Ready for commit?" and
+  `check-prompts.md`'s "Process Audit" both now point back to anti-pattern #8.
+
 ### Optional superpowers interop (#131)
 
 - The pdca-framework skill now offers optional interoperation with
