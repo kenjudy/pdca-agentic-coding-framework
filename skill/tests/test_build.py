@@ -694,20 +694,60 @@ class TestHookInfrastructure(unittest.TestCase):
             "run-evals.sh does not sync the eval extra, so deepeval/anthropic may be absent",
         )
 
-    def test_ci_mypy_covers_every_top_level_module(self):
-        """CI's mypy invocation must name every top-level module under skill/.
+    def test_settings_json_has_no_machine_specific_path(self):
+        """.claude/settings.json is checked in, so it must run on every clone.
 
-        The invocation is a hand-maintained list, so a new module is type-checked only if
-        someone remembers to widen it. build.py went unchecked until #126 noticed, and
+        Its PreToolUse hook contained an absolute path to one contributor's Mac. On any
+        other machine the `cd` fails, the `&&` chain short-circuits, and the trailing
+        `exit 0` reports success -- an advisory mypy gate that has never been able to fire
+        anywhere but one laptop, while looking configured to everyone.
+        """
+        settings = REPO_ROOT / ".claude" / "settings.json"
+        self.assertTrue(settings.exists(), ".claude/settings.json missing")
+        content = settings.read_text()
+        for home_prefix in ("/Users/", "/home/", "C:\\Users"):
+            with self.subTest(prefix=home_prefix):
+                self.assertNotIn(
+                    home_prefix,
+                    content,
+                    f"settings.json hardcodes a machine-specific path containing "
+                    f"'{home_prefix}'. It is checked in, so it must resolve paths relative "
+                    "to the repository -- otherwise the hook silently no-ops for everyone else",
+                )
+
+    def test_typecheck_invocation_is_shared(self):
+        """CI and the pre-commit hook must type-check via one shared script.
+
+        They previously carried separate mypy argument lists and had already diverged --
+        the hook still named `tests/test_build.py` while CI named six targets. That is
+        #114 in miniature: two copies of one procedure, drifting silently because only one
+        of them ever ran.
+        """
+        script = CLAUDE_SKILL_DIR / "typecheck.sh"
+        self.assertTrue(script.exists(), "skill/typecheck.sh missing -- no shared invocation")
+
+        workflow = (REPO_ROOT / ".github" / "workflows" / "test.yml").read_text()
+        self.assertIn("typecheck.sh", workflow, "CI does not use the shared typecheck script")
+
+        settings = (REPO_ROOT / ".claude" / "settings.json").read_text()
+        self.assertIn(
+            "typecheck.sh",
+            settings,
+            "the pre-commit hook does not use the shared typecheck script, so its module "
+            "list can drift from CI's again",
+        )
+
+    def test_ci_mypy_covers_every_top_level_module(self):
+        """typecheck.sh must name every top-level module under skill/.
+
+        The list is hand-maintained, so a new module is type-checked only if someone
+        remembers to widen it. build.py went unchecked until #126 noticed, and
         check_changelog.py was never added at all -- it shipped in #134 having been run
         only locally. Both are the same slip: a gate whose coverage silently fails to grow
-        with the code it guards.
+        with the code it guards. Asserted against typecheck.sh rather than the workflow,
+        since that script is now the single invocation CI and the hook both call.
         """
-        workflow = (REPO_ROOT / ".github" / "workflows" / "test.yml").read_text()
-        mypy_line = next(
-            (line for line in workflow.splitlines() if "mypy" in line and "run:" in line), ""
-        )
-        self.assertTrue(mypy_line, "no mypy invocation found in test.yml")
+        invocation = (CLAUDE_SKILL_DIR / "typecheck.sh").read_text()
 
         modules = sorted(
             p.name for p in CLAUDE_SKILL_DIR.glob("*.py") if not p.name.startswith("_")
@@ -717,9 +757,9 @@ class TestHookInfrastructure(unittest.TestCase):
             with self.subTest(module=module):
                 self.assertIn(
                     module,
-                    mypy_line,
-                    f"{module} exists under skill/ but is absent from CI's mypy invocation, "
-                    "so it is never type-checked in CI",
+                    invocation,
+                    f"{module} exists under skill/ but is absent from typecheck.sh, so it "
+                    "is never type-checked -- by CI or by the pre-commit hook",
                 )
 
     def test_run_evals_script_distinguishes_a_dead_harness(self):
