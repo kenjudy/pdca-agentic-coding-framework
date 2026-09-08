@@ -31,6 +31,32 @@ jobs:
       - name: Build and test
         run: bash skill/run-tests.sh
 
+  # CONTRIBUTING.md requires every PR to add a CHANGELOG entry under '## Unreleased'.
+  # Nothing enforced it and it was routinely missed -- CLAUDE.md mentions CHANGELOG only
+  # under Releasing, and the 1b prompt's Full Cycle Scope checklist omits it. The check
+  # needs a diff, which exists only on a pull request, so it runs here rather than in the
+  # unit suite (which could at most assert that some Unreleased section exists -- true
+  # forever after one entry, and blind to the PR that forgot).
+  #
+  # Dependabot is exempt: its bumps are summarised once at release time, as v1.2.0's
+  # "Dependency Updates" section did, rather than one entry per automated PR.
+  changelog:
+    if: github.event_name == 'pull_request' && github.actor != 'dependabot[bot]'
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          # Full history: the merge base is required for a correct three-dot diff.
+          # A shallow clone yields a wrong diff rather than an obvious failure.
+          fetch-depth: 0
+
+      - name: Require a CHANGELOG entry
+        run: python3 skill/check_changelog.py "origin/${{ github.base_ref }}"
+
   # The unit suite never imports anthropic or deepeval -- executor.py imports anthropic
   # lazily inside a function, and test_evals.py is excluded from the default run -- so a
   # dependency upgrade can break the eval harness with every test still green (issue #122).

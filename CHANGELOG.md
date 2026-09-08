@@ -36,18 +36,50 @@
   other packaged file — all four phase prompts, working agreements, testing anti-patterns,
   and all eight existing addon references — is byte-for-byte unchanged. The two new files
   ship in the package but are never loaded unless requested.
+### Build and Distribution
+
+- **The release workflow could never publish.** `release.yml` declared no `permissions:`
+  block, so `GITHUB_TOKEN` fell back to the repository default (read-only) and
+  `softprops/action-gh-release` failed with `403 Resource not accessible by integration`.
+  Every release run in this repository's history — v1.0.1 through v1.3.0 — finished with
+  conclusion `failure` for this reason, and each release was published by hand instead, so
+  the red workflow blocked nothing and there was no occasion to read the log. Now grants
+  `contents: write`, with `test_release_workflow_grants_contents_write` asserting both the
+  block and the scope.
+
+### New Tooling
+
+- **`.github/workflows/evals.yml`** — manually-dispatched workflow for running prompt
+  evals in CI, so `ANTHROPIC_API_KEY` stays in GitHub secrets rather than reaching a
+  terminal, a `.env` file, or an agent session. `workflow_dispatch` only; the test suite
+  asserts no automatic trigger exists, since a full run costs roughly $2–5. Takes a
+  `test_id` (required, no default, so scope is always deliberate) and a `shots` count —
+  the latter because a single run cannot attribute a failure to a prompt change:
+  `3-all-complete` was measured failing 3 of 18 runs against an unmodified master.
+
+- **`skill/check_changelog.py`** — enforces `CONTRIBUTING.md`'s per-PR CHANGELOG rule,
+  which had no mechanism behind it and was routinely missed. Runs on pull requests only,
+  because the check needs a diff; a unit test could at most assert that some `##
+  Unreleased` section exists, which stays true forever after one entry and is blind to the
+  PR that forgot. Dependabot is exempt — its bumps are summarised once at release time.
 
 ### Bug Fixes
 
 - **`run-evals.sh` never built the skill or synced the eval extra.** The harness reads the
-  built prompt files under `pdca-framework/references/`, which are gitignored artifacts, so
-  on any tree without a prior build every scenario died with `FileNotFoundError` before
-  reaching the API — and each dead shot was reported as "did not pass", indistinguishable in
-  a summary count from the model actually failing the scenario.
+  built prompt files under `pdca-framework/references/`, which are gitignored artifacts. On
+  any tree without a prior build every scenario died with `FileNotFoundError` on
+  `do-prompts.md` before reaching the API — and each dead shot was reported as "did not
+  pass", indistinguishable in a summary count from the model actually failing the scenario.
+  A harness that cannot run must not read like a harness delivering a verdict. Same shape
+  as #89, in the script next door.
 - **Eval reports are now echoed into the CI job log**, not only uploaded as an artifact.
   Artifact download is authenticated, so for any consumer that cannot reach one the shot
   count was the sole readable output — precisely the number `eval/README.md` says never to
   trust alone.
+
+### Dependency Updates
+
+- setuptools `>=83.0.0` → `>=84.0.0`.
 
 ## v1.3.0 (2026-08-18)
 
