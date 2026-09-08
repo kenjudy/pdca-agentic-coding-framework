@@ -260,6 +260,48 @@ class TestEvalScenarios(unittest.TestCase):
                 for scenario in scenarios:
                     validate_scenario(scenario)
 
+    def test_check_all_complete_scenario_includes_critic_pass_evidence(self):
+        """3-all-complete must supply critic-pass evidence so the model can return Status: Complete.
+
+        The Check prompt now requires an adversarial critic pass for any multi-file change.
+        Without evidence in the input, the model will flag the critic pass as missing and
+        return Status: Needs work, breaking the eval.
+        """
+        import json
+
+        scenarios_file = EVAL_SCENARIOS_DIR / "3_scenarios.json"
+        scenarios = json.loads(scenarios_file.read_text())
+        all_complete = next(
+            (s for s in scenarios if s.get("scenario_id") == "3-all-complete"), None
+        )
+        self.assertIsNotNone(all_complete, "3-all-complete scenario not found in 3_scenarios.json")
+        assert all_complete is not None
+        self.assertIn(
+            "critic pass",
+            all_complete["input"].lower(),
+            "3-all-complete input must include evidence that an adversarial critic pass was run "
+            "(the Check prompt requires one for multi-file changes)",
+        )
+
+    def test_check_has_critic_pass_missing_scenario(self):
+        """A scenario must exist that tests the model blocks completion when no critic pass was run.
+
+        The Check prompt requires an adversarial critic pass for multi-file changes.
+        This scenario verifies the model correctly returns Status: Needs work when that
+        evidence is absent from the input.
+        """
+        import json
+
+        scenarios_file = EVAL_SCENARIOS_DIR / "3_scenarios.json"
+        scenarios = json.loads(scenarios_file.read_text())
+        ids = [s.get("scenario_id") for s in scenarios]
+        self.assertIn(
+            "3-critic-pass-missing",
+            ids,
+            "No scenario with id '3-critic-pass-missing' found in 3_scenarios.json — "
+            "add one to cover the case where a multi-file change has no critic-pass evidence",
+        )
+
 
 class TestProjectSetup(unittest.TestCase):
     """Validate uv-based Python project infrastructure."""

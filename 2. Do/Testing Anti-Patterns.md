@@ -88,6 +88,8 @@ Testing the first edited instance of a repeated assumption -- one step of a mult
 
 *Origin:* Found via adversarial review after a fix shipped that added a mode-override flag but tested only the single-command cases (set mode, auto-detect mode, explicit-flag-overrides-detection) -- never the two-command sequence (detect, then re-run to override) the design actually specified. A sibling fix split a multi-step file's Step 1 for two modes, tested Step 1, and closed the task -- Steps 2-6 of the same file still assumed the removed constraint. Both were caught by a fresh critic reading the whole file/flow, not by the tests written during Do.
 
+*This rule does not self-apply.* On the very next cycle after it was written, the identical pattern recurred twice more (a docs pass that fixed only the first mention of a stale claim, not the rest of the document; a stage file's own overview sentence left unconverted because it sat outside any labeled per-mode section) -- caught again only by a fresh adversarial pass, not by re-reading this list. Advisory text you wrote for yourself is not a gate; see the Check phase's Decision probe, which now requires an operator-chosen critic model rather than relying on the same session re-reading its own work.
+
 ---
 
 ## Quick Check Before Committing

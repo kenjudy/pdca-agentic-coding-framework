@@ -2,6 +2,23 @@
 
 ## Unreleased
 
+### Check phase now requires an operator-chosen critic pass
+
+- Following a downstream retrospective (see the #144 Documentation entry below): anti-pattern
+  #8 (Partial-Instance Coverage) recurred twice more on the very next cycle after it was
+  written, both caught only by a fresh adversarial critic reading the whole file/change --
+  not by re-reading the anti-pattern list. Advisory text does not self-apply.
+- The Check phase's Decision probe (`claude-addon/injections/check-review-probe.md`) now
+  requires an adversarial critic pass with a fresh subagent for any change spanning more than
+  one file, or any acceptance criteria with an end-to-end/completeness claim -- with the
+  operator choosing which model runs the critique, rather than the session defaulting
+  silently or reviewing its own work.
+- `check-prompts.md`'s Process Audit checklist item is updated to match: a self-review or
+  re-read by the same session that did the work is explicitly named as not a substitute.
+- `testing-anti-patterns.md` #8 gains a short addendum documenting the recurrence itself, so
+  the anti-pattern's own text carries the evidence for why the critic pass is now required
+  rather than optional.
+
 ### Documentation (#144)
 
 - Added anti-pattern #8 (Partial-Instance Coverage) to `testing-anti-patterns.md`: testing
