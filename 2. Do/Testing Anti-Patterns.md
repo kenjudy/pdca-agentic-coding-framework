@@ -78,6 +78,18 @@ Starting with the happy-path test can force the stub to grow into a full impleme
 
 ---
 
+## 8. Partial-Instance Coverage
+
+Testing the first edited instance of a repeated assumption -- one step of a multi-step flow, one file of a documented multi-file change, one command of a multi-command sequence -- and treating the task as done, when the task's own acceptance criteria makes a whole-flow or whole-file claim ("operator can run X end-to-end," "stage Y now supports Z").
+
+*Diagnosis:* The acceptance criteria's claim is broader than what the tests actually exercise. Each individual test passes; the claim the criteria makes has never been tested as a whole.
+
+*Rule:* Before closing, grep the full scope named in the acceptance criteria for every other instance of the assumption just removed or changed -- not just the one instance you edited. If the plan describes a multi-step operator flow (e.g., run command A, then conditionally run command B), write a test that exercises the full sequence, not just each command in isolation.
+
+*Origin:* Found via adversarial review after a fix shipped that added a mode-override flag but tested only the single-command cases (set mode, auto-detect mode, explicit-flag-overrides-detection) -- never the two-command sequence (detect, then re-run to override) the design actually specified. A sibling fix split a multi-step file's Step 1 for two modes, tested Step 1, and closed the task -- Steps 2-6 of the same file still assumed the removed constraint. Both were caught by a fresh critic reading the whole file/flow, not by the tests written during Do.
+
+---
+
 ## Quick Check Before Committing
 
 - [ ] Every assertion is on real behavior, not mock call counts
@@ -85,3 +97,4 @@ Starting with the happy-path test can force the stub to grow into a full impleme
 - [ ] Mock responses mirror the full real API shape
 - [ ] No production methods exist solely for test access
 - [ ] Every test watched fail before watching it pass
+- [ ] If the acceptance criteria makes a whole-flow/whole-file claim, a test exercises the complete thing -- not just the edited piece (see #8)
