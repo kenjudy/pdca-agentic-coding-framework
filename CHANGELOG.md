@@ -2,6 +2,19 @@
 
 ## Unreleased
 
+### Dependency Updates
+
+- Floors raised and the lockfile relocked in one pass, superseding four separate dependabot
+  PRs (#127, #128, #129, #130): `anthropic >=1.0.0` (resolved 1.4.0, up from 0.122.0),
+  `deepeval >=4.1.10` (4.2.2), `ruff >=0.16.4` (0.16.6), `mypy >=2.3.1` (2.3.1, already
+  satisfied). Batched deliberately: each PR bumps a floor in
+  `[project.optional-dependencies]` without touching `uv.lock`, so each would fail CI under
+  `uv run --locked` on its own, and merging them one at a time would conflict on the lock.
+- **`anthropic` crossed a major version**, which is the risk #122 was filed for.
+  `tests/test_eval_imports.py` — added for exactly this — passes against 1.4.0: the client
+  class, `AnthropicModel`, `GEval`, `LLMTestCase` and the rubric modules all still construct.
+  That covers the API surface, not scoring behaviour.
+
 ### Optional superpowers interop (#131)
 
 - The pdca-framework skill now offers optional interoperation with
