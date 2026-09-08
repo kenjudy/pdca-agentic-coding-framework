@@ -14,6 +14,7 @@
   `tests/test_eval_imports.py` — added for exactly this — passes against 1.4.0: the client
   class, `AnthropicModel`, `GEval`, `LLMTestCase` and the rubric modules all still construct.
   That covers the API surface, not scoring behaviour.
+- setuptools `>=83.0.0` → `>=84.0.0`.
 
 ### Optional superpowers interop (#131)
 
@@ -49,6 +50,7 @@
   other packaged file — all four phase prompts, working agreements, testing anti-patterns,
   and all eight existing addon references — is byte-for-byte unchanged. The two new files
   ship in the package but are never loaded unless requested.
+
 ### Build and Distribution
 
 - **The release workflow could never publish.** `release.yml` declared no `permissions:`
@@ -89,10 +91,6 @@
   Artifact download is authenticated, so for any consumer that cannot reach one the shot
   count was the sole readable output — precisely the number `eval/README.md` says never to
   trust alone.
-
-### Dependency Updates
-
-- setuptools `>=83.0.0` → `>=84.0.0`.
 
 ## v1.3.0 (2026-08-18)
 
