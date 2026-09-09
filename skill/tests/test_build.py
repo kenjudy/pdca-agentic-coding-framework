@@ -244,6 +244,66 @@ EVAL_SCENARIOS_DIR = CLAUDE_SKILL_DIR / "eval" / "scenarios"
 class TestEvalScenarios(unittest.TestCase):
     """Structural validation: every scenario JSON file must conform to the schema."""
 
+    def test_superpowers_tdd_precedence_skips_geval(self):
+        """#136: GEval on this scenario measures noise, so it is turned off.
+
+        Three measured rounds (34245608454, 34275465380, 34372905517) established that
+        the Phase 2 judge scores this scenario against criteria it does not declare, and
+        that saying so in the rubric makes it worse -- a "do not penalise X" clause became
+        "penalise X", and scores fell to 0.00-0.10. The two prose fixes were reverted.
+
+        What the scenario claims is that the called shot survives when superpowers' TDD
+        skill is active. The mechanical tier verifies exactly that, and did so at 17/18,
+        22/23 and 17/18 across those three runs -- rock steady while GEval swung from 0.00
+        to 0.90 on the same behaviour. Turning GEval off here keeps the signal and drops
+        the noise.
+
+        This is not hiding the fault. #147's divergence note reports mechanical/GEval
+        disagreement in the report itself, and #148 tracks the root cause: rubrics score
+        every criterion against every scenario, including ones it does not claim.
+        """
+        import json
+
+        scenarios = json.loads((EVAL_SCENARIOS_DIR / "2_scenarios.json").read_text())
+        target = [s for s in scenarios if s["scenario_id"] == "2-superpowers-tdd-precedence"]
+        self.assertEqual(len(target), 1, "2-superpowers-tdd-precedence not found")
+        self.assertTrue(
+            target[0]["expected_signals"].get("skip_geval"),
+            "2-superpowers-tdd-precedence still runs GEval, which was measured scoring the "
+            "same behaviour anywhere from 0.00 to 0.90 across three runs (#136)",
+        )
+
+    def test_skip_geval_scenarios_still_assert_something(self):
+        """A scenario with GEval off and no mechanical signal cannot fail.
+
+        skip_geval is the only lever for silencing a judge that scores unclaimed
+        dimensions, and it is all-or-nothing (#148). That makes it the obvious way to
+        quiet an inconvenient red -- and a scenario quieted that way looks identical in
+        the report to one that passed. This asserts the lever cannot be pulled that far.
+        """
+        import json
+
+        for path in sorted(EVAL_SCENARIOS_DIR.glob("*.json")):
+            scenarios = json.loads(path.read_text())
+            if not isinstance(scenarios, list):
+                scenarios = [scenarios]
+            for scenario in scenarios:
+                signals = scenario["expected_signals"]
+                if not signals.get("skip_geval"):
+                    continue
+                with self.subTest(scenario=scenario["scenario_id"]):
+                    has_mechanical = (
+                        signals.get("must_contain")
+                        or signals.get("must_not_contain")
+                        or signals.get("called_shot_required")
+                    )
+                    self.assertTrue(
+                        has_mechanical,
+                        f"{scenario['scenario_id']} skips GEval and defines no mechanical "
+                        "signal, so it asserts nothing and cannot fail -- it would report "
+                        "as a pass forever",
+                    )
+
     def test_scenario_files_valid_against_schema(self):
         """All JSON files in eval/scenarios/ must pass validate_scenario.
         Passes vacuously until scenario files are added in Step 4."""

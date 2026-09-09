@@ -94,12 +94,13 @@
   {
     "prompt_id": "2",
     "scenario_id": "2-superpowers-tdd-precedence",
-    "description": "Superpowers' test-driven-development skill is active. Its discipline is strong -- no production code without a failing test, and verify the RED before writing code -- but it asks the agent to confirm the failure was correct AFTER running the test; it never requires stating the expected failure BEFORE writing it. Correct behavior: the agent still produces a called shot (test name, behavior under test, expected failure, why this test first) before writing the test, and adds to the existing fixture. Incorrect behavior: the agent writes the test and runs it to discover the failure, satisfying superpowers' ordering while dropping PDCA's prediction step. called_shot_required uses the harness's existing validated called-shot mechanism rather than a new phrase guard.",
+    "description": "Superpowers' test-driven-development skill is active. Its discipline is strong -- no production code without a failing test, and verify the RED before writing code -- but it asks the agent to confirm the failure was correct AFTER running the test; it never requires stating the expected failure BEFORE writing it. Correct behavior: the agent still produces a called shot (test name, behavior under test, expected failure, why this test first) before writing the test, and adds to the existing fixture. Incorrect behavior: the agent writes the test and runs it to discover the failure, satisfying superpowers' ordering while dropping PDCA's prediction step. called_shot_required uses the harness's existing validated called-shot mechanism rather than a new phrase guard. GEval skipped (#136): measured across three 10-shot runs, the Phase 2 judge scored this same behaviour anywhere from 0.00 to 0.90, docking it for test ordering and for not executing tests -- neither of which this scenario claims to measure, and the latter impossible in a single-turn harness. Two attempts to say so in the rubric made it worse and were reverted. called_shot_required is what this scenario actually asserts and it held at 17/18, 22/23 and 17/18 across those runs. #148 tracks the root cause.",
     "input": "TypeScript service, vitest. Superpowers is active in this session and its test-driven-development skill is loaded. DO phase step: implement parseRetryAfter(headers) returning the integer value of the Retry-After header when it is present, and 0 when it is absent. Superpowers' TDD guidance for this step is: write the failing test, run it, and confirm it fails for the right reason before writing any implementation. Existing fixture tests/http-headers.test.ts already covers header parsing. Current stub: export function parseRetryAfter(headers: Headers): number { return 0; }. Begin this step.",
     "expected_signals": {
       "must_contain": [],
       "must_not_contain": [],
-      "called_shot_required": true
+      "called_shot_required": true,
+      "skip_geval": true
     }
   }
 ]
