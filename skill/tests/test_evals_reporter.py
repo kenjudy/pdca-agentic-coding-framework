@@ -327,3 +327,68 @@ class TestReportProvenance:
         '5 shot(s); 5 did not pass'."""
         content = EvalReporter().write_report(tmp_path / "empty.md").read_text()
         assert "deepeval" in content
+
+
+class TestDivergenceNote:
+    """Mechanical and GEval disagreeing is the fingerprint of a rubric fault (#147).
+
+    The mechanical tier confirms required strings are literally present in the response.
+    GEval judges semantically. When mechanical passes and GEval fails, the judge scored
+    something the rubric may not declare -- which is what happened in #136, where 17 of
+    18 retry-shots passed mechanically while 13 of 18 fell below the GEval threshold, and
+    9 of those 13 judge reasons affirmed the required fields were present before docking.
+
+    Both values are already on the same summary row. Nothing compared them.
+    """
+
+    def _report(self, tmp_path, *results):
+        reporter = EvalReporter()
+        for r in results:
+            reporter.add(r)
+        return reporter.write_report(tmp_path / "report.md").read_text()
+
+    def test_divergence_is_reported_when_mechanical_passes_but_geval_fails(self, tmp_path):
+        content = self._report(
+            tmp_path,
+            _make_result(geval_score=0.3, geval_passed=False, mechanical_pass=True),
+        )
+        assert "Mechanical/GEval divergence" in content
+
+    def test_divergent_scenario_is_named(self, tmp_path):
+        """A note that does not say which scenario cannot send anyone to a response."""
+        content = self._report(
+            tmp_path,
+            _make_result(scenario_id="2-first-step", geval_passed=False, mechanical_pass=True),
+        )
+        section = content[content.index("Mechanical/GEval divergence"):]
+        assert "2-first-step" in section
+
+    def test_divergence_is_reported_when_geval_passes_but_mechanical_fails(self, tmp_path):
+        """The reverse direction is equally diagnostic: the judge liked a response that
+        does not contain what the scenario requires."""
+        content = self._report(
+            tmp_path,
+            _make_result(geval_score=0.9, geval_passed=True, mechanical_pass=False),
+        )
+        assert "Mechanical/GEval divergence" in content
+
+    def test_no_divergence_note_when_both_tiers_agree(self, tmp_path):
+        """Agreement is the normal case and must stay silent, or the note becomes noise
+        that trains people to skip it."""
+        content = self._report(
+            tmp_path,
+            _make_result(geval_passed=True, mechanical_pass=True),
+            _make_result(scenario_id="2-first-step", geval_score=0.2,
+                         geval_passed=False, mechanical_pass=False),
+        )
+        assert "Mechanical/GEval divergence" not in content
+
+    def test_note_is_phrased_as_a_hypothesis_not_a_verdict(self, tmp_path):
+        """Per eval/README.md's materiality rule and #141: a note that reads as a finding
+        is the same defect one level up -- output that looks like a measurement."""
+        content = self._report(
+            tmp_path,
+            _make_result(geval_passed=False, mechanical_pass=True),
+        )
+        section = content[content.index("Mechanical/GEval divergence"):]
+        assert "recorded response" in section
