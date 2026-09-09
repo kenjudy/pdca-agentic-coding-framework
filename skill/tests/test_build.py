@@ -1537,10 +1537,10 @@ class TestEvalBaselines(unittest.TestCase):
     """
 
     @staticmethod
-    def _scenario_ids():
+    def _scenario_ids() -> list[str]:
         import json
 
-        ids = []
+        ids: list[str] = []
         for path in sorted(EVAL_SCENARIOS_DIR.glob("*.json")):
             scenarios = json.loads(path.read_text())
             if not isinstance(scenarios, list):
