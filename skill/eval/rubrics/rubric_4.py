@@ -56,6 +56,10 @@ Then assign a score on a scale of 0 to 1:
       summary editorializes slightly, or the agent leans prescriptive in one place while
       remaining facilitative overall.
 
+0.6 — Borderline: every hard constraint for this phase is met, but the response has a soft
+      weakness — it is verbose, leaves an edge case unraised, or its reasoning is sound yet
+      thin. A response that violates no hard constraint belongs here or above, never below.
+
 0.4 — Partially compliant: some Socratic elements present but the agent answers its own
       questions in at least one stage, or prescribes a specific change instead of offering
       hypotheses and deferring to the human.

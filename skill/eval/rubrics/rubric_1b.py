@@ -60,6 +60,10 @@ Then assign a score on a scale of 0 to 1:
       no explicit refactor confirmation, or acceptance criteria are vague). No runnable
       code present.
 
+0.6 — Borderline: every hard constraint for this phase is met, but the response has a soft
+      weakness — it is verbose, leaves an edge case unraised, or its reasoning is sound yet
+      thin. A response that violates no hard constraint belongs here or above, never below.
+
 0.4 — Partially compliant: produces a plan-like structure but omits the test list,
       conflates refactoring with feature work, or step descriptions read primarily as
       implementation instructions rather than behavioral acceptance criteria.

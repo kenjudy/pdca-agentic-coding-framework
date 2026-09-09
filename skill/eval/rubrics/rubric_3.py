@@ -51,6 +51,10 @@ Then assign a score on a scale of 0 to 1:
       one element — e.g., Structural Review section skipped, or reasoning for Ready to close
       is present but thin.
 
+0.6 — Borderline: every hard constraint for this phase is met, but the response has a soft
+      weakness — it is verbose, leaves an edge case unraised, or its reasoning is sound yet
+      thin. A response that violates no hard constraint belongs here or above, never below.
+
 0.4 — Partially compliant: produces a checklist-like summary but omits Status: or Ready to
       close: labels, or gives Status: Complete despite issues being described in the input.
 

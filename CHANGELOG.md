@@ -62,6 +62,18 @@
   obvious abuse — a scenario with GEval off and no mechanical signal cannot fail, and would
   report as a pass forever.
 
+- **All five rubrics' scoring bands straddled the 0.50 threshold with nothing between (#153).**
+  Every rubric defined `1.0 / 0.7 / 0.4 / 0.0` against `THRESHOLD = 0.5`, so the two nearest
+  anchors sat either side of the decision boundary with no rung across it. A response the judge
+  considered neither "mostly compliant" nor "partially compliant" had nowhere to land and was
+  pushed to one side close to arbitrarily — turning a small judgment difference into a pass/fail
+  flip, which then presents as scenario flakiness. A `0.6 — Borderline` band now sits in that
+  gap in all five, defined so that violating no hard constraint lands on the passing side.
+  Wording is identical across rubrics on purpose: #149 measured that naming a concept in a
+  rubric makes the judge score against it, so this adds structure and no new criteria.
+  **Unvalidated against the judge** — the tests assert the ladder's shape, not that scores
+  improve. Measurement is tracked in #153.
+
 - **The repo has a tracked eval baseline for the first time (#122).** `skill/eval/baselines/`
   now holds a full 21-scenario sweep run at `deepeval 4.2.2` / `anthropic 1.4.0`, recorded in
   the report itself by #145's provenance line — making it the first eval run in the project's
