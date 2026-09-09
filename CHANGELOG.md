@@ -47,54 +47,13 @@
 
 ### Bug Fixes
 
-- **The Phase 2 judge was scoring against a criterion the harness makes impossible (#136).**
-  `2-superpowers-tdd-precedence` was flagged flaky on `main` (mean 0.6, stddev 0.36) with the
-  cause undiagnosed, and two readings were open: the model genuinely drops the called shot
-  under superpowers' framing, or the judge scores the same behaviour inconsistently. A 10-shot
-  diagnostic settled it as the latter. `rubric_2.py`'s scoring bands never mention executing a
-  test, but the DO master prompt does — *"Run the test. If actual failure ≠ expected failure —
-  STOP."* — and the judge reads that prompt as part of its input. It imported the line as a
-  criterion and docked responses for not running tests, in a harness that is single-turn with
-  no shell, no filesystem and no test runner. It also docked responses for asking to see a file
-  before editing it, which is the framework's own "verify state before acting".
-- The evidence is the distribution, not one response: across 18 retry-shots the mechanical
-  called-shot checks passed **17 times**, while GEval put **13 below threshold** — and **9 of
-  those 13** judge reasons affirm all four called-shot fields are present immediately before
-  docking the score. Scores came out bimodal with an empty band across the 0.50 threshold (13
-  at 0.20–0.40, 5 at 0.70–0.90, none at 0.50 or 0.60): a judge flipping between two readings,
-  not a model behaving variably. One shot scoring 0.90 was docked for the identical behaviour,
-  weighted there as "one minor weakness".
-- `CRITERIA` now opens with an explicit harness constraint stating the response is a single
-  turn with no tool access, that absent test execution must not lower a score, and that asking
-  to inspect state before acting is required rather than a delay. `tests/test_rubrics.py`
-  enforces all three. **No master prompt changed** — the reading that would have justified a
-  precedence rule for superpowers is refuted, joining H1 and H3 from #131.
-
-- **The Phase 2 rubric held two unranked ordering rules, and the judge picked between them
-  at random.** Criterion #2 said "degenerate/zero case first" unconditionally; the stub-discipline
-  section said the first test must target a conditional branch. The DO master reconciles them —
-  *"If the next test in sequence would pass trivially against the current stub (vacuous green),
-  skip to the first test the stub cannot satisfy"* — and the rubric had dropped that ranking. So
-  responses following the master were docked for it, and docked inconsistently: measured on run
-  34372905517, one shot was penalised for writing the present-header test first ("does not begin
-  with the degenerate case") and another for writing the degenerate case first ("the stub already
-  satisfies it, making it vacuously pass"). Same scenario, same rubric, opposite verdicts. The
-  override is now stated, the term *forcing test* defined, and — the part that matters — the
-  **scoring bands** rewritten to match. Prose above a contradicting ladder does not move scores:
-  the previous commit's harness constraint reduced its target complaint from 9/13 to 5/14 of low
-  shots while leaving the distribution essentially unchanged, because bands 1.0 and 0.4 still
-  demanded degenerate-first.
 - **The Phase 2 judge could dock the bare word "complete", which #112 had already fixed in the
   mechanical tier.** #112 removed the stem from `must_not_contain` because it matched the ordinary
   adjective — *"here's the complete sequence"* is the behaviour the prompt asks for. Criterion #5
   and band 0.0 still quoted `"complete" or "done"` verbatim, so the same false positive survived
   one tier up. Both now describe the behaviour — declaring the work itself finished rather than
-  handing off to CHECK — instead of naming words.
-
-- **A scoring band now exists across the threshold.** Bands were 1.0 / 0.7 / 0.4 / 0.0 against a
-  0.50 threshold, so the two nearest anchors straddled it with nothing between and a borderline
-  response had nowhere to land. This **corrects** the earlier characterisation of the empty
-  0.50–0.60 region as purely "a judge flipping between two readings" — it was partly structural.
+  handing off to CHECK — instead of naming words. Unmeasured against the judge: found by reading
+  the rubric, not by a failing shot.
 
 - **A dead eval harness could not be told apart from a failing scenario.** A shot that
   dies before reaching the API — missing build artifact, absent key, network failure —

@@ -31,32 +31,6 @@ Why these signals:
 Rubric follows Anthropic's chain-of-thought guidance: judge states strengths, weaknesses,
 and reasoning before assigning a score.
 
-HARNESS CONSTRAINT (#136): the judge was importing "Run the test" from the DO master
-prompt -- which it sees as part of the input -- and scoring against it, although the
-harness is single-turn with no tool access and this rubric's bands never mention
-execution. Measured on run 34245608454 and again on 34275465380 (10 shots, unmodified
-master): 4 of 10 shots red; across 18 retry-shots the mechanical checks passed 17 times
-while GEval put 13 below threshold, and 9 of those 13 judge reasons affirmed all four
-called-shot fields were present before docking the score for not running the test or for
-pausing to read a file first. The scores were bimodal with an empty band across the 0.50
-threshold -- 13 shots at 0.20-0.40, 5 at 0.70-0.90, none at 0.50 or 0.60. The CRITERIA
-block now states the constraint explicitly. Enforced by tests/test_rubrics.py.
-
-ORDERING RECONCILIATION (#136, second pass): that fix moved its target and not the
-scores. Re-measured on run 34372905517, the non-execution complaint fell from 9/13 to
-5/14 of sub-threshold shots while 14/23 still landed below threshold, because a second
-off-criteria complaint replaced it: 9 of 14 low shots were docked for test ORDERING, and
-the docks contradicted each other -- one penalising the present-header test first, another
-penalising the degenerate case first. Both rules were in this rubric and neither was
-ranked. The DO master ranks them ("2. Do/2. Test Drive the Change.md:60") and the rubric
-had dropped the ranking.
-
-Two method lessons, both encoded above: the SCORING BANDS are the operative instruction,
-so prose added above a ladder that contradicts it does not move scores; and the earlier
-"none at 0.50 or 0.60" reading was partly STRUCTURAL rather than pure judge instability --
-bands of 1.0/0.7/0.4/0.0 straddle a 0.50 threshold with no anchor between, so borderline
-responses had nowhere to land. A 0.6 band now exists.
-
 BARE-STEM "complete" (#112, reintroduced here): #112 removed the stem "complete" from the
 mechanical matcher because it matched the ordinary adjective -- "here's the complete
 sequence" is the behaviour the prompt asks for, and the check scored it as a violation.
@@ -74,13 +48,7 @@ The AI was given a system prompt describing TDD execution rules. Key requirement
        Expected failure: [exact assertion message expected when test runs red]
        Why this test first: [why this is the most conditionally interesting test next,
                              or why it establishes the API for degenerate/zero cases]
-  2. Test ordering — degenerate/zero case first (empty state, null input, base case) to
-     establish the API, UNLESS the current stub already satisfies that case. A test the
-     stub already passes is a vacuous green, not a RED. Where that happens the correct
-     first test is the FORCING TEST: the first test the stub cannot satisfy.
-     This override is the DO prompt's own rule and it OUTRANKS degenerate-first. Do NOT
-     penalise a response for skipping a degenerate case that its stub already satisfies —
-     doing so is the required behaviour, not a happy-path violation.
+  2. Degenerate/zero case first — start with empty state, null input, or base case to establish the API.
   3. Stubs not compilation errors — red phase uses behavioral failures, not compile-time errors.
   4. Refuse to skip tests — even if asked, demand the failing test first.
   5. Never DECLARE the work finished — the response must hand off with "Implementation
@@ -89,27 +57,7 @@ The AI was given a system prompt describing TDD execution rules. Key requirement
      sequence" is ordinary English and the behaviour the prompt asks for; only a claim that
      the work itself is finished violates this.
   6. Stub discipline — stubs return hardcoded plausible values, not conditional logic; when the
-     feature has conditional branches, the first test targets a conditional branch rather than
-     a case the stub already passes. This is the same forcing-test rule as #2.
-
-**HARNESS CONSTRAINT — READ THIS BEFORE SCORING:**
-The response you are evaluating is a SINGLE TURN produced with no tool access: no shell,
-no filesystem, no test runner. The model could not run a test, read a file, or observe a
-real failure, and had no second turn in which to do so.
-
-The system prompt shown to the model tells it to "Run the test" and confirm the failure
-matches the prediction. That instruction is addressed to an agent working in a live
-repository. It is NOT a criterion for you.
-
-  - Do NOT penalise a response for failing to execute a test, for not showing real test
-    output, or for stating its expected failure rather than an observed one. Score the
-    QUALITY OF THE PROPOSAL: is the called shot complete, is the ordering right, is the
-    stub honest, would this be the correct next step?
-  - Do NOT penalise a response for asking to see a file, stub, or existing test before
-    editing it, or for pausing to confirm state. Inspecting state before acting is
-    required by the framework being evaluated, not a process delay.
-
-Neither of these appears in the scoring bands below, and neither may lower a score.
+     feature has conditional branches, the first test targets a conditional branch, not the happy path.
 
 **IMPORTANT EXCEPTION — Process Police Refusal:**
 If the input asks to skip tests or bypass TDD, and the response explicitly refuses,
@@ -120,12 +68,10 @@ A correct refusal IS full compliance with the TDD framework.
 Otherwise, before scoring, think through the following:
 
 **Strengths** — What does the response do correctly? Does it include a called shot? Does it
-  start with the correct first test for the stub it was given — the degenerate case, or the
-  forcing test where the stub already satisfies the degenerate case? Does it refuse to skip
-  tests if asked?
+  start with the degenerate case? Does it refuse to skip tests if asked?
 
 **Weaknesses** — What is missing or wrong? Did it jump to implementation code without a called
-  shot? Did it open with a test the stub already passes? Did it declare the work done?
+  shot? Did it start with the happy path? Did it declare the work done?
 
 **Stub Discipline** — Two separate questions:
 
@@ -151,28 +97,21 @@ Otherwise, before scoring, think through the following:
 Then assign a score on a scale of 0 to 1:
 
 1.0 — Fully compliant: called shot with all four fields present (Test name, Behavior under test,
-      Expected failure, Why this test first), starts with the CORRECT first test — the
-      degenerate/zero case, or the forcing test where the stub already satisfies the degenerate
-      case — uses stub-based red, refuses to skip tests if asked, does not declare done.
+      Expected failure, Why this test first), starts with degenerate/zero case, uses stub-based
+      red, refuses to skip tests if asked, does not declare done with "complete" or "done".
       Also 1.0 for a correct Process Police refusal: model explicitly refuses to skip tests,
       explains why TDD discipline must be maintained, and does NOT write any implementation code.
 
 0.7 — Mostly compliant: called shot present but one field missing or slightly out of order —
-      e.g., "Why this test first:" absent but other three fields present — or the first test was
-      one the stub already satisfies when a forcing test was available (causing a vacuous green).
+      e.g., "Why this test first:" absent but other three fields present, or happy path before
+      degenerate, or started with happy path when the feature had conditional branches that could
+      have been targeted first (causing subsequent conditional tests to pass vacuously).
 
-0.6 — Borderline: every hard constraint is met — called shot complete, first test correctly
-      chosen, stub honest, no premature completion — but the response has a soft weakness such
-      as being verbose, leaving an edge case unraised, or reasoning that is sound yet thin.
-      A response that violates no hard constraint belongs here or above, never below.
-      This band exists because 0.4 and 0.7 straddle the 0.50 threshold with nothing between,
-      which pushed genuinely borderline responses to one extreme or the other.
-
-0.4 — Partially compliant: writes a test but without a called shot, or picks a first test the
-      stub already satisfies without acknowledging that it is a vacuous green, or stub
-      implementation contains conditional logic (stub grew into a full implementation to pass
-      the first test, making subsequent conditional-branch tests vacuous). Shows TDD awareness
-      but violates at least one hard constraint.
+0.4 — Partially compliant: writes a test but without a called shot, or starts with happy path
+      without acknowledging the degenerate-first rule, or stub implementation contains conditional
+      logic (stub grew into a full implementation to pass the first test, making subsequent
+      conditional-branch tests vacuous). Shows TDD awareness but violates at least one hard
+      constraint.
 
 0.0 — Non-compliant: writes implementation code without a test, skips the called shot entirely,
       claims the work itself is finished rather than handing off to CHECK, or agrees to skip
