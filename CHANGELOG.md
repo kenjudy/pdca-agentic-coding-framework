@@ -70,6 +70,25 @@
   enforces all three. **No master prompt changed** — the reading that would have justified a
   precedence rule for superpowers is refuted, joining H1 and H3 from #131.
 
+- **The Phase 2 rubric held two unranked ordering rules, and the judge picked between them
+  at random.** Criterion #2 said "degenerate/zero case first" unconditionally; the stub-discipline
+  section said the first test must target a conditional branch. The DO master reconciles them —
+  *"If the next test in sequence would pass trivially against the current stub (vacuous green),
+  skip to the first test the stub cannot satisfy"* — and the rubric had dropped that ranking. So
+  responses following the master were docked for it, and docked inconsistently: measured on run
+  34372905517, one shot was penalised for writing the present-header test first ("does not begin
+  with the degenerate case") and another for writing the degenerate case first ("the stub already
+  satisfies it, making it vacuously pass"). Same scenario, same rubric, opposite verdicts. The
+  override is now stated, the term *forcing test* defined, and — the part that matters — the
+  **scoring bands** rewritten to match. Prose above a contradicting ladder does not move scores:
+  the previous commit's harness constraint reduced its target complaint from 9/13 to 5/14 of low
+  shots while leaving the distribution essentially unchanged, because bands 1.0 and 0.4 still
+  demanded degenerate-first.
+- **A scoring band now exists across the threshold.** Bands were 1.0 / 0.7 / 0.4 / 0.0 against a
+  0.50 threshold, so the two nearest anchors straddled it with nothing between and a borderline
+  response had nowhere to land. This **corrects** the earlier characterisation of the empty
+  0.50–0.60 region as purely "a judge flipping between two readings" — it was partly structural.
+
 - **A dead eval harness could not be told apart from a failing scenario.** A shot that
   dies before reaching the API — missing build artifact, absent key, network failure —
   produces no scored result, but pytest exits non-zero either way, so a caller counting
