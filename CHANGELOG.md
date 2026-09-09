@@ -47,6 +47,21 @@
 
 ### Bug Fixes
 
+- **`2-superpowers-tdd-precedence` no longer runs GEval (#136).** Three 10-shot runs measured
+  the Phase 2 judge scoring the same behaviour anywhere from **0.00 to 0.90**, docking it for
+  test ordering and for not executing tests — neither claimed by the scenario, and the latter
+  impossible in a single-turn harness with no shell or test runner. Two attempts to state that
+  in the rubric were measured and **reverted**: telling an LLM judge "do not penalise X" made X
+  salient and it penalised harder, with the file-reading clause inverted outright into *"Step 4
+  requires… avoiding requesting file reads"*. What the scenario actually claims — that the
+  called shot survives when superpowers' TDD skill is active — is verified by the mechanical
+  tier, which held at 17/18, 22/23 and 17/18 across those same runs while GEval swung wildly.
+  Turning GEval off keeps the signal and drops the noise. The fault stays visible rather than
+  hidden: #147's divergence note reports mechanical/GEval disagreement in the report itself, and
+  #148 tracks the root cause. `test_skip_geval_scenarios_still_assert_something` now blocks the
+  obvious abuse — a scenario with GEval off and no mechanical signal cannot fail, and would
+  report as a pass forever.
+
 - **The Phase 2 judge could dock the bare word "complete", which #112 had already fixed in the
   mechanical tier.** #112 removed the stem from `must_not_contain` because it matched the ordinary
   adjective — *"here's the complete sequence"* is the behaviour the prompt asks for. Criterion #5
