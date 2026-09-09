@@ -62,6 +62,20 @@
   obvious abuse — a scenario with GEval off and no mechanical signal cannot fail, and would
   report as a pass forever.
 
+- **Two instruction files told readers to get baseline scores from a directory git has never
+  tracked (#122).** `CLAUDE.md`'s Validating Prompt Changes step 1 and
+  `SUPERVISION-PROTOCOL.md`'s "Establish a Baseline" both pointed at `skill/eval/results/`,
+  which is gitignored (`.gitignore:28`) and whose `git log --all` is empty. Both instructions
+  have therefore been inoperable on every fresh clone and in CI for as long as they have
+  existed — and #122's own closing procedure, "compare against the baselines in
+  `skill/eval/results/`", had no left-hand side. New tracked `skill/eval/baselines/` holds
+  deliberately promoted reports; `results/` is deliberately **not** un-ignored, because every
+  run writes a fresh timestamped report there and tracking it would dirty the tree after each
+  run — the churn pattern `uv.lock` already produced.
+- `test_baselines_dir_is_not_gitignored` runs `git check-ignore` and fails if anyone adds the
+  new directory to `.gitignore`, which would reproduce the defect silently while both
+  instructions carried on reading as though they worked.
+
 - **The Phase 2 judge could dock the bare word "complete", which #112 had already fixed in the
   mechanical tier.** #112 removed the stem from `must_not_contain` because it matched the ordinary
   adjective — *"here's the complete sequence"* is the behaviour the prompt asks for. Criterion #5
