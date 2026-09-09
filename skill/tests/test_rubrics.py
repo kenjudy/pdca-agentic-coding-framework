@@ -129,3 +129,16 @@ class TestRubric2OrderingIsReconciled(unittest.TestCase):
             "rubric_2 has no term for 'the first test the stub cannot satisfy', so the "
             "correct answer remains describable as a happy-path violation",
         )
+class TestRubric2DoesNotReintroduceTheBareCompleteStem(unittest.TestCase):
+    """#112 removed the bare stem "complete" from the mechanical matcher because it
+    matched the ordinary adjective -- "here's the complete sequence" is the behavior the
+    prompt asks for, and the check scored it as a violation. The rubric prose still
+    quotes the bare words, so the judge can dock what the mechanical tier was fixed to
+    stop docking."""
+
+    def test_bands_do_not_penalise_the_bare_word_complete(self):
+        self.assertFalse(
+            "declares the work complete" in rubric_2.CRITERIA,
+            "band 0.0 penalises 'declares the work complete', reintroducing in the judge "
+            "the bare-stem match that #112 removed from the mechanical tier",
+        )

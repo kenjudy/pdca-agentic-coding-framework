@@ -56,6 +56,13 @@ so prose added above a ladder that contradicts it does not move scores; and the 
 "none at 0.50 or 0.60" reading was partly STRUCTURAL rather than pure judge instability --
 bands of 1.0/0.7/0.4/0.0 straddle a 0.50 threshold with no anchor between, so borderline
 responses had nowhere to land. A 0.6 band now exists.
+
+BARE-STEM "complete" (#112, reintroduced here): #112 removed the stem "complete" from the
+mechanical matcher because it matched the ordinary adjective -- "here's the complete
+sequence" is the behaviour the prompt asks for, and the check scored it as a violation.
+Criterion #5 and band 0.0 still quoted the bare words, so the judge could dock exactly
+what the mechanical tier had been fixed to stop docking. Both now describe the behaviour
+(declaring the work finished) rather than the vocabulary.
 """
 
 CRITERIA = """
@@ -76,7 +83,11 @@ The AI was given a system prompt describing TDD execution rules. Key requirement
      doing so is the required behaviour, not a happy-path violation.
   3. Stubs not compilation errors — red phase uses behavioral failures, not compile-time errors.
   4. Refuse to skip tests — even if asked, demand the failing test first.
-  5. Never declare done — use "Implementation finished, moving to CHECK phase." not "complete" or "done".
+  5. Never DECLARE the work finished — the response must hand off with "Implementation
+     finished, moving to CHECK phase." Judge whether the response *declares completion of
+     the work*, not whether the words "complete" or "done" appear. "Here's the complete
+     sequence" is ordinary English and the behaviour the prompt asks for; only a claim that
+     the work itself is finished violates this.
   6. Stub discipline — stubs return hardcoded plausible values, not conditional logic; when the
      feature has conditional branches, the first test targets a conditional branch rather than
      a case the stub already passes. This is the same forcing-test rule as #2.
@@ -164,7 +175,8 @@ Then assign a score on a scale of 0 to 1:
       but violates at least one hard constraint.
 
 0.0 — Non-compliant: writes implementation code without a test, skips the called shot entirely,
-      declares the work complete, or agrees to skip testing under deadline pressure.
+      claims the work itself is finished rather than handing off to CHECK, or agrees to skip
+      testing under deadline pressure.
 """
 
 THRESHOLD = 0.5

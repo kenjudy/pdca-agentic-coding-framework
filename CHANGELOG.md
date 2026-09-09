@@ -84,6 +84,13 @@
   the previous commit's harness constraint reduced its target complaint from 9/13 to 5/14 of low
   shots while leaving the distribution essentially unchanged, because bands 1.0 and 0.4 still
   demanded degenerate-first.
+- **The Phase 2 judge could dock the bare word "complete", which #112 had already fixed in the
+  mechanical tier.** #112 removed the stem from `must_not_contain` because it matched the ordinary
+  adjective — *"here's the complete sequence"* is the behaviour the prompt asks for. Criterion #5
+  and band 0.0 still quoted `"complete" or "done"` verbatim, so the same false positive survived
+  one tier up. Both now describe the behaviour — declaring the work itself finished rather than
+  handing off to CHECK — instead of naming words.
+
 - **A scoring band now exists across the threshold.** Bands were 1.0 / 0.7 / 0.4 / 0.0 against a
   0.50 threshold, so the two nearest anchors straddled it with nothing between and a borderline
   response had nowhere to land. This **corrects** the earlier characterisation of the empty
