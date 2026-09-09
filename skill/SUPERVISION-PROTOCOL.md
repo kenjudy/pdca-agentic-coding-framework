@@ -138,13 +138,22 @@ Any change to master prompt files (`1. Plan/`, `2. Do/`, etc.) or eval rubrics m
 
 ### 1. Establish a Baseline
 
-Check the most recent eval report:
+Check the tracked baselines first:
 
 ```bash
-ls -t skill/eval/results/
+ls -t skill/eval/baselines/
 ```
 
-If a recent report exists, use its per-scenario scores as the baseline. If not, or if the codebase has diverged, run the full eval first:
+`skill/eval/baselines/` holds deliberately promoted reports and is committed, so it works
+on a fresh clone and in CI. `skill/eval/results/` is gitignored — it holds only your own
+most recent local run, and is empty for anyone who has not just run the evals themselves.
+That is why the instruction here used to point at nothing (#122).
+
+```bash
+ls -t skill/eval/results/   # your own last local run, if any
+```
+
+Use the per-scenario scores as the baseline. If not, or if the codebase has diverged, run the full eval first:
 
 ```bash
 cd skill && bash run-evals.sh

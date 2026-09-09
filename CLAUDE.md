@@ -173,7 +173,16 @@ See `skill/SUPERVISION-PROTOCOL.md` for the full protocol. Key rules:
 
 Any edit to master prompt files or eval rubrics requires:
 
-1. Check `skill/eval/results/` for the baseline scores
+1. Check `skill/eval/baselines/` for the baseline scores. This directory is **tracked**;
+   `skill/eval/results/` is gitignored and holds only your own last local run, so it is
+   empty on a fresh clone and in CI.
 2. Make one discrete change, rebuild (`bash skill/build-skill.sh`)
 3. Re-run only the affected phase evals
 4. All previously passing scenarios must still pass — see `skill/SUPERVISION-PROTOCOL.md` for the full table of phase → eval class mappings
+
+**Read the baseline's caveats before comparing against it.** Each baseline records the
+`deepeval` and `anthropic` versions that produced it, and scores are not comparable across
+a major bump. GEval scores for prompt 2 and prompt 3 are **provisional**: the Phase 2
+rubric was measured scoring identical behaviour anywhere from 0.00 to 0.90 (#136), and
+#148 tracks the cause. Mechanical checks were steady across every run and are the reliable
+gate.

@@ -239,6 +239,7 @@ CHANGELOG_FILE = REPO_ROOT / "CHANGELOG.md"
 
 
 EVAL_SCENARIOS_DIR = CLAUDE_SKILL_DIR / "eval" / "scenarios"
+EVAL_BASELINES_DIR = CLAUDE_SKILL_DIR / "eval" / "baselines"
 
 
 class TestEvalScenarios(unittest.TestCase):
@@ -1518,3 +1519,107 @@ class TestBeadsWorkflowContent(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)
+
+
+class TestEvalBaselines(unittest.TestCase):
+    """A tracked baseline must exist, and must be attributable (#122).
+
+    CLAUDE.md's Validating Prompt Changes step 1 says to "check skill/eval/results/ for
+    the baseline scores". That directory is gitignored (.gitignore:28) and `git log --all`
+    over it is empty -- it has never been tracked. The instruction has therefore been
+    inoperable on every fresh clone and in CI for as long as it has existed, and #122's
+    own closing procedure ("compare against the baselines in skill/eval/results/") had no
+    left-hand side.
+
+    eval/results/ cannot simply be un-ignored: every run writes a fresh timestamped report
+    there, so tracking it would leave the tree dirty after each run -- the churn pattern
+    uv.lock already produced. eval/baselines/ holds deliberately promoted reports only.
+    """
+
+    @staticmethod
+    def _scenario_ids() -> list[str]:
+        import json
+
+        ids: list[str] = []
+        for path in sorted(EVAL_SCENARIOS_DIR.glob("*.json")):
+            scenarios = json.loads(path.read_text())
+            if not isinstance(scenarios, list):
+                scenarios = [scenarios]
+            ids.extend(s["scenario_id"] for s in scenarios)
+        return ids
+
+    @staticmethod
+    def _baseline_texts():
+        if not EVAL_BASELINES_DIR.is_dir():
+            return []
+        return [p.read_text() for p in sorted(EVAL_BASELINES_DIR.glob("report_*.md"))]
+
+    def test_baseline_exists_for_every_scenario(self):
+        """Reuses check_eval_ran.scored_scenarios rather than re-parsing the Summary
+        table: that parser already distinguishes a scored row from a crashed run's empty
+        table, which is exactly the distinction a baseline must not blur."""
+        import sys
+
+        sys.path.insert(0, str(CLAUDE_SKILL_DIR))
+        from check_eval_ran import scored_scenarios
+
+        covered = set()
+        for text in self._baseline_texts():
+            covered.update(scored_scenarios(text))
+
+        missing = sorted(set(self._scenario_ids()) - covered)
+        self.assertEqual(
+            missing,
+            [],
+            f"{len(missing)} scenario(s) have no baseline in skill/eval/baselines/: "
+            f"{', '.join(missing)}",
+        )
+
+    def test_baselines_dir_is_not_gitignored(self):
+        """The mechanism that stops #122's defect recurring.
+
+        The whole problem was an instruction naming a path that git never tracked. Adding
+        eval/baselines/ to .gitignore later would reproduce it exactly, silently, and the
+        instruction would keep reading as though it worked.
+        """
+        result = subprocess.run(
+            ["git", "check-ignore", "-q", "skill/eval/baselines/"],
+            cwd=REPO_ROOT,
+            capture_output=True,
+        )
+        # git check-ignore exits 0 when the path IS ignored.
+        self.assertNotEqual(
+            result.returncode,
+            0,
+            "skill/eval/baselines/ is gitignored, so the baselines the instructions point "
+            "at would not exist on a fresh clone or in CI -- the exact defect of #122",
+        )
+
+    def test_instruction_files_point_at_the_tracked_baselines_dir(self):
+        """CLAUDE.md and SUPERVISION-PROTOCOL.md both told readers to get baseline scores
+        from skill/eval/results/, which has never been tracked."""
+        for rel in ("CLAUDE.md", "skill/SUPERVISION-PROTOCOL.md"):
+            with self.subTest(instruction_file=rel):
+                text = (REPO_ROOT / rel).read_text()
+                self.assertIn(
+                    "skill/eval/baselines/",
+                    text,
+                    f"{rel} does not name the tracked baselines directory, so its "
+                    "baseline instruction points at gitignored output that is absent on "
+                    "any fresh clone and in CI (#122)",
+                )
+
+    def test_every_baseline_records_the_versions_that_produced_it(self):
+        """A baseline that does not say what produced it cannot be compared against --
+        the defect that made #122 unanswerable in retrospect. #145 made the reporter
+        record this; this asserts a promoted baseline actually carries it."""
+        texts = self._baseline_texts()
+        self.assertTrue(texts, "no baseline reports in skill/eval/baselines/")
+        for path, text in zip(sorted(EVAL_BASELINES_DIR.glob("report_*.md")), texts):
+            with self.subTest(baseline=path.name):
+                self.assertIn(
+                    "deepeval:",
+                    text,
+                    f"{path.name} records no deepeval version, so the scores in it cannot "
+                    "be attributed to a dependency set (#122)",
+                )
