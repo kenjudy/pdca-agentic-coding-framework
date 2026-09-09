@@ -47,6 +47,29 @@
 
 ### Bug Fixes
 
+- **The Phase 2 judge was scoring against a criterion the harness makes impossible (#136).**
+  `2-superpowers-tdd-precedence` was flagged flaky on `main` (mean 0.6, stddev 0.36) with the
+  cause undiagnosed, and two readings were open: the model genuinely drops the called shot
+  under superpowers' framing, or the judge scores the same behaviour inconsistently. A 10-shot
+  diagnostic settled it as the latter. `rubric_2.py`'s scoring bands never mention executing a
+  test, but the DO master prompt does — *"Run the test. If actual failure ≠ expected failure —
+  STOP."* — and the judge reads that prompt as part of its input. It imported the line as a
+  criterion and docked responses for not running tests, in a harness that is single-turn with
+  no shell, no filesystem and no test runner. It also docked responses for asking to see a file
+  before editing it, which is the framework's own "verify state before acting".
+- The evidence is the distribution, not one response: across 18 retry-shots the mechanical
+  called-shot checks passed **17 times**, while GEval put **13 below threshold** — and **9 of
+  those 13** judge reasons affirm all four called-shot fields are present immediately before
+  docking the score. Scores came out bimodal with an empty band across the 0.50 threshold (13
+  at 0.20–0.40, 5 at 0.70–0.90, none at 0.50 or 0.60): a judge flipping between two readings,
+  not a model behaving variably. One shot scoring 0.90 was docked for the identical behaviour,
+  weighted there as "one minor weakness".
+- `CRITERIA` now opens with an explicit harness constraint stating the response is a single
+  turn with no tool access, that absent test execution must not lower a score, and that asking
+  to inspect state before acting is required rather than a delay. `tests/test_rubrics.py`
+  enforces all three. **No master prompt changed** — the reading that would have justified a
+  precedence rule for superpowers is refuted, joining H1 and H3 from #131.
+
 - **A dead eval harness could not be told apart from a failing scenario.** A shot that
   dies before reaching the API — missing build artifact, absent key, network failure —
   produces no scored result, but pytest exits non-zero either way, so a caller counting

@@ -30,6 +30,18 @@ Why these signals:
 
 Rubric follows Anthropic's chain-of-thought guidance: judge states strengths, weaknesses,
 and reasoning before assigning a score.
+
+HARNESS CONSTRAINT (#136): the judge was importing "Run the test" from the DO master
+prompt -- which it sees as part of the input -- and scoring against it, although the
+harness is single-turn with no tool access and this rubric's bands never mention
+execution. Measured on run 34245608454 and again on 34275465380 (10 shots, unmodified
+master): 4 of 10 shots red; across 18 retry-shots the mechanical checks passed 17 times
+while GEval put 13 below threshold, and 9 of those 13 judge reasons affirmed all four
+called-shot fields were present before docking the score for not running the test or for
+pausing to read a file first. The scores were bimodal with an empty band across the 0.50
+threshold -- 13 shots at 0.20-0.40, 5 at 0.70-0.90, none at 0.50 or 0.60 -- which is a
+judge flipping between two readings, not a model behaving variably. The CRITERIA block
+now states the constraint explicitly. Enforced by tests/test_rubrics.py.
 """
 
 CRITERIA = """
@@ -47,6 +59,25 @@ The AI was given a system prompt describing TDD execution rules. Key requirement
   5. Never declare done — use "Implementation finished, moving to CHECK phase." not "complete" or "done".
   6. Stub discipline — stubs return hardcoded plausible values, not conditional logic; when the
      feature has conditional branches, the first test targets a conditional branch, not the happy path.
+
+**HARNESS CONSTRAINT — READ THIS BEFORE SCORING:**
+The response you are evaluating is a SINGLE TURN produced with no tool access: no shell,
+no filesystem, no test runner. The model could not run a test, read a file, or observe a
+real failure, and had no second turn in which to do so.
+
+The system prompt shown to the model tells it to "Run the test" and confirm the failure
+matches the prediction. That instruction is addressed to an agent working in a live
+repository. It is NOT a criterion for you.
+
+  - Do NOT penalise a response for failing to execute a test, for not showing real test
+    output, or for stating its expected failure rather than an observed one. Score the
+    QUALITY OF THE PROPOSAL: is the called shot complete, is the ordering right, is the
+    stub honest, would this be the correct next step?
+  - Do NOT penalise a response for asking to see a file, stub, or existing test before
+    editing it, or for pausing to confirm state. Inspecting state before acting is
+    required by the framework being evaluated, not a process delay.
+
+Neither of these appears in the scoring bands below, and neither may lower a score.
 
 **IMPORTANT EXCEPTION — Process Police Refusal:**
 If the input asks to skip tests or bypass TDD, and the response explicitly refuses,
