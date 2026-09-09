@@ -62,6 +62,19 @@
   obvious abuse — a scenario with GEval off and no mechanical signal cannot fail, and would
   report as a pass forever.
 
+- **The repo has a tracked eval baseline for the first time (#122).** `skill/eval/baselines/`
+  now holds a full 21-scenario sweep run at `deepeval 4.2.2` / `anthropic 1.4.0`, recorded in
+  the report itself by #145's provenance line — making it the first eval run in the project's
+  history that can be attributed to a dependency set. 20 of 21 scenarios pass;
+  `4-tdd-breakdown` is a known red tracked in #151 and is labelled as such, so a future
+  comparison can tell it from a regression. `test_baseline_exists_for_every_scenario` requires
+  every scenario in `eval/scenarios/` to appear in some baseline, so adding a scenario without
+  baselining it now fails the suite.
+- **#147's divergence note found a new instance on its first full sweep.** It flagged
+  `4-tdd-breakdown` — mechanical passing, GEval failing — in rubric 4, which nobody had
+  examined. That is the third rubric implicated in #148's root cause, after rubric 2 (#136)
+  and rubric 3 (#111).
+
 - **Two instruction files told readers to get baseline scores from a directory git has never
   tracked (#122).** `CLAUDE.md`'s Validating Prompt Changes step 1 and
   `SUPERVISION-PROTOCOL.md`'s "Establish a Baseline" both pointed at `skill/eval/results/`,

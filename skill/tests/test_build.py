@@ -1554,6 +1554,27 @@ class TestEvalBaselines(unittest.TestCase):
             return []
         return [p.read_text() for p in sorted(EVAL_BASELINES_DIR.glob("report_*.md"))]
 
+    def test_baseline_exists_for_every_scenario(self):
+        """Reuses check_eval_ran.scored_scenarios rather than re-parsing the Summary
+        table: that parser already distinguishes a scored row from a crashed run's empty
+        table, which is exactly the distinction a baseline must not blur."""
+        import sys
+
+        sys.path.insert(0, str(CLAUDE_SKILL_DIR))
+        from check_eval_ran import scored_scenarios
+
+        covered = set()
+        for text in self._baseline_texts():
+            covered.update(scored_scenarios(text))
+
+        missing = sorted(set(self._scenario_ids()) - covered)
+        self.assertEqual(
+            missing,
+            [],
+            f"{len(missing)} scenario(s) have no baseline in skill/eval/baselines/: "
+            f"{', '.join(missing)}",
+        )
+
     def test_baselines_dir_is_not_gitignored(self):
         """The mechanism that stops #122's defect recurring.
 
@@ -1586,4 +1607,19 @@ class TestEvalBaselines(unittest.TestCase):
                     f"{rel} does not name the tracked baselines directory, so its "
                     "baseline instruction points at gitignored output that is absent on "
                     "any fresh clone and in CI (#122)",
+                )
+
+    def test_every_baseline_records_the_versions_that_produced_it(self):
+        """A baseline that does not say what produced it cannot be compared against --
+        the defect that made #122 unanswerable in retrospect. #145 made the reporter
+        record this; this asserts a promoted baseline actually carries it."""
+        texts = self._baseline_texts()
+        self.assertTrue(texts, "no baseline reports in skill/eval/baselines/")
+        for path, text in zip(sorted(EVAL_BASELINES_DIR.glob("report_*.md")), texts):
+            with self.subTest(baseline=path.name):
+                self.assertIn(
+                    "deepeval:",
+                    text,
+                    f"{path.name} records no deepeval version, so the scores in it cannot "
+                    "be attributed to a dependency set (#122)",
                 )

@@ -43,3 +43,12 @@ every criterion against every scenario, including ones the scenario does not cla
 
 Do not treat a prompt-2 or prompt-3 GEval delta as a regression without reading the
 recorded responses, per `eval/README.md`'s materiality rule.
+
+## Known reds in the current baseline
+
+`report_20260909_174245.md` — 20 of 21 scenarios pass. **`4-tdd-breakdown` is red**
+(GEval 0/3 shots, mechanical 3/3) and is tracked in #151: at least one shot shows the judge
+scoring only the first line of a 1553-character response and reporting that the body was
+absent. Treat it as a known red, not as a regression you introduced.
+
+`4-short-session` carries high variance (mean 0.5667, stddev 0.3215) and passes on the mean.
