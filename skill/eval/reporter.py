@@ -41,6 +41,17 @@ def compute_shot_stats(shot_scores: list[float]) -> dict:
     return {"shot_mean": round(mean, 4), "shot_stddev": round(stddev, 4)}
 
 
+def mechanical_passed(result: dict) -> bool:
+    """Whether the mechanical tier passed for a result, retried or not.
+
+    Was computed inline in two places with the same expression. Named because the
+    divergence note below turns it into a comparison rather than a display value.
+    """
+    if result.get("retried"):
+        return result["shots_mech_passed"] >= 2
+    return all(c.passed for c in result["mechanical"])
+
+
 PHASE_NAMES = {
     "1a": "Analysis",
     "1b": "Planning",
@@ -79,7 +90,7 @@ class EvalReporter:
         lines.append("|----------|-------|-------|-----------|-------|------------|")
         for r in self.results:
             phase = PHASE_NAMES.get(r["prompt_id"], r["prompt_id"])
-            mech_ok = r["shots_mech_passed"] >= 2 if r.get("retried") else all(c.passed for c in r["mechanical"])
+            mech_ok = mechanical_passed(r)
             if r.get("retried"):
                 mean = r.get("shot_mean")
                 stddev = r.get("shot_stddev")
@@ -160,19 +171,46 @@ class EvalReporter:
 
             lines.append("")
 
-        # Analyst notes: flag high-variance retried scenarios
+        # Analyst notes: flag high-variance retried scenarios, and scenarios where the
+        # two scoring tiers disagree.
         high_variance = [
             r for r in self.results
             if r.get("retried") and (r.get("shot_stddev") or 0.0) > 0.2
         ]
-        if high_variance:
+        # Mechanical confirms required strings are literally present; GEval judges
+        # semantically. When they disagree the judge scored something the rubric may not
+        # declare -- the fingerprint of a rubric fault rather than a scenario failure.
+        # In #136, 17 of 18 retry-shots passed mechanically while 13 of 18 fell below the
+        # GEval threshold, and both numbers sat on the same summary rows uncompared.
+        divergent = [
+            r for r in self.results
+            if mechanical_passed(r) != r["geval_passed"]
+        ]
+        if high_variance or divergent:
             lines.append("## Analyst Notes\n")
+        if high_variance:
             lines.append("The following scenarios show high score variance (stddev > 0.2) across retry shots.")
             lines.append("These may be flaky or sensitive to minor prompt wording changes.\n")
             for r in high_variance:
                 lines.append(
                     f"- **{r['scenario_id']}**: mean={r.get('shot_mean')}, stddev={r.get('shot_stddev')}"
                 )
+            lines.append("")
+
+        if divergent:
+            lines.append("**Mechanical/GEval divergence**\n")
+            lines.append(
+                "The two scoring tiers disagree on these scenarios. The mechanical tier "
+                "confirms the required strings are literally present; GEval judges "
+                "semantically. A disagreement means the judge scored something the rubric "
+                "may not declare, so this may be a rubric fault rather than a scenario "
+                "failure -- read the recorded response before treating it as either "
+                "(see #136).\n"
+            )
+            for r in divergent:
+                mech = "pass" if mechanical_passed(r) else "FAIL"
+                geval = "pass" if r["geval_passed"] else "FAIL"
+                lines.append(f"- **{r['scenario_id']}**: mechanical {mech}, GEval {geval}")
             lines.append("")
 
         return "\n".join(lines)

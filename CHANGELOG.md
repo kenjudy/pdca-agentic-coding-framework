@@ -167,6 +167,18 @@
   Unreleased` section exists, which stays true forever after one entry and is blind to the
   PR that forgot. Dependabot is exempt — its bumps are summarised once at release time.
 
+- **Eval reports now flag when the two scoring tiers disagree (#147).** The mechanical tier
+  confirms required strings are literally present; GEval judges semantically. When mechanical
+  passes and GEval fails — or the reverse — the judge scored something the rubric may not
+  declare, which is the fingerprint of a rubric fault rather than a scenario failure. Analyst
+  Notes previously flagged only variance (`stddev > 0.2`), and variance is the symptom *both*
+  candidate causes share, so it could never separate a flaky model from a flaky rubric. That
+  gap is what left #136 undiagnosed until a dispatched 10-shot run and a human reading
+  responses; the divergence there was 17/18 mechanical passes against 13/18 GEval failures,
+  both already printed on the same summary rows and never compared. The note is phrased as a
+  hypothesis pointing at specific recorded responses, not a verdict — a note that reads as a
+  finding would be #141's defect one level up. Costs nothing: no API calls, no extra run.
+
 - **Eval reports now record the dependency versions that produced them.** Every report
   gains an `**Environment:**` line naming the installed `deepeval` and `anthropic`
   versions, read via `importlib.metadata` so the reporter stays importable without the
