@@ -62,6 +62,26 @@
   obvious abuse — a scenario with GEval off and no mechanical signal cannot fail, and would
   report as a pass forever.
 
+- **CI now collects `tests/test_evals.py` without running it.** That file is excluded from the
+  default suite because it makes real API calls, so a broken import there was previously only
+  discoverable by paying for an eval run. It also cannot be imported without a credential — it
+  builds `AnthropicModel` at module import time — which is why every cheap check had skipped it.
+  The step passes a deliberately fake key and executes nothing.
+
+- **Rubric criteria are now addressable (#148, phase 1).** Each rubric exposed one monolithic
+  `CRITERIA` string, so `_rubric_for_prompt(prompt_id)` handed every scenario in a phase the
+  same criteria — including ones the scenario never claimed to measure. That produced measured
+  mis-scoring in rubric 2 (#136), rubric 3 (#111) and rubric 4 (#151), and `skip_geval`, the
+  only lever for silencing it, is all-or-nothing. The five rubrics now expose `CRITERIA_ITEMS`
+  — 26 stable identifiers across the set — assembled by `eval/rubrics/assemble.py`.
+- **This phase is provably behaviour-neutral.** `test_assembled_criteria_is_byte_identical_to_
+  the_published_string` pins every assembled rubric against a snapshot of the text that shipped
+  before decomposition, so no API spend can be required to show the judge reads the same prompt.
+  That property is the point: any score movement from the per-scenario selection landing later
+  is attributable to scoping alone, not to rewording. Out-of-scope criteria will be **omitted**
+  from the assembled text rather than named — #149 measured the alternative twice, and a "do not
+  penalise X" clause reliably becomes "penalise X".
+
 - **The repo has a tracked eval baseline for the first time (#122).** `skill/eval/baselines/`
   now holds a full 21-scenario sweep run at `deepeval 4.2.2` / `anthropic 1.4.0`, recorded in
   the report itself by #145's provenance line — making it the first eval run in the project's

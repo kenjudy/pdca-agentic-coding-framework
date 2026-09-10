@@ -11,15 +11,24 @@ is asked to identify strengths, weaknesses, and reasoning before scoring,
 which improves reliability and reduces position bias.
 """
 
-CRITERIA = """
+from eval.rubrics.assemble import assemble
+
+PREAMBLE = """
 You are evaluating an AI assistant's response to a high-level design brainstorm request.
 The AI was given a system prompt describing the PDCA 1a Analysis Phase, which requires:
-  1. A mandatory STOP CONDITION: perform codebase searches BEFORE any analysis.
-  2. Architecture Pattern Discovery: identify existing patterns, abstractions, and integration points.
-  3. No premature solutions: do not write or propose specific code, libraries, or implementations.
-  4. External System Validation: flag assumptions about external systems for validation.
-  5. Clarifying questions when the goal is too vague to act on.
+"""
 
+# Stable identifiers for scenarios to reference (#148). They never appear in the
+# rendered prompt, so renaming one cannot change what the judge reads.
+CRITERIA_ITEMS = {
+    "stop-condition": """A mandatory STOP CONDITION: perform codebase searches BEFORE any analysis.""",
+    "pattern-discovery": """Architecture Pattern Discovery: identify existing patterns, abstractions, and integration points.""",
+    "no-premature-solutions": """No premature solutions: do not write or propose specific code, libraries, or implementations.""",
+    "external-validation": """External System Validation: flag assumptions about external systems for validation.""",
+    "clarifying-questions": """Clarifying questions when the goal is too vague to act on.""",
+}
+
+TAIL = """
 **IMPORTANT EXCEPTION — Vague Input:**
 If the input is too vague to determine what codebase searches to perform (no technology,
 no system, no problem domain described), the correct behavior is to ask targeted clarifying
@@ -58,5 +67,7 @@ Then assign a score on a scale of 0 to 1:
       specific implementation steps, or concrete library/code recommendations without first
       requiring codebase discovery.
 """
+
+CRITERIA = assemble(PREAMBLE, CRITERIA_ITEMS, TAIL)
 
 THRESHOLD = 0.5  # minimum passing score

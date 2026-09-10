@@ -1013,6 +1013,25 @@ class TestHookInfrastructure(unittest.TestCase):
             "fail on a missing deepeval rather than testing anything",
         )
 
+    def test_ci_collects_the_eval_suite(self):
+        """Something must import tests/test_evals.py without spending money.
+
+        It is excluded from the default suite (it makes real API calls), so a broken
+        import or bad node id there surfaces only when someone dispatches a run -- half an
+        hour and a few dollars later.
+
+        It also cannot be imported without a credential: it builds AnthropicModel at module
+        import time. That is why every cheap check has skipped this file, and why the CI
+        step passes a deliberately fake key -- collection executes nothing.
+        """
+        workflow = REPO_ROOT / ".github" / "workflows" / "test.yml"
+        content = workflow.read_text()
+        self.assertTrue(
+            "--collect-only" in content and "tests/test_evals.py" in content,
+            "no CI job collects tests/test_evals.py, so an import error in the eval suite "
+            "is only discoverable by paying for an eval run",
+        )
+
     def test_ci_exercises_the_reporter_against_installed_eval_dependencies(self):
         """The eval-extra job must also run the reporter tests.
 

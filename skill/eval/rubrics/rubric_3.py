@@ -21,16 +21,25 @@ Rubric follows Anthropic's chain-of-thought guidance: judge states strengths, we
 and reasoning before assigning a score.
 """
 
-CRITERIA = """
+from eval.rubrics.assemble import assemble
+
+PREAMBLE = """
 You are evaluating an AI assistant's response to a PDCA Check Phase request.
 The AI was given a system prompt requiring a completeness and process audit. Key requirements:
-  1. Address all three checklist sections: Verification (tests, smoke test, docs, regressions,
-     TODOs), Process Audit (TDD discipline, test coverage), Structural Review (improvements found).
-  2. Give an explicit Status: verdict — "Complete" or "Needs work" — based on findings.
-  3. Give explicit Ready to close: with Yes or No and clear reasoning.
-  4. Correctly identify any outstanding items described in the input (TODOs, missing docs, etc.).
-  5. Do NOT give Status: Complete when issues are present in the input.
+"""
 
+# Stable identifiers for scenarios to reference (#148). They never appear in the
+# rendered prompt, so renaming one cannot change what the judge reads.
+CRITERIA_ITEMS = {
+    "checklist-sections": """Address all three checklist sections: Verification (tests, smoke test, docs, regressions,
+     TODOs), Process Audit (TDD discipline, test coverage), Structural Review (improvements found).""",
+    "status-verdict": """Give an explicit Status: verdict — "Complete" or "Needs work" — based on findings.""",
+    "ready-to-close": """Give explicit Ready to close: with Yes or No and clear reasoning.""",
+    "outstanding-items": """Correctly identify any outstanding items described in the input (TODOs, missing docs, etc.).""",
+    "no-false-complete": """Do NOT give Status: Complete when issues are present in the input.""",
+}
+
+TAIL = """
 Before scoring, think through the following:
 
 **Strengths** — What does the response do correctly? Does it work through the checklist?
@@ -57,5 +66,7 @@ Then assign a score on a scale of 0 to 1:
 0.0 — Non-compliant: skips the checklist entirely, gives no Status verdict, or simply
       declares everything is fine without working through the verification steps.
 """
+
+CRITERIA = assemble(PREAMBLE, CRITERIA_ITEMS, TAIL)
 
 THRESHOLD = 0.5

@@ -39,26 +39,35 @@ what the mechanical tier had been fixed to stop docking. Both now describe the b
 (declaring the work finished) rather than the vocabulary.
 """
 
-CRITERIA = """
+from eval.rubrics.assemble import assemble
+
+PREAMBLE = """
 You are evaluating an AI assistant's response to a PDCA DO Phase (TDD implementation) request.
 The AI was given a system prompt describing TDD execution rules. Key requirements:
-  1. Called shot mandatory before every test — output all four fields before writing or running any test:
+"""
+
+# Stable identifiers for scenarios to reference (#148). They never appear in the
+# rendered prompt, so renaming one cannot change what the judge reads.
+CRITERIA_ITEMS = {
+    "called-shot": """Called shot mandatory before every test — output all four fields before writing or running any test:
        Test name: [descriptive name]
        Behavior under test: [observable behavior being verified]
        Expected failure: [exact assertion message expected when test runs red]
        Why this test first: [why this is the most conditionally interesting test next,
-                             or why it establishes the API for degenerate/zero cases]
-  2. Degenerate/zero case first — start with empty state, null input, or base case to establish the API.
-  3. Stubs not compilation errors — red phase uses behavioral failures, not compile-time errors.
-  4. Refuse to skip tests — even if asked, demand the failing test first.
-  5. Never DECLARE the work finished — the response must hand off with "Implementation
+                             or why it establishes the API for degenerate/zero cases]""",
+    "degenerate-first": """Degenerate/zero case first — start with empty state, null input, or base case to establish the API.""",
+    "stub-based-red": """Stubs not compilation errors — red phase uses behavioral failures, not compile-time errors.""",
+    "refuse-to-skip-tests": """Refuse to skip tests — even if asked, demand the failing test first.""",
+    "no-completion-claim": """Never DECLARE the work finished — the response must hand off with "Implementation
      finished, moving to CHECK phase." Judge whether the response *declares completion of
      the work*, not whether the words "complete" or "done" appear. "Here's the complete
      sequence" is ordinary English and the behaviour the prompt asks for; only a claim that
-     the work itself is finished violates this.
-  6. Stub discipline — stubs return hardcoded plausible values, not conditional logic; when the
-     feature has conditional branches, the first test targets a conditional branch, not the happy path.
+     the work itself is finished violates this.""",
+    "stub-discipline": """Stub discipline — stubs return hardcoded plausible values, not conditional logic; when the
+     feature has conditional branches, the first test targets a conditional branch, not the happy path.""",
+}
 
+TAIL = """
 **IMPORTANT EXCEPTION — Process Police Refusal:**
 If the input asks to skip tests or bypass TDD, and the response explicitly refuses,
 explains why TDD discipline must be maintained, and writes NO implementation code,
@@ -117,5 +126,7 @@ Then assign a score on a scale of 0 to 1:
       claims the work itself is finished rather than handing off to CHECK, or agrees to skip
       testing under deadline pressure.
 """
+
+CRITERIA = assemble(PREAMBLE, CRITERIA_ITEMS, TAIL)
 
 THRESHOLD = 0.5
