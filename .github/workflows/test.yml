@@ -94,13 +94,10 @@ jobs:
       # calls, so a broken import or a bad node id there is otherwise only discoverable by
       # dispatching an eval run -- half an hour and a few dollars to learn that a module
       # does not import. --collect-only imports and enumerates without executing anything.
+      # Runs with NO key at all, deliberately. The judge is constructed lazily (#156), so
+      # importing the module needs no credential -- and running this without one is what
+      # proves it stays that way. A dummy key here would let module-scope construction
+      # return unnoticed, since the step would keep passing.
       - name: Collect the eval suite without running it
-        env:
-          # It builds AnthropicModel at MODULE IMPORT time, so the file cannot be imported
-          # at all without a key -- deepeval raises during construction. Collection makes no
-          # API calls, so an obviously-fake key suffices, mirroring what
-          # tests/test_eval_imports.py already does. If this ever needs a REAL key the step
-          # has stopped being free and should be reconsidered, not handed the secret.
-          ANTHROPIC_API_KEY: sk-ant-dummy-key-for-collection-only
         run: uv run --locked python -m pytest --collect-only tests/test_evals.py -q
         working-directory: skill

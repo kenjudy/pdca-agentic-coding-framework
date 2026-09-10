@@ -62,6 +62,21 @@
   obvious abuse — a scenario with GEval off and no mechanical signal cannot fail, and would
   report as a pass forever.
 
+- **`tests/test_evals.py` no longer needs an API key to import (#156).** It built
+  `AnthropicModel` at module scope, and deepeval raises during construction when no key is
+  configured — so the file could not be imported, collected, or meaningfully type-checked
+  without a credential. That is why it slipped past every cheap check the project has, and why
+  every edit to it has been unverifiable except by dispatching a paid eval run. The judge is
+  now built on first use, cached, so it is still constructed exactly once per session at the
+  point an API call is about to happen — mirroring `eval/executor.py`'s `_client()`, which
+  defers construction for the same reason.
+- **The CI collection step now runs with no key at all**, which is what proves the property
+  holds. It previously passed a dummy key as a workaround; leaving that in place would have let
+  module-scope construction return unnoticed, since the step would have kept passing.
+  `test_judge_model_is_not_constructed_at_module_scope` checks the source by parsing it rather
+  than importing it — importing is the thing that did not work, and the guard has to run in the
+  default suite, which installs neither deepeval nor a key.
+
 - **Verdicts can now be pooled across runs (#147 deliverable 2).** `eval/aggregate.py` reads
   several reports and names the scenarios whose **verdict changed** between them — the question
   that decides whether a scenario is usable as a regression gate, and one no single run can
