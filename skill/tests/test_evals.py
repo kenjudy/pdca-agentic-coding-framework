@@ -35,7 +35,27 @@ from eval.rubrics.rubric_3 import THRESHOLD as THRESHOLD_3
 from eval.rubrics.rubric_4 import CRITERIA as CRITERIA_4
 from eval.rubrics.rubric_4 import THRESHOLD as THRESHOLD_4
 
-JUDGE_MODEL = AnthropicModel(model="claude-haiku-4-5-20251001")
+JUDGE_MODEL_NAME = "claude-haiku-4-5-20251001"
+
+_judge_model: AnthropicModel | None = None
+
+
+def judge_model() -> AnthropicModel:
+    """The GEval judge, built on first use rather than at import (#156).
+
+    deepeval raises during AnthropicModel construction when no key is configured, so
+    building this at module scope made the file unimportable without a credential --
+    and therefore uncollectable, unanalysable, and unverifiable except by dispatching a
+    paid eval run. Every cheap check the project has skipped this file for that reason.
+
+    Mirrors eval/executor.py's `_client()`, which defers construction for the same
+    reason. Cached, so the model is still built exactly once per session, at the point
+    where an API call is actually about to happen.
+    """
+    global _judge_model
+    if _judge_model is None:
+        _judge_model = AnthropicModel(model=JUDGE_MODEL_NAME)
+    return _judge_model
 
 pytestmark = pytest.mark.eval
 
@@ -98,7 +118,7 @@ def _run_scenario(scenario: dict, include_skill_prompt: bool = True) -> dict:
         criteria=criteria,
         evaluation_params=[LLMTestCaseParams.INPUT, LLMTestCaseParams.ACTUAL_OUTPUT],
         threshold=threshold,
-        model=JUDGE_MODEL,
+        model=judge_model(),
     )
     test_case = LLMTestCase(input=scenario["input"], actual_output=output)
     metric.measure(test_case)
