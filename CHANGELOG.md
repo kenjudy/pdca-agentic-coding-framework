@@ -79,7 +79,9 @@
   default suite because it makes real API calls, so a broken import there was previously only
   discoverable by paying for an eval run — and phase 2 rewired its rubric lookup, which is
   exactly the edit that breaks collection and nothing else. `--collect-only` imports and
-  enumerates without executing, so it needs no key and costs nothing.
+  enumerates without executing anything, so it makes no API calls. It does need a dummy key:
+  `test_evals.py` constructs `AnthropicModel` at module import time, so the file cannot be
+  imported at all without one — the same reason `test_eval_imports.py` passes a fake key.
 
 - **Rubric criteria are now addressable (#148, phase 1).** Each rubric exposed one monolithic
   `CRITERIA` string, so `_rubric_for_prompt(prompt_id)` handed every scenario in a phase the
