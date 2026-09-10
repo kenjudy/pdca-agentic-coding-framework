@@ -37,7 +37,7 @@ apply the correct one based on the scenario input. This mirrors real skill usage
 cd skill
 uv sync --extra eval
 cp .env.example .env        # fill in ANTHROPIC_API_KEY
-bash run-evals.sh           # all 15 scenarios
+bash run-evals.sh           # all 21 scenarios
 ```
 
 Run a single prompt's tests:
@@ -57,6 +57,31 @@ Unit tests (no API calls, always run in CI):
 ```bash
 bash run-tests.sh
 ```
+
+### Pooling verdicts across runs
+
+A single run cannot tell you whether a scenario is a usable gate. `eval/aggregate.py`
+pools several reports and names the scenarios whose **verdict changed** between them:
+
+```bash
+uv run python eval/aggregate.py eval/results/            # your local runs
+uv run python eval/aggregate.py eval/baselines/ eval/results/
+```
+
+```
+## Verdict changed across runs
+
+- **2-first-step**: 1 pass / 1 fail over 2 run(s), scores 0.30–0.70, tiers disagreed in 1 of 2
+```
+
+It needs at least two reports and refuses to run on one, because "stable" is not a
+conclusion a single observation supports.
+
+It deliberately reports **no cause**. A scenario that changes verdict may have an unstable
+judge or an unstable model, and the scoring bands (`1.0/0.7/0.4/0.0` against a `0.50`
+threshold) push borderline scores away from the middle regardless — so the shape alone
+cannot separate the two. Use it to find which recorded responses are worth reading, then
+apply the materiality rule below.
 
 ---
 
