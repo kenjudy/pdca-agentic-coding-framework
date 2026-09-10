@@ -62,6 +62,23 @@
   obvious abuse — a scenario with GEval off and no mechanical signal cannot fail, and would
   report as a pass forever.
 
+- **Verdicts can now be pooled across runs (#147 deliverable 2).** `eval/aggregate.py` reads
+  several reports and names the scenarios whose **verdict changed** between them — the question
+  that decides whether a scenario is usable as a regression gate, and one no single run can
+  answer. Analyst Notes sees variance within one run; the divergence note sees the two tiers
+  disagreeing in one run; neither could see a scenario passing on Monday and failing on Tuesday.
+  The reporter cannot either: its fixture is `scope="session"`, so each `run-evals.sh`
+  invocation writes its own file, and `evals.yml`'s multi-shot dispatch was producing exactly
+  this data and dropping it.
+- **It reports no cause, deliberately.** #147 as filed proposed flagging bimodal scores as
+  "judge instability"; that was corrected, because every rubric's bands are `1.0/0.7/0.4/0.0`
+  against a `0.50` threshold (#153), so a gap at the threshold is partly structural and a shape
+  alone cannot separate an unstable judge from an unstable model. Naming a cause would be #141's
+  defect one level up — output that reads like a measurement. It refuses to run on a single
+  report for the same reason: "stable" is not a conclusion one observation supports.
+- Verified against the two real full sweeps to date, where it independently reproduced the one
+  verdict flip previously found by hand: `2-first-step`, 1 pass / 1 fail, scores 0.30–0.70.
+
 - **CI now collects `tests/test_evals.py` without running it.** That file is excluded from the
   default suite because it makes real API calls, so a broken import there was previously only
   discoverable by paying for an eval run. It also cannot be imported without a credential — it
