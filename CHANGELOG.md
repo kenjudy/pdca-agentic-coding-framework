@@ -62,26 +62,11 @@
   obvious abuse — a scenario with GEval off and no mechanical signal cannot fail, and would
   report as a pass forever.
 
-- **Scenarios can now be judged against only the criteria they claim (#148, phase 2).** A
-  scenario may declare `geval_criteria`; absent it, it gets its whole phase rubric exactly as
-  before, so this ships behaviour-neutral. Omitted criteria are **removed from the assembled
-  prompt, never named as exclusions** — #149 measured that naming a criterion to exclude it
-  makes the judge score against it. Selection follows the rubric's declared order rather than
-  the caller's, so the same subset cannot render two different prompts.
-- **Narrowing must be argued, not merely declared.** `geval_criteria_reason` is required
-  whenever `geval_criteria` narrows the rubric, and an empty selection is rejected outright.
-  Without that, `geval_criteria` is a nicer-looking `skip_geval` — a way to make a red
-  scenario green by dropping the criterion it fails, indistinguishable in the report from a
-  pass on merit. An unknown criteria id raises rather than resolving to "all" or "none", and
-  `test_declared_geval_criteria_exist_in_their_rubric` catches a typo in the unit suite
-  instead of half an hour into a paid run.
 - **CI now collects `tests/test_evals.py` without running it.** That file is excluded from the
   default suite because it makes real API calls, so a broken import there was previously only
-  discoverable by paying for an eval run — and phase 2 rewired its rubric lookup, which is
-  exactly the edit that breaks collection and nothing else. `--collect-only` imports and
-  enumerates without executing anything, so it makes no API calls. It does need a dummy key:
-  `test_evals.py` constructs `AnthropicModel` at module import time, so the file cannot be
-  imported at all without one — the same reason `test_eval_imports.py` passes a fake key.
+  discoverable by paying for an eval run. It also cannot be imported without a credential — it
+  builds `AnthropicModel` at module import time — which is why every cheap check had skipped it.
+  The step passes a deliberately fake key and executes nothing.
 
 - **Rubric criteria are now addressable (#148, phase 1).** Each rubric exposed one monolithic
   `CRITERIA` string, so `_rubric_for_prompt(prompt_id)` handed every scenario in a phase the

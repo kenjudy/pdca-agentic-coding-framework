@@ -1017,12 +1017,12 @@ class TestHookInfrastructure(unittest.TestCase):
         """Something must import tests/test_evals.py without spending money.
 
         It is excluded from the default suite (it makes real API calls), so a broken
-        import or a bad node id there surfaces only when someone dispatches a run --
-        half an hour and a few dollars later. #148 rewired its rubric lookup, which is
-        exactly the kind of edit that breaks collection and nothing else.
+        import or bad node id there surfaces only when someone dispatches a run -- half an
+        hour and a few dollars later.
 
-        --collect-only imports the module and enumerates tests without executing any, so
-        this costs nothing and needs no key.
+        It also cannot be imported without a credential: it builds AnthropicModel at module
+        import time. That is why every cheap check has skipped this file, and why the CI
+        step passes a deliberately fake key -- collection executes nothing.
         """
         workflow = REPO_ROOT / ".github" / "workflows" / "test.yml"
         content = workflow.read_text()
@@ -1593,43 +1593,6 @@ class TestEvalBaselines(unittest.TestCase):
             f"{len(missing)} scenario(s) have no baseline in skill/eval/baselines/: "
             f"{', '.join(missing)}",
         )
-
-    def test_declared_geval_criteria_exist_in_their_rubric(self):
-        """A criteria id that no rubric defines must fail here, not mid-run (#148).
-
-        `assemble` raises on an unknown id, but that happens inside an eval run costing
-        real money and taking half an hour. Catching it in the unit suite makes a typo a
-        five-second failure instead.
-
-        Deliberately NOT asserting that a narrowed scenario keeps mechanical signals.
-        Narrowing leaves GEval active with at least one criterion, so the scenario still
-        has teeth -- unlike skip_geval, which removes the tier entirely and is why
-        test_skip_geval_scenarios_still_assert_something exists. Requiring mechanical
-        signals here would forbid narrowing on scenarios that legitimately have none.
-        """
-        import json
-        import sys
-
-        sys.path.insert(0, str(CLAUDE_SKILL_DIR))
-        from eval.rubrics import RUBRICS
-
-        for path in sorted(EVAL_SCENARIOS_DIR.glob("*.json")):
-            scenarios = json.loads(path.read_text())
-            if not isinstance(scenarios, list):
-                scenarios = [scenarios]
-            for scenario in scenarios:
-                declared = scenario["expected_signals"].get("geval_criteria")
-                if not declared:
-                    continue
-                with self.subTest(scenario=scenario["scenario_id"]):
-                    module = RUBRICS[scenario["prompt_id"]]
-                    unknown = sorted(set(declared) - set(module.CRITERIA_ITEMS))
-                    self.assertEqual(
-                        unknown,
-                        [],
-                        f"{scenario['scenario_id']} names criteria its rubric does not "
-                        f"define: {unknown}; available: {sorted(module.CRITERIA_ITEMS)}",
-                    )
 
     def test_baselines_dir_is_not_gitignored(self):
         """The mechanism that stops #122's defect recurring.
