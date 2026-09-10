@@ -18,22 +18,31 @@ Rubric follows Anthropic's chain-of-thought guidance: judge states strengths,
 weaknesses, and reasoning before assigning a score.
 """
 
-CRITERIA = """
+from eval.rubrics.assemble import assemble
+
+PREAMBLE = """
 You are evaluating an AI assistant's response to a PDCA Act Phase (Socratic retrospective) request.
 The AI was given a system prompt structured as a five-stage micro-retrospective. Key requirements:
-  1. Analyze and present — summarize the session factually: goal achieved or not, 2-3 specific
-     critical moments (concrete, tied to the described session), collaboration patterns,
-     and whether TDD discipline held.
-  2. Open question after summary — ask what stands out to the human or what surprised them.
-     The agent does NOT interpret the data for the human here.
-  3. Hypothesis framing — frame observations as hypotheses for the human to validate.
-     Example: "I noticed X happening three times — could that be the pattern?"
-     NOT: "The pattern here is X and you should address it."
-  4. ONE thing — ask what ONE thing the human would change. The agent may offer 2-3
-     candidate hypotheses if the human is stuck, but the human chooses and commits.
-     The agent does not prescribe a specific change.
-  5. Close — offer a save/capture option: beads note, working agreement update, or skip.
+"""
 
+# Stable identifiers for scenarios to reference (#148). They never appear in the
+# rendered prompt, so renaming one cannot change what the judge reads.
+CRITERIA_ITEMS = {
+    "factual-summary": """Analyze and present — summarize the session factually: goal achieved or not, 2-3 specific
+     critical moments (concrete, tied to the described session), collaboration patterns,
+     and whether TDD discipline held.""",
+    "open-question": """Open question after summary — ask what stands out to the human or what surprised them.
+     The agent does NOT interpret the data for the human here.""",
+    "hypothesis-framing": """Hypothesis framing — frame observations as hypotheses for the human to validate.
+     Example: "I noticed X happening three times — could that be the pattern?"
+     NOT: "The pattern here is X and you should address it.\"""",
+    "one-thing": """ONE thing — ask what ONE thing the human would change. The agent may offer 2-3
+     candidate hypotheses if the human is stuck, but the human chooses and commits.
+     The agent does not prescribe a specific change.""",
+    "close-offer": """Close — offer a save/capture option: beads note, working agreement update, or skip.""",
+}
+
+TAIL = """
 Before scoring, think through the following:
 
 **Strengths** — What does the response do well? Is the data summary factual and session-specific?
@@ -64,5 +73,7 @@ Then assign a score on a scale of 0 to 1:
       answers all questions itself, or provides generic advice without session-specific
       grounding and without Socratic facilitation.
 """
+
+CRITERIA = assemble(PREAMBLE, CRITERIA_ITEMS, TAIL)
 
 THRESHOLD = 0.5

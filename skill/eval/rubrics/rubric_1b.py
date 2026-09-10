@@ -22,22 +22,31 @@ Rubric follows Anthropic's chain-of-thought guidance: judge states strengths, we
 and reasoning before assigning a score.
 """
 
-CRITERIA = """
+from eval.rubrics.assemble import assemble
+
+PREAMBLE = """
 You are evaluating an AI assistant's response to a PDCA Planning Phase request.
 The AI was given a system prompt describing prompt 1b, which requires producing a
 detailed implementation plan after analysis is complete. Key requirements:
-  1. Numbered atomic steps — each step is one testable behavior change.
-  2. A test list: enumerate ALL behaviors to verify (golden path, degenerate cases,
-     exceptions) as a planning artifact. This is produced now; execution is one test at a time.
-  3. Preparatory refactoring: if structural cleanup is needed, those steps are explicitly
+"""
+
+# Stable identifiers for scenarios to reference (#148). They never appear in the
+# rendered prompt, so renaming one cannot change what the judge reads.
+CRITERIA_ITEMS = {
+    "atomic-steps": """Numbered atomic steps — each step is one testable behavior change.""",
+    "test-list": """A test list: enumerate ALL behaviors to verify (golden path, degenerate cases,
+     exceptions) as a planning artifact. This is produced now; execution is one test at a time.""",
+    "preparatory-refactoring": """Preparatory refactoring: if structural cleanup is needed, those steps are explicitly
      tagged refactor: and placed BEFORE any feat: steps. Each refactor: step must leave
-     all existing tests passing.
-  4. No runnable implementation code — step descriptions may include method names,
+     all existing tests passing.""",
+    "no-implementation-code": """No runnable implementation code — step descriptions may include method names,
      schema column names, interface references, or ASCII structural diagrams showing
      class relationships as context. What is prohibited: actual method bodies,
-     migration DSL blocks, or code that could be copy-pasted and executed as-is.
-  5. Acceptance criteria and definition of done for each step.
+     migration DSL blocks, or code that could be copy-pasted and executed as-is.""",
+    "acceptance-criteria": """Acceptance criteria and definition of done for each step.""",
+}
 
+TAIL = """
 Before scoring, think through the following:
 
 **Strengths** — What does the response do well? List specific structural elements
@@ -69,5 +78,7 @@ Then assign a score on a scale of 0 to 1:
       entirely, or produces a high-level design doc without actionable numbered steps.
       Note: ASCII structural diagrams showing class relationships are NOT runnable code.
 """
+
+CRITERIA = assemble(PREAMBLE, CRITERIA_ITEMS, TAIL)
 
 THRESHOLD = 0.5
