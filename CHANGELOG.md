@@ -33,6 +33,14 @@
 
 ### Dependency Updates
 
+- **`aiohttp` 3.13.3 → 3.14.3** — a transitive dependency via `deepeval`, not declared directly
+  in `pyproject.toml`. Reported in #137 as CVE-2026-34520 (malformed HTTP response header
+  parsing in the C parser). The issue's suggested patch hand-edited the version string in
+  `uv.lock` while leaving the old wheel hashes in place, which would have made `uv sync --locked`
+  fail in CI rather than fix anything. Re-resolved instead with
+  `uv lock --upgrade-package aiohttp`; only aiohttp's own package block changed — confirmed by
+  diffing every `name =`/`version =` pair in the lock before and after.
+
 - Floors raised and the lockfile relocked in one pass, superseding four separate dependabot
   PRs (#127, #128, #129, #130): `anthropic >=1.0.0` (resolved 1.4.0, up from 0.122.0),
   `deepeval >=4.1.10` (4.2.2), `ruff >=0.16.4` (0.16.6), `mypy >=2.3.1` (2.3.1, already
