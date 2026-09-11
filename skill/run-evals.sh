@@ -3,7 +3,8 @@
 #
 # Requires ANTHROPIC_API_KEY in environment (or .env file).
 # Uses Claude Haiku as the judge model — costs approximately $2-5 per full run.
-# NOT run in CI — invoke manually when iterating on phase prompt quality.
+# Never runs automatically on push or pull_request. evals.yml DOES invoke this script,
+# but only via workflow_dispatch -- a human-triggered run, not an automatic one (#159).
 #
 # Usage:
 #   bash run-evals.sh                     # run all eval tests
@@ -67,5 +68,17 @@ if ! (cd "$SCRIPT_DIR" && python3 check_eval_ran.py $NEW_REPORTS); then
   echo "  Exit code 2 means the harness did not run -- distinct from 1, a scenario failure." >&2
   exit 2
 fi
+
+# Promotion into eval/baselines/ has been entirely manual since #152 created the
+# directory, prompted by nothing, so every full sweep since has been read once and
+# discarded (#157 has had nothing to pool over as a direct result). promote_baseline.py
+# decides on its own whether this was a full sweep -- by checking whether the report
+# covers every scenario, not by trusting that this script was invoked with no arguments
+# -- and never blocks when stdin is not a terminal, which is how evals.yml calls this
+# script in CI. A single new report is expected per invocation: the reporter's
+# write_report fixture is session-scoped, firing once at teardown.
+for report in $NEW_REPORTS; do
+  python3 "$SCRIPT_DIR/promote_baseline.py" "$report"
+done
 
 exit "$PYTEST_EXIT"

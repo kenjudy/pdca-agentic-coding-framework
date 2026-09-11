@@ -16,13 +16,36 @@ so tracking it would leave the working tree dirty after each run — the churn p
 
 ## Promoting a report
 
+A full sweep (`bash run-evals.sh` with no arguments) offers to promote itself (#159):
+
+```
+=== Harness check ===
+Eval harness ran: 1 report(s), scored 21 scenarios.
+
+## Verdict changed across runs
+...
+
+Promote report_<timestamp>.md to skill/eval/baselines/? [y/N]
+```
+
+Say yes and it's copied for you. **Only offered in a terminal, on a full sweep.** In
+a non-interactive context — `evals.yml` on a GitHub Actions runner, no TTY on stdin —
+it never prompts; it prints the `cp` command instead and moves on, since a blocking
+prompt there would hang the job rather than fail loudly. A partial run (one scenario,
+one class) is never offered either way, whatever the argument count claimed: it's
+decided from the report's own content — does it score every scenario? — so a bug in
+that argument-count check can't corrupt the baseline's completeness invariant.
+
+To promote by hand instead:
+
 ```bash
 cd skill && bash run-evals.sh tests/test_evals.py      # or dispatch evals.yml
 cp eval/results/report_<timestamp>.md eval/baselines/
 ```
 
-Promote a **full sweep**, not a single scenario — `test_baseline_exists_for_every_scenario`
-requires every scenario in `eval/scenarios/` to appear in some baseline here.
+Either way, promote a **full sweep**, not a single scenario —
+`test_baseline_exists_for_every_scenario` requires every scenario in `eval/scenarios/`
+to appear in some baseline here.
 
 ## Reading a baseline
 

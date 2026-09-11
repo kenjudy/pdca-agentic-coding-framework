@@ -2,6 +2,29 @@
 
 ## Unreleased
 
+### run-evals.sh now offers to promote a full sweep to the tracked baseline
+
+- **Promotion into `eval/baselines/` was entirely manual since #152 created the directory** —
+  documented only in `baselines/README.md`, prompted by nothing. Every full sweep since,
+  including the one that validated #153's band-gap fix, was read once and left in
+  `eval/results/`, gitignored, gone. #157's cross-run pooling needs an accumulating corpus and
+  has had nothing to pool over as a direct result.
+- **`promote_baseline.py` (#159)** offers to promote a full sweep after `run-evals.sh` finishes,
+  showing the `eval.aggregate` divergence summary against the existing baseline before asking.
+  Three properties, each closing a specific way this could go wrong: it **never blocks in a
+  non-interactive context** — `evals.yml` dispatches this script on a GitHub Actions runner with
+  no TTY on stdin, and a blocking prompt there would hang the job rather than fail loudly, the
+  opposite of #141/#142/#156's fixes this cycle; a **partial report is never promotable**,
+  regardless of interactivity or answer, decided from the report's own content (does it score
+  every scenario?) rather than trusted from `run-evals.sh`'s argument count, so a bug in the
+  shell-side gate cannot corrupt `test_baseline_exists_for_every_scenario`'s completeness
+  invariant; and it **only offers, never auto-promotes**.
+- Verified past the unit tests: a real, non-mocked shell invocation in this same non-interactive
+  environment confirmed both the full-sweep and partial-report paths exit `0` with no hang.
+  `typecheck.sh`'s own `test_ci_mypy_covers_every_top_level_module` caught that the new script
+  wasn't in mypy's hardcoded module list — the exact class of drift it was built in #114/#126/#141
+  to prevent, working as intended on the first new script since.
+
 ### Check phase now requires an operator-chosen critic pass
 
 - Following a downstream retrospective (see the #144 Documentation entry below): anti-pattern
