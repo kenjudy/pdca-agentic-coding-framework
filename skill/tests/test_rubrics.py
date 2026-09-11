@@ -134,6 +134,12 @@ class TestScoringBandsSpanTheThreshold(unittest.TestCase):
         ladder = criteria[criteria.index(marker):]
         return sorted(float(m) for m in re.findall(r"^(\d\.\d+) —", ladder, re.M))
 
+    @staticmethod
+    def _bands_as_written(criteria: str) -> list[float]:
+        marker = "Then assign a score on a scale of 0 to 1:"
+        ladder = criteria[criteria.index(marker):]
+        return [float(m) for m in re.findall(r"^(\d\.\d+) —", ladder, re.M)]
+
     def test_every_rubric_has_a_band_between_0_4_and_0_7(self):
         for name in self.RUBRICS:
             module = importlib.import_module(f"eval.rubrics.rubric_{name}")
@@ -160,3 +166,36 @@ class TestScoringBandsSpanTheThreshold(unittest.TestCase):
                     f"rubric_{name}'s spanning band {spanning} is below its threshold "
                     f"{module.THRESHOLD}",
                 )
+
+    def test_bands_appear_in_descending_order_as_written(self):
+        """#171 critic pass: `_bands()` sorts, so a band physically misplaced in the
+        ladder (e.g. written after 0.0 instead of between 0.7 and 0.4) still satisfies
+        the two tests above. The judge reads the ladder top-down as written; it must
+        itself be in descending order, not just contain the right values."""
+        for name in self.RUBRICS:
+            module = importlib.import_module(f"eval.rubrics.rubric_{name}")
+            with self.subTest(rubric=name):
+                ordered = self._bands_as_written(module.CRITERIA)
+                self.assertEqual(
+                    ordered,
+                    sorted(ordered, reverse=True),
+                    f"rubric_{name}'s bands {ordered} are not in descending order as written",
+                )
+
+    def test_the_0_6_band_text_is_identical_across_all_rubrics(self):
+        """The PR's stated safety property: identical wording across all five rubrics so
+        no phase-specific vocabulary is introduced for the judge to score against (#149).
+        Nothing previously enforced this -- a future reword of one rubric's band would
+        drift silently, and the byte-identity snapshot test's prescribed remedy for any
+        CRITERIA change (regenerate the snapshot) would rubber-stamp exactly that drift."""
+        texts = {}
+        for name in self.RUBRICS:
+            module = importlib.import_module(f"eval.rubrics.rubric_{name}")
+            match = re.search(r"^0\.6 —.*?(?=\n\n0\.4 —)", module.CRITERIA, re.S | re.M)
+            self.assertIsNotNone(match, f"rubric_{name} has no 0.6 band block")
+            texts[name] = match.group(0)
+        self.assertEqual(
+            len(set(texts.values())),
+            1,
+            f"0.6 band text differs across rubrics: {texts}",
+        )
