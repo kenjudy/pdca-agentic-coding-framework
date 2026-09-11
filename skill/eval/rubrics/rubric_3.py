@@ -22,6 +22,7 @@ and reasoning before assigning a score.
 """
 
 from eval.rubrics.assemble import assemble
+from eval.rubrics.generic_tail import GENERIC_TAIL
 
 PREAMBLE = """
 You are evaluating an AI assistant's response to a PDCA Check Phase request.
@@ -39,37 +40,7 @@ CRITERIA_ITEMS = {
     "no-false-complete": """Do NOT give Status: Complete when issues are present in the input.""",
 }
 
-TAIL = """
-Before scoring, think through the following:
-
-**Strengths** — What does the response do correctly? Does it work through the checklist?
-  Does it produce a Status: verdict? Does it correctly identify issues when they exist?
-
-**Weaknesses** — What is missing? Did it skip sections? Give a vague or missing verdict?
-  Declare Complete when there are known outstanding items?
-
-**Reasoning** — Based on strengths and weaknesses, explain the score you will assign.
-
-Then assign a score on a scale of 0 to 1:
-
-1.0 — Fully compliant: addresses all three checklist sections, gives explicit Status: and
-      Ready to close: verdicts with reasoning, correctly flags outstanding items if present,
-      does not declare Complete when issues exist.
-
-0.7 — Mostly compliant: covers most checklist sections and gives a verdict but is missing
-      one element — e.g., Structural Review section skipped, or reasoning for Ready to close
-      is present but thin.
-
-0.6 — Borderline: every hard constraint for this phase is met, but the response has a soft
-      weakness — it is verbose, leaves an edge case unraised, or its reasoning is sound yet
-      thin. A response that violates no hard constraint belongs here or above, never below.
-
-0.4 — Partially compliant: produces a checklist-like summary but omits Status: or Ready to
-      close: labels, or gives Status: Complete despite issues being described in the input.
-
-0.0 — Non-compliant: skips the checklist entirely, gives no Status verdict, or simply
-      declares everything is fine without working through the verification steps.
-"""
+TAIL = GENERIC_TAIL
 
 CRITERIA = assemble(PREAMBLE, CRITERIA_ITEMS, TAIL)
 

@@ -2,6 +2,44 @@
 
 ## Unreleased
 
+### Rubric scaffold and bands genericized so per-scenario scoping actually scopes (#148)
+
+- **The mechanism above only fixed the numbered criteria list. Every rubric's scoring bands
+  and Strengths/Weaknesses scaffold still narrated specific criteria by name** — "did it
+  start with the happy path?", "stub implementation contains conditional logic" — so a
+  scenario scoped away from a criterion in the numbered list was still judged against it
+  invisibly, one section down. This is the exact defect that sank the first #148 phase-2
+  attempt (`12ad72e`): "the mechanism worked and the feature did not."
+- **Added `eval/rubrics/generic_tail.py`'s `GENERIC_TAIL`** — one shared scaffold-and-bands
+  string, imported verbatim by all five rubrics, that never names a specific criterion or
+  behavior; every reference is to "the criteria listed above". It scopes automatically with
+  whatever `CRITERIA_ITEMS` subset a scenario selects, with no separate narrowing logic.
+  Identical wording across all five rubrics is deliberate — the same principle #153 already
+  established for the 0.6 band alone, generalized to the whole tail: rubric-specific phrasing
+  here would itself be judge vocabulary, and #149 measured that backfiring twice already.
+  Rubric-specific whole-response short-circuits (rubric_1a's vague-input exception, rubric_2's
+  Process Police refusal exception) stay as a rubric-specific prefix before the shared text —
+  they're overrides, not per-criterion narration.
+- **rubric_2's dedicated "Stub Discipline" scaffold section was folded into the
+  `stub-discipline` `CRITERIA_ITEMS` entry** rather than kept as a separate always-shown
+  section, so its content is now properly scoped through the same mechanism as every other
+  criterion instead of needing its own carve-out.
+- **`test_scoped_criteria_leave_no_trace_in_bands_or_scaffold`** reproduces the exact prior
+  failure: scoping rubric 2 to only `called-shot` and asserting "stub" and "happy path" don't
+  appear anywhere in the assembled prompt, not just absent from the numbered list. Confirmed
+  RED against the mechanism-only state (both concepts leaked via the hardcoded bands), GREEN
+  after genericizing. `test_generic_tail_is_present_verbatim_in_every_rubric` guards the
+  "identical across rubrics" property going forward — mutation-tested by inlining a
+  rubric-specific tweak into one rubric's tail and confirming it's caught.
+- **`tests/fixtures/rubric_criteria_snapshot.json` updated deliberately** — same rationale as
+  #153: the byte-identity test it backs guards #148 phase-1's decomposition refactor, not
+  rubric content for all time; this is an intentional content edit.
+- **Not yet applied to any scenario, and not yet validated against the judge.** No scenario
+  declares `geval_criteria` yet, so this ships as a structural capability. Unlike #153, this
+  is not behavior-neutral for unscoped scenarios either — every rubric's scaffold and bands
+  are now different prose than what shipped before, for every scenario in every phase, not
+  just scoped ones. That needs real eval validation before this is considered done.
+
 ### Rubrics can score a scenario against only the criteria it claims (#148, mechanism)
 
 - **Reintroduced `geval_criteria` scoping** (`eval/rubrics/assemble.py`, `eval/rubrics/__init__.py`,

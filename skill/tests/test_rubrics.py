@@ -191,3 +191,48 @@ class TestRubricForScenario(unittest.TestCase):
 
         with self.assertRaises(ValueError):
             rubric_for_scenario("99", {})
+
+    def test_scoped_criteria_leave_no_trace_in_bands_or_scaffold(self):
+        """The exact defect that sank the first #148 phase-2 attempt (12ad72e): scoping
+        the numbered list removed a criterion's own text, but its concept still appeared
+        in the scoring bands and Strengths/Weaknesses scaffold under different wording --
+        "stub implementation contains conditional logic" in the 0.4 band, for example,
+        with no "stub-discipline" criterion in scope to license it. A scenario scoped to
+        only "called-shot" must not be judged against "stub" or "happy path" anywhere in
+        the assembled prompt, not just absent from the numbered list. ("degenerate" is
+        deliberately not checked here -- it legitimately appears inside the "called-shot"
+        item's own text, describing what "Why this test first" should cite.)"""
+        from eval.rubrics import rubric_for_scenario
+
+        criteria, _ = rubric_for_scenario("2", {"geval_criteria": ["called-shot"]})
+        lowered = criteria.lower()
+        for leaked_concept in ("stub", "happy path"):
+            with self.subTest(concept=leaked_concept):
+                self.assertNotIn(leaked_concept, lowered)
+
+
+class TestEveryRubricUsesTheSharedGenericTail(unittest.TestCase):
+    """Every rubric's TAIL must contain GENERIC_TAIL verbatim (#148).
+
+    Scoping only works because the scaffold and bands never name a specific criterion --
+    they say "the criteria listed above" instead. That property holds only as long as
+    every rubric actually uses the shared GENERIC_TAIL string; a future edit that inlines
+    a rubric-specific tweak into one rubric's own TAIL would silently reintroduce the exact
+    defect #148 exists to fix, without the string-literal snapshot test (which only proves
+    *some* text changed, not that it changed the right way) catching it.
+    """
+
+    RUBRICS = ("1a", "1b", "2", "3", "4")
+
+    def test_generic_tail_is_present_verbatim_in_every_rubric(self):
+        from eval.rubrics.generic_tail import GENERIC_TAIL
+
+        for name in self.RUBRICS:
+            module = importlib.import_module(f"eval.rubrics.rubric_{name}")
+            with self.subTest(rubric=name):
+                self.assertIn(
+                    GENERIC_TAIL,
+                    module.CRITERIA,
+                    f"rubric_{name} does not contain GENERIC_TAIL verbatim -- its scaffold "
+                    "or bands may have drifted into rubric-specific wording again",
+                )

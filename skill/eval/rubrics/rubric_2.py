@@ -40,6 +40,7 @@ what the mechanical tier had been fixed to stop docking. Both now describe the b
 """
 
 from eval.rubrics.assemble import assemble
+from eval.rubrics.generic_tail import GENERIC_TAIL
 
 PREAMBLE = """
 You are evaluating an AI assistant's response to a PDCA DO Phase (TDD implementation) request.
@@ -63,73 +64,27 @@ CRITERIA_ITEMS = {
      the work*, not whether the words "complete" or "done" appear. "Here's the complete
      sequence" is ordinary English and the behaviour the prompt asks for; only a claim that
      the work itself is finished violates this.""",
-    "stub-discipline": """Stub discipline — stubs return hardcoded plausible values, not conditional logic; when the
-     feature has conditional branches, the first test targets a conditional branch, not the happy path.""",
+    "stub-discipline": """Stub discipline, two separate questions. (1) Initial stub: does the stub set up before TDD
+     begins return only hardcoded values, no conditional logic? A stub is not a stub if it contains
+     branching. (2) GREEN phase over-implementation: when making test #N pass, did the implementation
+     add conditional logic that test #N does not require — logic that only a later test would need?
+     If yes, that later test passes vacuously, before it is written. Conditional logic that directly
+     implements what the CURRENTLY failing test demands is correct, not a violation; ask whether a
+     hardcoded value could have made this test pass instead. When the feature has conditional
+     branches, the first test written must target one of those branches rather than the happy path
+     — starting with the happy path and implementing everything at once is the ordering-triggered
+     form of this violation.""",
 }
 
-TAIL = """
+EXCEPTION = """
 **IMPORTANT EXCEPTION — Process Police Refusal:**
 If the input asks to skip tests or bypass TDD, and the response explicitly refuses,
 explains why TDD discipline must be maintained, and writes NO implementation code,
 assign a score of 1.0 immediately. Do not evaluate the other criteria.
 A correct refusal IS full compliance with the TDD framework.
-
-Otherwise, before scoring, think through the following:
-
-**Strengths** — What does the response do correctly? Does it include a called shot? Does it
-  start with the degenerate case? Does it refuse to skip tests if asked?
-
-**Weaknesses** — What is missing or wrong? Did it jump to implementation code without a called
-  shot? Did it start with the happy path? Did it declare the work done?
-
-**Stub Discipline** — Two separate questions:
-
-  1. Initial stub: Did the stub set up before TDD begins return only hardcoded values (no
-     conditional logic)? A stub is not a stub if it contains branching.
-
-  2. GREEN phase over-implementation: When making test #N pass, did the implementation add
-     conditional logic that test #N does not require — logic that only a later test would need?
-     If yes, that later test will be vacuously green (it passes before it is written).
-
-  NOTE: Conditional logic in the GREEN phase of a test that specifically tests a conditional
-  behavior is CORRECT — not a violation. The violation is adding conditionals that are not
-  required by the currently failing test. Ask: "Could this GREEN phase have been written as a
-  hardcoded value that still makes test #N pass?" If yes and the agent used a conditional
-  instead, it over-implemented.
-
-  When the feature includes conditional branches, did the agent start with a test that requires
-  those branches rather than the happy path? Starting with the happy path and implementing
-  everything at once is the ordering-triggered form of this violation.
-
-**Reasoning** — Based on strengths and weaknesses, explain the score you will assign.
-
-Then assign a score on a scale of 0 to 1:
-
-1.0 — Fully compliant: called shot with all four fields present (Test name, Behavior under test,
-      Expected failure, Why this test first), starts with degenerate/zero case, uses stub-based
-      red, refuses to skip tests if asked, does not declare done with "complete" or "done".
-      Also 1.0 for a correct Process Police refusal: model explicitly refuses to skip tests,
-      explains why TDD discipline must be maintained, and does NOT write any implementation code.
-
-0.7 — Mostly compliant: called shot present but one field missing or slightly out of order —
-      e.g., "Why this test first:" absent but other three fields present, or happy path before
-      degenerate, or started with happy path when the feature had conditional branches that could
-      have been targeted first (causing subsequent conditional tests to pass vacuously).
-
-0.6 — Borderline: every hard constraint for this phase is met, but the response has a soft
-      weakness — it is verbose, leaves an edge case unraised, or its reasoning is sound yet
-      thin. A response that violates no hard constraint belongs here or above, never below.
-
-0.4 — Partially compliant: writes a test but without a called shot, or starts with happy path
-      without acknowledging the degenerate-first rule, or stub implementation contains conditional
-      logic (stub grew into a full implementation to pass the first test, making subsequent
-      conditional-branch tests vacuous). Shows TDD awareness but violates at least one hard
-      constraint.
-
-0.0 — Non-compliant: writes implementation code without a test, skips the called shot entirely,
-      claims the work itself is finished rather than handing off to CHECK, or agrees to skip
-      testing under deadline pressure.
 """
+
+TAIL = EXCEPTION + GENERIC_TAIL
 
 CRITERIA = assemble(PREAMBLE, CRITERIA_ITEMS, TAIL)
 
