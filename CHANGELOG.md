@@ -2,6 +2,38 @@
 
 ## Unreleased
 
+### Fixed: GENERIC_TAIL's bands scored correct refusals near zero (#148)
+
+- **Dispatched 5 phase-scoped CI eval runs against the generic-tail rewrite (no
+  scenario scoped yet) to check the rewrite itself didn't regress anything.** Phases
+  1a, 1b, 3, 4 looked safe. Phase 2 — the exact rubric #136/#148's motivating example
+  came from — showed all 5 GEval-scored scenarios flip from pass to fail, two with
+  zero variance across 3 shots (not flaky noise).
+- **Controlled the finding before trusting it.** The harness calls the API fresh
+  every run, so a sequential comparison against the old tracked baseline can't
+  distinguish "my rewrite caused this" from "the model just sampled worse this
+  time" — exactly the uncontrolled-comparison risk `CLAUDE.md` already warns about
+  for prompt changes. Dispatched a same-time-window control run of phase 2 against
+  unmodified `main`. Result: `2-superpowers-branch-finish`'s correct refusal to
+  merge before CHECK/ACT scored **0.90** under the old bespoke rubric at the same
+  time my branch scored a similar correct-refusal response **0.00**. Model behavior
+  was consistent; the judge's scoring under my new prompt was not — this is a
+  rubric-wording effect, not sampling noise.
+- **Root cause: `GENERIC_TAIL`'s bands were framed around positive demonstration**
+  ("1.0 = every criterion listed above is fully met"), which reads as a checklist
+  requiring every criterion to be affirmatively shown — with no room for a criterion
+  that simply doesn't apply, like "called shot" when the scenario's correct behavior
+  is refusing to write a test at all. The old bespoke bands were framed more
+  holistically and left the judge room to reason that a response violates nothing
+  even when it doesn't engage with most criteria.
+- **Fix: reworded bands 1.0/0.7/0.4/0.0 around violation** ("no criterion listed
+  above is violated"), matching the already-shipped, already-validated 0.6 band's
+  own framing (#153) — the whole ladder is now internally consistent about what
+  "compliant" means. Scope kept minimal: only the bands changed, not the
+  Strengths/Weaknesses scaffold, which wasn't implicated by the evidence.
+- Not yet re-validated against the judge — that's the next step before this can be
+  considered mergeable.
+
 ### Fixed: reintroducing #148's mechanism from a stale patch reverted #156's fix
 
 - **CI caught this one, not a local check.** Re-applying `5680ce5`'s diff (see the
