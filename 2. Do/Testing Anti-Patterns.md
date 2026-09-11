@@ -90,6 +90,16 @@ Testing the first edited instance of a repeated assumption -- one step of a mult
 
 *This rule does not self-apply.* On the very next cycle after it was written, the identical pattern recurred twice more (a docs pass that fixed only the first mention of a stale claim, not the rest of the document; a stage file's own overview sentence left unconverted because it sat outside any labeled per-mode section) -- caught again only by a fresh adversarial pass, not by re-reading this list. Advisory text you wrote for yourself is not a gate; see the Check phase's Decision probe, which now requires an operator-chosen critic model rather than relying on the same session re-reading its own work.
 
+## 9. Loose Called Shot
+
+The called shot's "Expected failure" names the assertion that best expresses the behavior under test, rather than the assertion the test runner will actually report first when the test has several. The prediction and the RED are both individually reasonable; they just describe different lines.
+
+*Diagnosis:* A test carries more than one assertion, and the one chosen as "Expected failure" is not the first to execute. The test runner stops and reports at the first failing assertion, so RED fires there regardless of which assertion the called shot named.
+
+*Rule:* Predict the exact message of the first assertion that will fail, not the most meaningful one. If the assertion that defines the behavior is not first, either reorder the assertions so it is, or split the test so each assertion has its own called shot. A RED on any assertion other than the predicted one means the prediction was wrong, not that the test needs re-explaining.
+
+*Origin:* A test with eight assertions across two files predicted `toContain("Verification Log")` as the expected failure; the RED fired two lines earlier, on `expected.toLowerCase()).toContain(reviewer)`. Both phrases were genuinely absent, so the test was sound -- the prediction was simply about a different, later assertion than the one that ran. Twenty other called shots in the same session predicted correctly because each test happened to lead with its defining assertion; the one that did not was the one that misfired. See #155.
+
 ---
 
 ## Quick Check Before Committing

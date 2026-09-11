@@ -2,6 +2,30 @@
 
 ## Unreleased
 
+### Called shot must predict the first-executing assertion, not the most meaningful one
+
+- **The DO master's CALLED SHOT block named "the exact assertion message or error expected" with
+  no anchor to *which* assertion, when a test carries several (#155).** In practice the prediction
+  drifts to the assertion that best expresses the behavior, while the test runner reports the
+  first one that executes. When those differ, a correct test's RED reads as a misprediction and
+  the STOP rule fires for the wrong reason — or worse, trains the operator to wave the mismatch
+  through, eroding the rule for the case it exists to catch. `Expected failure:` now asks for the
+  exact message of the first assertion that will fail, and names the fix directly: reorder the
+  assertions so the defining one runs first, or split the test.
+- **`Testing Anti-Patterns.md` gains item 9, "Loose Called Shot,"** naming the pattern so it is
+  citable in retros the way item 8 has been used as diagnostic vocabulary all cycle rather than
+  re-explained from scratch each time.
+- **`Human Working Agreements.md` gains the matching intervention question** — "Which assertion
+  did you predict, and which one fired?" — alongside the section's existing TDD-discipline
+  questions.
+- **Not verifiable by the eval harness, and said so rather than hidden.** The harness is
+  single-turn and never executes real code — the same structural limit #136 already found for
+  "Run the test." Whether a model predicted the actual first-executing assertion can only be
+  observed in real TDD work, not a synthetic scenario, so `rubric_2.py` and the scenario JSON are
+  deliberately untouched. Confirmed instead that the four labels `called_shot_required` matches on
+  (`Test name:`, `Behavior under test:`, `Expected failure:`, `Why this test first:`) are unchanged
+  — this edit only touches bracket-instruction text and the follow-up sentence, so the mechanical
+  tier's behavior across every scenario that uses it is unaffected.
 ### must_not_contain now matches case-insensitively (#116)
 
 - **`check_mechanical`'s `must_not_contain` matched case-sensitively, so `"all done"` missed the

@@ -637,6 +637,16 @@ class TestSkillPackage(unittest.TestCase):
             "do-prompts.md doesn't contain expected master content",
         )
 
+    def test_do_prompts_contains_the_first_executing_assertion_language(self):
+        """#155's DO master edit must reach the packaged skill, not just the source.
+        Mirrors test_do_prompts_contains_master_content's pattern."""
+        packaged = read_zip_file(SKILL_FILE, f"{SKILL_NAME}/references/do-prompts.md")
+        self.assertIn(
+            "the first assertion that will fail",
+            packaged,
+            "do-prompts.md does not contain the #155 called-shot wording",
+        )
+
     def test_working_agreements_matches_master(self):
         packaged = read_zip_file(SKILL_FILE, f"{SKILL_NAME}/references/working-agreements.md")
         master = (REPO_ROOT / "Human Working Agreements.md").read_text()
@@ -818,6 +828,54 @@ class TestBuildScript(unittest.TestCase):
 
 class TestHookInfrastructure(unittest.TestCase):
     """Verify git hook infrastructure files exist and are correctly structured."""
+
+    def test_called_shot_requires_predicting_the_first_executing_assertion(self):
+        """#155: the called shot's 'Expected failure' field named the most meaningful
+        assertion in a multi-assertion test, not the one the runner reports first. When
+        those differ, a correct test's RED reads as a misprediction and the STOP rule
+        fires for the wrong reason -- or worse, trains the operator to wave it through,
+        which erodes the rule for the case it exists to catch.
+
+        Checked against the master source directly (unconditional, no build needed).
+        assertTrue rather than assertIn per #143.
+        """
+        master = (REPO_ROOT / "2. Do" / "2. Test Drive the Change.md").read_text()
+        self.assertTrue(
+            "the first assertion that will fail" in master,
+            "the DO master's CALLED SHOT block does not ask for the first-executing "
+            "assertion specifically, so a loose prediction against a different "
+            "assertion in the same test cannot be told apart from a genuine "
+            "misprediction (#155)",
+        )
+        self.assertTrue(
+            "ordered so that a secondary assertion runs before the one that defines "
+            "the behavior" in master,
+            "the DO master's STOP-rule sentence does not name assertion ordering as a "
+            "possible cause of a RED mismatch, only 'testing the wrong thing' (#155)",
+        )
+
+    def test_testing_anti_patterns_names_the_loose_called_shot_pattern(self):
+        """#155's own suggestion: name the pattern so it is citable in retros, the way
+        #8 (Partial-Instance Coverage) has been used as diagnostic vocabulary all
+        cycle rather than re-explained from scratch each time."""
+        master = (REPO_ROOT / "2. Do" / "Testing Anti-Patterns.md").read_text()
+        self.assertTrue(
+            "## 9. Loose Called Shot" in master,
+            "Testing Anti-Patterns.md has no item 9 for a called shot that predicts "
+            "the most meaningful assertion rather than the first-executing one (#155)",
+        )
+
+    def test_working_agreements_asks_which_assertion_fired(self):
+        """The operator-side half of #155: an intervention question matching the
+        format already used by every other line in this section, so 'the called shot
+        drifted' is as askable in the moment as 'where's the failing test first'."""
+        master = (REPO_ROOT / "Human Working Agreements.md").read_text()
+        self.assertTrue(
+            "Which assertion did you predict, and which one fired?" in master,
+            "Human Working Agreements.md's Process Discipline section has no "
+            "intervention question for a called shot that predicted the wrong "
+            "assertion (#155)",
+        )
 
     def test_working_agreements_requires_verifying_a_prior_commands_result(self):
         """#138: a command chain where one step fails silently must not let a later
