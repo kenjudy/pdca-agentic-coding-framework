@@ -819,6 +819,35 @@ class TestBuildScript(unittest.TestCase):
 class TestHookInfrastructure(unittest.TestCase):
     """Verify git hook infrastructure files exist and are correctly structured."""
 
+    def test_working_agreements_requires_verifying_a_prior_commands_result(self):
+        """#138: a command chain where one step fails silently must not let a later
+        step assert something the failed step never accomplished.
+
+        Concrete incident: `bd update --append-notes` (a heredoc) failed with a bash
+        syntax error; the three commands in the invocation were not `&&`-chained, so
+        execution continued past the failure into two `bd close` calls whose
+        --reason text claimed the notes had been recorded. They had not. The agent
+        caught this only by later re-running `bd show` against its own claim rather
+        than trusting it.
+
+        The working agreements already require verifying test expectations (item 4)
+        and RED before GREEN in the DO master, but neither generalizes to CLI/tool
+        orchestration -- a beads state change, a multi-step shell command, any case
+        where step N's success is assumed rather than checked before step N+1 asserts
+        something about it. Checked against the master source directly rather than the
+        built package, so this runs in the default suite with no build step required --
+        unlike TestSkillPackage, which skips entirely when the .skill zip is absent.
+        assertTrue rather than assertIn, per #143: assertIn dumps the entire file into
+        the failure message and buries the one line that matters.
+        """
+        master = (REPO_ROOT / "Human Working Agreements.md").read_text()
+        self.assertTrue(
+            "VERIFY BEFORE CLAIMING" in master,
+            "Human Working Agreements.md has no rule requiring a prior command's "
+            "actual result be checked before a later command, commit, or close "
+            "reason asserts something depended on it (#138)",
+        )
+
     def test_run_tests_script_exists(self):
         self.assertTrue(
             (CLAUDE_SKILL_DIR / "run-tests.sh").exists(),

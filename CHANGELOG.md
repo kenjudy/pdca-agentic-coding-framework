@@ -2,6 +2,17 @@
 
 ## Unreleased
 
+### Working agreements now require verifying a prior command's result before claiming it
+
+- **`Human Working Agreements.md` gains item 11, "VERIFY BEFORE CLAIMING" (#138).** Item 4 already
+  required verifying test expectations; nothing generalized that discipline to CLI/tool
+  orchestration. Concrete incident: a `bd update --append-notes` heredoc failed with a bash syntax
+  error, the three commands in the invocation weren't `&&`-chained, so execution continued past the
+  failure into two `bd close` calls whose `--reason` text claimed the notes had been recorded —
+  they had not. Caught only by later re-running `bd show` against the claim rather than trusting
+  it. `test_working_agreements_requires_verifying_a_prior_commands_result` pins the new item in
+  the default suite, checked against the master source directly so it runs with no build step.
+
 ### Dependency floors raised to match what is already locked
 
 - **`anthropic`, `deepeval`, `ruff` floors in `pyproject.toml` had drifted behind `uv.lock`.**
