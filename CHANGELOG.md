@@ -25,6 +25,35 @@
   wasn't in mypy's hardcoded module list — the exact class of drift it was built in #114/#126/#141
   to prevent, working as intended on the first new script since.
 
+### Working agreements now require verifying a prior command's result before claiming it
+
+- **`Human Working Agreements.md` gains item 11, "VERIFY BEFORE CLAIMING" (#138).** Item 4 already
+  required verifying test expectations; nothing generalized that discipline to CLI/tool
+  orchestration. Concrete incident: a `bd update --append-notes` heredoc failed with a bash syntax
+  error, the three commands in the invocation weren't `&&`-chained, so execution continued past the
+  failure into two `bd close` calls whose `--reason` text claimed the notes had been recorded —
+  they had not. Caught only by later re-running `bd show` against the claim rather than trusting
+  it. `test_working_agreements_requires_verifying_a_prior_commands_result` pins the new item in
+  the default suite, checked against the master source directly so it runs with no build step.
+
+### Dependency floors raised to match what is already locked
+
+- **`anthropic`, `deepeval`, `ruff` floors in `pyproject.toml` had drifted behind `uv.lock`.**
+  An earlier batch relock resolved `anthropic 1.4.0`, `deepeval 4.2.2`, `ruff 0.16.6`, but the
+  declared floors in `[project.optional-dependencies]` were never raised to match — left at
+  `>=1.0.0`, `>=4.1.10`, `>=0.16.4`. Real gap, not stale noise: an install without the lock
+  (or an older compatible resolution) could silently receive versions below what this project
+  actually builds and tests against. Dependabot's #127, #128 and #129 correctly reported it;
+  raised the three floors to exactly what's locked, closing all three.
+- **`test_declared_floor_matches_the_locked_version`** guards the invariant going forward —
+  generalized to every declared floor, not hardcoded to these three packages. Deliberately
+  asserts equality, not `floor <= locked`: the latter is a tautology as long as `uv.lock`
+  resolves at all (`uv lock` guarantees the resolved graph satisfies the declared constraint),
+  so it would have passed with this exact gap still wide open. Equality matches the project's
+  own stated convention ("Floors raised and the lockfile relocked in one pass") — confirmed
+  against every other floor before relying on it: `pytest`, `python-dotenv`, and `mypy` already
+  satisfied it; `anthropic`, `deepeval`, `ruff` were exactly the three that didn't.
+
 ### Check phase now requires an operator-chosen critic pass
 
 - Following a downstream retrospective (see the #144 Documentation entry below): anti-pattern
@@ -55,6 +84,14 @@
   `check-prompts.md`'s "Process Audit" both now point back to anti-pattern #8.
 
 ### Dependency Updates
+
+- **`aiohttp` 3.13.3 → 3.14.3** — a transitive dependency via `deepeval`, not declared directly
+  in `pyproject.toml`. Reported in #137 as CVE-2026-34520 (malformed HTTP response header
+  parsing in the C parser). The issue's suggested patch hand-edited the version string in
+  `uv.lock` while leaving the old wheel hashes in place, which would have made `uv sync --locked`
+  fail in CI rather than fix anything. Re-resolved instead with
+  `uv lock --upgrade-package aiohttp`; only aiohttp's own package block changed — confirmed by
+  diffing every `name =`/`version =` pair in the lock before and after.
 
 - Floors raised and the lockfile relocked in one pass, superseding four separate dependabot
   PRs (#127, #128, #129, #130): `anthropic >=1.0.0` (resolved 1.4.0, up from 0.122.0),
