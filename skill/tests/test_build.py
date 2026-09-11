@@ -642,7 +642,7 @@ class TestSkillPackage(unittest.TestCase):
         Mirrors test_do_prompts_contains_master_content's pattern."""
         packaged = read_zip_file(SKILL_FILE, f"{SKILL_NAME}/references/do-prompts.md")
         self.assertIn(
-            "the first assertion that will fail",
+            "the assertion expected to fail first",
             packaged,
             "do-prompts.md does not contain the #155 called-shot wording",
         )
@@ -841,28 +841,84 @@ class TestHookInfrastructure(unittest.TestCase):
         """
         master = (REPO_ROOT / "2. Do" / "2. Test Drive the Change.md").read_text()
         self.assertTrue(
-            "the first assertion that will fail" in master,
+            "the assertion expected to fail first" in master,
             "the DO master's CALLED SHOT block does not ask for the first-executing "
             "assertion specifically, so a loose prediction against a different "
             "assertion in the same test cannot be told apart from a genuine "
             "misprediction (#155)",
         )
         self.assertTrue(
-            "ordered so that a secondary assertion runs before the one that defines "
-            "the behavior" in master,
+            "ordered so a secondary one runs before the one that expresses the "
+            "behavior under test" in master,
             "the DO master's STOP-rule sentence does not name assertion ordering as a "
             "possible cause of a RED mismatch, only 'testing the wrong thing' (#155)",
+        )
+        self.assertTrue(
+            "aggregate failures per test" in master,
+            "the DO master's STOP-rule sentence has no qualification for assertion "
+            "styles that aggregate failures (subTest, soft assertions) -- for those, "
+            "'ran first' is the wrong question and the ordering-based rule above "
+            "would misfire on the repo's own subTest-based tests (found in adversarial "
+            "review of #155)",
         )
 
     def test_testing_anti_patterns_names_the_loose_called_shot_pattern(self):
         """#155's own suggestion: name the pattern so it is citable in retros, the way
         #8 (Partial-Instance Coverage) has been used as diagnostic vocabulary all
-        cycle rather than re-explained from scratch each time."""
+        cycle rather than re-explained from scratch each time.
+
+        Pins the Rule paragraph, not just the heading. An earlier version of this test
+        pinned only the heading and was found, by adversarial review, to pass against
+        an empty section -- mutation-tested afterward here to confirm it no longer does.
+        """
         master = (REPO_ROOT / "2. Do" / "Testing Anti-Patterns.md").read_text()
         self.assertTrue(
             "## 9. Loose Called Shot" in master,
             "Testing Anti-Patterns.md has no item 9 for a called shot that predicts "
             "the most meaningful assertion rather than the first-executing one (#155)",
+        )
+        self.assertTrue(
+            "Predict the exact message of the first assertion that will fail, not "
+            "the most meaningful one" in master,
+            "item 9's Rule paragraph is missing -- a heading alone does not tell "
+            "anyone what to do differently (#155)",
+        )
+        self.assertTrue(
+            "the mismatch is the predicted assertion being absent from the report, "
+            "not out of order" in master,
+            "item 9's Diagnosis does not qualify for assertion styles that aggregate "
+            "failures per test, so it states a false universal -- 'the runner stops "
+            "at the first failing assertion' is untrue for subTest, soft assertions, "
+            "and aggregate_failures, which this repo's own test suite uses (found in "
+            "adversarial review of #155)",
+        )
+
+    def test_testing_anti_patterns_item_9_matches_the_established_layout(self):
+        """Items 1-8 each open with a '---' separator and get a Quick Check line;
+        item 9 initially had neither, which is precisely item 8's own anti-pattern
+        (a document that indexes its items in several places, updated in only one)."""
+        master = (REPO_ROOT / "2. Do" / "Testing Anti-Patterns.md").read_text()
+        self.assertTrue(
+            "---\n\n## 9. Loose Called Shot" in master,
+            "item 9 has no '---' separator before it, unlike every other item in "
+            "this file (#155)",
+        )
+        self.assertTrue(
+            "(see #9)" in master,
+            "Quick Check Before Committing has no line referencing item 9, unlike "
+            "every other numbered item (#155)",
+        )
+
+    def test_do_master_cross_references_the_loose_called_shot_anti_pattern(self):
+        """Items 7 and 8 are both cross-referenced from the DO master at the exact
+        point their guidance applies (see '2. Do/2. Test Drive the Change.md:60,72,129').
+        Item 9 had no reference from anywhere outside its own section."""
+        master = (REPO_ROOT / "2. Do" / "2. Test Drive the Change.md").read_text()
+        self.assertTrue(
+            "references/testing-anti-patterns.md` #9" in master,
+            "the DO master's CALLED SHOT section does not cross-reference "
+            "testing-anti-patterns.md #9, unlike the #7 and #8 references elsewhere "
+            "in this same file (#155)",
         )
 
     def test_working_agreements_asks_which_assertion_fired(self):
