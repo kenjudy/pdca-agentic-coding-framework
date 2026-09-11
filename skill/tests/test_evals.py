@@ -24,38 +24,9 @@ from deepeval.test_case import LLMTestCase, LLMTestCaseParams
 from eval.executor import run_phase
 from eval.mechanical import check_mechanical
 from eval.reporter import EvalReporter, compute_shot_stats
-from eval.rubrics.rubric_1a import CRITERIA as CRITERIA_1A
-from eval.rubrics.rubric_1a import THRESHOLD as THRESHOLD_1A
-from eval.rubrics.rubric_1b import CRITERIA as CRITERIA_1B
-from eval.rubrics.rubric_1b import THRESHOLD as THRESHOLD_1B
-from eval.rubrics.rubric_2 import CRITERIA as CRITERIA_2
-from eval.rubrics.rubric_2 import THRESHOLD as THRESHOLD_2
-from eval.rubrics.rubric_3 import CRITERIA as CRITERIA_3
-from eval.rubrics.rubric_3 import THRESHOLD as THRESHOLD_3
-from eval.rubrics.rubric_4 import CRITERIA as CRITERIA_4
-from eval.rubrics.rubric_4 import THRESHOLD as THRESHOLD_4
+from eval.rubrics import rubric_for_scenario
 
-JUDGE_MODEL_NAME = "claude-haiku-4-5-20251001"
-
-_judge_model: AnthropicModel | None = None
-
-
-def judge_model() -> AnthropicModel:
-    """The GEval judge, built on first use rather than at import (#156).
-
-    deepeval raises during AnthropicModel construction when no key is configured, so
-    building this at module scope made the file unimportable without a credential --
-    and therefore uncollectable, unanalysable, and unverifiable except by dispatching a
-    paid eval run. Every cheap check the project has skipped this file for that reason.
-
-    Mirrors eval/executor.py's `_client()`, which defers construction for the same
-    reason. Cached, so the model is still built exactly once per session, at the point
-    where an API call is actually about to happen.
-    """
-    global _judge_model
-    if _judge_model is None:
-        _judge_model = AnthropicModel(model=JUDGE_MODEL_NAME)
-    return _judge_model
+JUDGE_MODEL = AnthropicModel(model="claude-haiku-4-5-20251001")
 
 pytestmark = pytest.mark.eval
 
@@ -79,17 +50,6 @@ def load_scenarios(prompt_id: str) -> list[dict]:
         return json.load(f)
 
 
-def _rubric_for_prompt(prompt_id: str) -> tuple[str, float]:
-    rubrics = {
-        "1a": (CRITERIA_1A, THRESHOLD_1A),
-        "1b": (CRITERIA_1B, THRESHOLD_1B),
-        "2":  (CRITERIA_2,  THRESHOLD_2),
-        "3":  (CRITERIA_3,  THRESHOLD_3),
-        "4":  (CRITERIA_4,  THRESHOLD_4),
-    }
-    if prompt_id not in rubrics:
-        raise ValueError(f"No rubric registered for prompt_id: {prompt_id!r}")
-    return rubrics[prompt_id]
 
 
 def _run_scenario(scenario: dict, include_skill_prompt: bool = True) -> dict:
@@ -112,13 +72,15 @@ def _run_scenario(scenario: dict, include_skill_prompt: bool = True) -> dict:
             "geval_passed": True,
         }
 
-    criteria, threshold = _rubric_for_prompt(prompt_id)
+    # Keys on the scenario, not just the phase: a scenario may narrow the criteria it is
+    # judged against (#148). Absent geval_criteria it gets the whole rubric, as before.
+    criteria, threshold = rubric_for_scenario(prompt_id, scenario["expected_signals"])
     metric = GEval(
         name=f"pdca_{prompt_id}_compliance",
         criteria=criteria,
         evaluation_params=[LLMTestCaseParams.INPUT, LLMTestCaseParams.ACTUAL_OUTPUT],
         threshold=threshold,
-        model=judge_model(),
+        model=JUDGE_MODEL,
     )
     test_case = LLMTestCase(input=scenario["input"], actual_output=output)
     metric.measure(test_case)

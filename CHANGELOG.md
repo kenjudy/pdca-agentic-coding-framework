@@ -2,6 +2,28 @@
 
 ## Unreleased
 
+### Rubrics can score a scenario against only the criteria it claims (#148, mechanism)
+
+- **Reintroduced `geval_criteria` scoping** (`eval/rubrics/assemble.py`, `eval/rubrics/__init__.py`,
+  `eval/schema.py`), previously implemented in `5680ce5` and reverted in `12ad72e` — not because
+  the mechanism was wrong, but because scoping the numbered criteria list left the scoring bands
+  and Strengths/Weaknesses scaffold still narrating every criterion, so a "scoped" scenario was
+  still evaluated on dimensions it never claimed. That prose-level gap is fixed separately below;
+  this commit restores the mechanism unchanged and behavior-neutral (no scenario opts in yet, so
+  every rubric renders identically to before).
+- **Design constraints, unchanged from the original attempt, each backed by something measured
+  rather than assumed:** out-of-scope criteria are omitted from the assembled text, never named
+  as exclusions (#149 measured "do not penalise X" backfiring twice); selection follows the
+  rubric's own declared order, not the caller's, so two scenarios naming the same subset in a
+  different order still get the same prompt; numbering stays contiguous so the judge never sees
+  a gap implying something was withheld; an unknown criterion id raises rather than silently
+  resolving to "all" or "none"; narrowing requires a stated `geval_criteria_reason`, without
+  which the field would be a nicer-looking `skip_geval` — a way to make a red scenario green by
+  quietly dropping the criterion it fails.
+- CI's `eval-imports` job collection-only check is restored alongside it, closing the same gap
+  #156 found: `tests/test_evals.py` is excluded from the default suite, so a broken import there
+  was previously only discoverable by dispatching a paid eval run.
+
 ### All five rubrics gain a scoring band anchored across the 0.5 threshold (#153)
 
 - **Every rubric's bands jumped straight from 0.7 to 0.4, straddling `THRESHOLD = 0.5` with

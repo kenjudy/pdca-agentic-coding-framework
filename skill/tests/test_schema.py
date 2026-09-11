@@ -2,6 +2,8 @@
 
 import unittest
 
+import pytest
+
 from eval.schema import ScenarioValidationError, validate_scenario
 
 VALID_SCENARIO = {
@@ -110,3 +112,50 @@ class TestSchemaAcceptsValid(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)
+
+
+class TestGevalCriteriaScoping:
+    """#148 phase 2: a scenario may narrow the criteria it is judged against."""
+
+    def _valid(self, **signals):
+        base = {"must_contain": [], "must_not_contain": [], "called_shot_required": False}
+        base.update(signals)
+        return {
+            "prompt_id": "2",
+            "scenario_id": "x",
+            "description": "d",
+            "input": "i",
+            "expected_signals": base,
+        }
+
+    def test_accepts_geval_criteria_list(self):
+        validate_scenario(self._valid(geval_criteria=["called-shot"],
+                                      geval_criteria_reason="because"))
+
+    def test_rejects_geval_criteria_not_a_list(self):
+        with pytest.raises(ScenarioValidationError):
+            validate_scenario(self._valid(geval_criteria="called-shot",
+                                          geval_criteria_reason="because"))
+
+    def test_rejects_non_string_criteria_ids(self):
+        with pytest.raises(ScenarioValidationError):
+            validate_scenario(self._valid(geval_criteria=[1], geval_criteria_reason="because"))
+
+    def test_rejects_narrowing_without_a_stated_reason(self):
+        """Narrowing must be argued, not just declared. Without this, geval_criteria is a
+        nicer-looking skip_geval -- a way to make a red scenario green by quietly dropping
+        the criterion it fails."""
+        with pytest.raises(ScenarioValidationError) as exc:
+            validate_scenario(self._valid(geval_criteria=["called-shot"]))
+        assert "reason" in str(exc.value).lower()
+
+    def test_rejects_an_empty_reason(self):
+        with pytest.raises(ScenarioValidationError):
+            validate_scenario(self._valid(geval_criteria=["called-shot"],
+                                          geval_criteria_reason="   "))
+
+    def test_rejects_an_empty_criteria_list(self):
+        """Selecting nothing is skip_geval with extra steps, and bypasses the invariant
+        that skip_geval scenarios must still assert something mechanically."""
+        with pytest.raises(ScenarioValidationError):
+            validate_scenario(self._valid(geval_criteria=[], geval_criteria_reason="because"))
