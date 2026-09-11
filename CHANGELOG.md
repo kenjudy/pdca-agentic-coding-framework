@@ -2,6 +2,30 @@
 
 ## Unreleased
 
+### All five rubrics gain a scoring band anchored across the 0.5 threshold (#153)
+
+- **Every rubric's bands jumped straight from 0.7 to 0.4, straddling `THRESHOLD = 0.5` with
+  nothing between them.** A genuinely borderline response — one the judge considers neither
+  "mostly compliant" nor "partially compliant" — had no band to land on, so a small judgment
+  difference flipped pass/fail. The pre-fix #136 score distribution showed this directly: an
+  empty 0.5–0.6 region, previously misread as judge instability rather than a structural gap
+  in the ladder itself (corrected in #147).
+- **Added a `0.6 — Borderline` band to all five rubrics**, worded as positive structure — what
+  IS present — rather than a "do not penalise X" exclusion. #149 measured that phrasing
+  backfiring twice on rubric 2: telling an LLM judge what not to penalize makes it salient and
+  it gets penalized harder. Each band ends with the same invariant: "a response that violates
+  no hard constraint belongs here or above, never below." Rubric 2's band text matches the
+  draft already proposed in #153 itself (from `b779436`, since reverted with the rest of that
+  commit).
+  `test_every_rubric_has_a_band_anchored_at_0_6` in `tests/test_rubrics.py` pins the new band
+  across all five rubrics (RED confirmed before the edit — all five subtests failed with the
+  exact predicted message).
+- **`tests/fixtures/rubric_criteria_snapshot.json` updated deliberately.** The byte-identity
+  test it backs (`test_assembled_criteria_is_byte_identical_to_the_published_string`) exists to
+  prove #148's phase-1 decomposition changed no behavior — it is not a freeze on rubric content
+  for all time. This change is an intentional content edit, so the snapshot was regenerated to
+  match; the new test above is what guards this specific change going forward.
+
 ### Called shot must predict the first-executing assertion, not the most meaningful one
 
 - **The DO master's CALLED SHOT block named "the exact assertion message or error expected" with

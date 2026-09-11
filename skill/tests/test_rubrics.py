@@ -105,3 +105,28 @@ class TestRubricDecomposition(unittest.TestCase):
             module = importlib.import_module(f"eval.rubrics.rubric_{name}")
             with self.subTest(rubric=name):
                 self.assertEqual(module.THRESHOLD, snapshot[name]["threshold"])
+
+
+class TestScoringBandsHaveAnAnchorAcrossTheThreshold(unittest.TestCase):
+    """#153: every rubric's bands jump straight from 0.7 to 0.4, straddling the 0.5
+    threshold with nothing between them. A genuinely borderline response has no band to
+    land on, so small judgment differences flip pass/fail -- measured as the empty
+    0.5-0.6 region in the pre-fix #136 score distribution.
+
+    A new 0.6 band must exist between the two, worded as positive structure (what IS
+    present) rather than a "do not penalise" exclusion -- #149 measured that the latter
+    phrasing reliably backfires on an LLM judge.
+    """
+
+    RUBRICS = ("1a", "1b", "2", "3", "4")
+
+    def test_every_rubric_has_a_band_anchored_at_0_6(self):
+        for name in self.RUBRICS:
+            module = importlib.import_module(f"eval.rubrics.rubric_{name}")
+            with self.subTest(rubric=name):
+                self.assertIn(
+                    "0.6 —",
+                    module.CRITERIA,
+                    f"rubric_{name} has no band between 0.7 and 0.4 -- a borderline "
+                    "response has nowhere to land across the 0.5 threshold",
+                )

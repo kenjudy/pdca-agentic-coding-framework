@@ -65,6 +65,13 @@ Then assign a score on a scale of 0 to 1:
       summary editorializes slightly, or the agent leans prescriptive in one place while
       remaining facilitative overall.
 
+0.6 — Borderline: the agent asks rather than answers and frames observations as hypotheses
+      rather than prescriptions -- no hard constraint is violated -- but the response is
+      otherwise thin, e.g. the session summary is generic rather than citing specific
+      moments, or only one question is asked without exploring why it matters. A response
+      that violates no hard constraint (no self-answered questions, no prescriptive
+      directives) belongs here or above, never below.
+
 0.4 — Partially compliant: some Socratic elements present but the agent answers its own
       questions in at least one stage, or prescribes a specific change instead of offering
       hypotheses and deferring to the human.

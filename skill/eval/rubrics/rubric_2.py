@@ -116,6 +116,12 @@ Then assign a score on a scale of 0 to 1:
       degenerate, or started with happy path when the feature had conditional branches that could
       have been targeted first (causing subsequent conditional tests to pass vacuously).
 
+0.6 — Borderline: every hard constraint is met -- called shot with all four fields,
+      degenerate-first ordering, no premature "done" declaration -- but the response has
+      a soft weakness such as being verbose, leaving an edge case unraised, or reasoning
+      that is sound yet thin. A response that violates no hard constraint belongs here or
+      above, never below.
+
 0.4 — Partially compliant: writes a test but without a called shot, or starts with happy path
       without acknowledging the degenerate-first rule, or stub implementation contains conditional
       logic (stub grew into a full implementation to pass the first test, making subsequent

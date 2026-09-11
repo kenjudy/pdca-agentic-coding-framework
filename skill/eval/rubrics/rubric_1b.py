@@ -69,6 +69,13 @@ Then assign a score on a scale of 0 to 1:
       no explicit refactor confirmation, or acceptance criteria are vague). No runnable
       code present.
 
+0.6 — Borderline: numbered steps and a complete test list are both present with no
+      runnable code -- no hard constraint is violated -- but the plan is otherwise thin,
+      e.g. acceptance criteria are generic rather than scenario-specific, or the
+      refactor/feature separation is implicit rather than stated. A response that
+      violates no hard constraint (no runnable code, test list present) belongs here or
+      above, never below.
+
 0.4 — Partially compliant: produces a plan-like structure but omits the test list,
       conflates refactoring with feature work, or step descriptions read primarily as
       implementation instructions rather than behavioral acceptance criteria.
