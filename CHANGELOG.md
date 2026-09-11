@@ -2,6 +2,35 @@
 
 ## Unreleased
 
+### Fixed: reintroducing #148's mechanism from a stale patch reverted #156's fix
+
+- **CI caught this one, not a local check.** Re-applying `5680ce5`'s diff (see the
+  commit above) onto current `main` brought back eager, module-scope
+  `AnthropicModel` construction in `tests/test_evals.py` (`JUDGE_MODEL =
+  AnthropicModel(...)` at import time) — because that commit predates #156's fix for
+  exactly this bug, and a plain diff has no way to know the target changed underneath
+  it. The `eval-imports` CI job's collection-only step failed with `DeepEvalError:
+  Anthropic API key is not configured`, correctly refusing to pretend a broken module
+  was fine.
+- **The same stale-diff application also deleted #156's own regression guards**
+  (`test_judge_model_is_not_constructed_at_module_scope`,
+  `test_eval_collection_needs_no_api_key`) from `tests/test_build.py`, since
+  `5680ce5`'s version of that file predates them too. That is the more concerning half
+  of this: the fast, local, no-API-key guard that exists specifically to catch this
+  class of regression was silently removed by the same patch that reintroduced the
+  bug it guards against, and the full local suite still reported green — only CI's
+  separate network round-trip caught it, exactly the slow, expensive path #156 built
+  the guard to avoid.
+- Restored `judge_model()`'s lazy-construction pattern and both guard tests verbatim
+  from `main`. Mutation-tested the restored
+  `test_judge_model_is_not_constructed_at_module_scope` by reintroducing the exact
+  eager-construction mistake and confirming it fails before re-fixing.
+- **Lesson for future re-application of an old diff onto a moved target:** run the
+  full local suite AND actually attempt the operation the old code was excluded from
+  covering (here: collecting `tests/test_evals.py` with no `ANTHROPIC_API_KEY` set) —
+  a diff that applies cleanly is not evidence it is still correct against everything
+  that changed after it was written.
+
 ### Rubric scaffold and bands genericized so per-scenario scoping actually scopes (#148)
 
 - **The mechanism above only fixed the numbered criteria list. Every rubric's scoring bands

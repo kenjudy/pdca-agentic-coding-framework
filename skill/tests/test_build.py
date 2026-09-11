@@ -1013,6 +1013,59 @@ class TestHookInfrastructure(unittest.TestCase):
             "fail on a missing deepeval rather than testing anything",
         )
 
+    def test_judge_model_is_not_constructed_at_module_scope(self):
+        """tests/test_evals.py must be importable without a credential (#156).
+
+        deepeval raises during AnthropicModel construction when no key is present, so a
+        module-scope judge makes the file unimportable, uncollectable, and unanalysable
+        without a secret -- which is why every cheap check has skipped it and why every
+        edit to it has been unverifiable except by paying for an eval run.
+
+        Checked by parsing the source rather than importing it. Importing is the thing
+        that does not work, and this test has to run in the default suite, which installs
+        neither deepeval nor a key.
+        """
+        import ast
+
+        source = (CLAUDE_SKILL_DIR / "tests" / "test_evals.py").read_text()
+        offenders = []
+        for node in ast.parse(source).body:
+            # A function body runs when called, not when the module is imported, so a
+            # construction inside one is the fix rather than the defect.
+            if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                continue
+            for call in ast.walk(node):
+                if not isinstance(call, ast.Call):
+                    continue
+                func = call.func
+                name = getattr(func, "id", None) or getattr(func, "attr", None)
+                if name == "AnthropicModel":
+                    offenders.append(getattr(node, "lineno", "?"))
+        self.assertEqual(
+            offenders,
+            [],
+            f"tests/test_evals.py constructs AnthropicModel at module scope (line(s) "
+            f"{offenders}), so importing the module requires an API key",
+        )
+
+    def test_eval_collection_needs_no_api_key(self):
+        """The observable consequence of the fix, and the reason to make it.
+
+        The collection step shipped with a dummy key because the module could not be
+        imported without one. Once the judge is built lazily that workaround is dead
+        weight, and leaving it would hide a regression: if module-scope construction came
+        back, the step would keep passing on the dummy key and say nothing.
+        """
+        workflow = (REPO_ROOT / ".github" / "workflows" / "test.yml").read_text()
+        step = workflow[workflow.index("Collect the eval suite without running it"):]
+        step = step[: step.index("--collect-only")]
+        self.assertNotIn(
+            "ANTHROPIC_API_KEY",
+            step,
+            "the eval-collection step still sets ANTHROPIC_API_KEY, so it cannot detect a "
+            "return to module-scope judge construction -- it would pass on the dummy key",
+        )
+
     def test_ci_collects_the_eval_suite(self):
         """Something must import tests/test_evals.py without spending money.
 
