@@ -65,6 +65,20 @@ class TestRunPhaseRequestConstruction(unittest.TestCase):
         call_kwargs = mock_client.messages.create.call_args.kwargs
         self.assertEqual(call_kwargs["model"], "claude-haiku-4-5-20251001")
 
+    def test_max_tokens_gives_room_for_a_multi_test_called_shot_walkthrough(self):
+        """#148 validation (eval run 34640545802) caught 2-first-step's response
+        truncated mid-sentence at MAX_TOKENS=2048 -- the judge's own reasoning said
+        so explicitly: 'it cuts off mid-sentence... never reaching the required
+        completion phrase.' A phase-2 scenario legitimately needs room for a called
+        shot plus code across several tests plus the handoff phrase; 2048 was not
+        enough. Pinned generously so a future re-lowering doesn't silently
+        reintroduce truncation-driven false failures."""
+        prompt_path = make_prompt_file()
+        mock_client = make_mock_client()
+        run_phase(prompt_path, SCENARIO_INPUT, _client=mock_client)
+        call_kwargs = mock_client.messages.create.call_args.kwargs
+        self.assertGreaterEqual(call_kwargs["max_tokens"], 4096)
+
 
 class TestRunPhaseResponse(unittest.TestCase):
     """Verify the executor extracts and returns the model's text."""
