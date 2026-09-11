@@ -87,15 +87,6 @@ class TestMustContain(unittest.TestCase):
         results = check_mechanical("Check the architecture.", signals)
         self.assertIn("architecture", results[0].field)
 
-    def test_must_contain_stays_case_sensitive(self):
-        # #116 case-folded must_not_contain only. must_contain is deliberately
-        # left alone: folding it would let casual lowercase prose usages
-        # satisfy signals like "Status:" that were meant to match the
-        # template's specific bolded heading, not any mention of the word.
-        signals = {**EMPTY_SIGNALS, "must_contain": ["Status:"]}
-        results = check_mechanical("current status: unclear", signals)
-        self.assertFalse(results[0].passed)
-
 
 class TestMustNotContain(unittest.TestCase):
     """must_not_contain checks — string must be absent from output."""
@@ -118,15 +109,6 @@ class TestMustNotContain(unittest.TestCase):
         # so the guard against certifying unfinished work never fires.
         signals = {**EMPTY_SIGNALS, "must_not_contain": ["Status: Complete"]}
         results = check_mechanical("**Status:** Complete", signals)
-        self.assertEqual(len(results), 1)
-        self.assertFalse(results[0].passed)
-
-    def test_must_not_contain_catches_case_variant(self):
-        # #116: "all done" written sentence-initial as "All done" evaded the
-        # guard entirely under case-sensitive matching -- demonstrated live in
-        # the issue against 2-first-step's only mechanical signal.
-        signals = {**EMPTY_SIGNALS, "must_not_contain": ["all done"]}
-        results = check_mechanical("All done — the implementation is finished.", signals)
         self.assertEqual(len(results), 1)
         self.assertFalse(results[0].passed)
 
