@@ -39,6 +39,8 @@
 
 10. **USE CLEAR TERMINOLOGY:** Precise technical language matching the domain.
 
+11. **VERIFY BEFORE CLAIMING:** Never build a commit message, close reason, or next command on a prior command's result without checking that result directly first — not just its exit code. This is item 4's discipline generalized past tests: a multi-step shell invocation where the steps are not `&&`-chained keeps running past a silent failure, and a later step can then assert something the failed step never actually did.
+
 ---
 
 ## License & Attribution
