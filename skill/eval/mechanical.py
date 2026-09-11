@@ -47,7 +47,12 @@ def check_mechanical(output: str, signals: dict) -> list[CheckResult]:
         ))
 
     for phrase in signals.get("must_not_contain", []):
-        passed = _normalize(phrase) not in _normalize(output)
+        # Case-folded (#116): a forbidden phrase is forbidden in any casing --
+        # "All done" at a sentence start is the same violation as "all done"
+        # mid-sentence. must_contain and called_shot_required stay case-sensitive
+        # deliberately; folding those would loosen 29 other signals' semantics
+        # to match prose usages they were never meant to accept.
+        passed = _normalize(phrase).casefold() not in _normalize(output).casefold()
         results.append(CheckResult(
             field=f"must_not_contain: '{phrase}'",
             passed=passed,

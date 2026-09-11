@@ -2,6 +2,18 @@
 
 ## Unreleased
 
+### must_not_contain now matches case-insensitively (#116)
+
+- **`check_mechanical`'s `must_not_contain` matched case-sensitively, so `"all done"` missed the
+  most natural phrasing — sentence-initial "All done."** Demonstrated live in #116: a model that
+  opens with "All done" evaded the guard entirely, and after #112 this became `2-first-step`'s
+  *only* mechanical signal. `must_contain` and `called_shot_required` are deliberately left
+  case-sensitive — folding those would let casual lowercase prose usages satisfy signals like
+  `"Status:"` that were meant to match a specific bolded heading, loosening the other 29 signals
+  across the scenario suite to match prose they were never meant to accept. A new guard test pins
+  that `must_contain` stays case-sensitive so a later change to `_normalize` cannot fold it by
+  accident.
+
 ### run-evals.sh now offers to promote a full sweep to the tracked baseline
 
 - **Promotion into `eval/baselines/` was entirely manual since #152 created the directory** —
