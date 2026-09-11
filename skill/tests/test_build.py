@@ -305,6 +305,43 @@ class TestEvalScenarios(unittest.TestCase):
                         "as a pass forever",
                     )
 
+    def test_all_done_guard_catches_sentence_initial_capitalization(self):
+        """#116: "all done" missed the natural sentence-initial phrasing "All done."
+
+        Demonstrated live in the issue: a model opening a response with "All done"
+        evaded must_not_contain: ["all done"] entirely under case-sensitive matching,
+        and after #112 this is 2-first-step's *only* mechanical signal.
+
+        Fixed by adding the capitalized variant directly to the three affected
+        scenarios' forbidden-phrase lists -- not by case-folding must_not_contain
+        globally in eval/mechanical.py. A fresh adversarial critic pass on that
+        approach found it broke two *other* scenarios that rely on capitalization
+        to distinguish a directive statement from an incidental mention:
+        1a-vague-goal's "Add an index" and 4-tdd-breakdown's "you should" both
+        started matching compliant, lowercase incidental usage once must_not_contain
+        was folded suite-wide. Scoping the fix to the three scenarios that actually
+        need it leaves those two signals' case-sensitivity intact.
+        """
+        import json
+
+        from eval.mechanical import check_mechanical
+
+        scenarios = json.loads((EVAL_SCENARIOS_DIR / "2_scenarios.json").read_text())
+        affected = {"2-first-step", "2-beads-ordering-capture", "2-ponytail-precedence"}
+        targets = [s for s in scenarios if s["scenario_id"] in affected]
+        self.assertEqual(len(targets), 3, "expected all three #116-affected scenarios")
+        for scenario in targets:
+            with self.subTest(scenario=scenario["scenario_id"]):
+                results = check_mechanical(
+                    "All done — the implementation is finished.",
+                    scenario["expected_signals"],
+                )
+                mnc_results = [r for r in results if r.field.startswith("must_not_contain")]
+                self.assertTrue(
+                    any(not r.passed for r in mnc_results),
+                    f"{scenario['scenario_id']} did not flag sentence-initial 'All done'",
+                )
+
     def test_scenario_files_valid_against_schema(self):
         """All JSON files in eval/scenarios/ must pass validate_scenario.
         Passes vacuously until scenario files are added in Step 4."""

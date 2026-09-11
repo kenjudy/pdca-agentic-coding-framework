@@ -2,17 +2,28 @@
 
 ## Unreleased
 
-### must_not_contain now matches case-insensitively (#116)
+### The "all done" guard now catches sentence-initial capitalization (#116)
 
-- **`check_mechanical`'s `must_not_contain` matched case-sensitively, so `"all done"` missed the
-  most natural phrasing — sentence-initial "All done."** Demonstrated live in #116: a model that
-  opens with "All done" evaded the guard entirely, and after #112 this became `2-first-step`'s
-  *only* mechanical signal. `must_contain` and `called_shot_required` are deliberately left
-  case-sensitive — folding those would let casual lowercase prose usages satisfy signals like
-  `"Status:"` that were meant to match a specific bolded heading, loosening the other 29 signals
-  across the scenario suite to match prose they were never meant to accept. A new guard test pins
-  that `must_contain` stays case-sensitive so a later change to `_normalize` cannot fold it by
-  accident.
+- **`must_not_contain: ["all done"]` matched case-sensitively, so the most natural phrasing —
+  sentence-initial "All done" — evaded it entirely.** Demonstrated live in #116, and after #112
+  this became `2-first-step`'s *only* mechanical signal.
+- **First attempt case-folded `must_not_contain` globally in `eval/mechanical.py`. An adversarial
+  critic pass (operator-chosen model: Opus) found it broke two other scenarios on the same
+  branch.** `1a-vague-goal`'s `"Add an index"` and `4-tdd-breakdown`'s `"you should"` both rely on
+  capitalization to distinguish a directive statement from an incidental, compliant mention —
+  folding the whole signal type made both start matching lowercase prose they were never meant to
+  catch. Confirmed empirically: a compliant 1a response containing "...tell you to add an
+  index..." passed against `main` and failed against the folded version; likewise a compliant ACT
+  response containing "You should have the final call..." Reverted the code change entirely
+  (`eval/mechanical.py` and `tests/test_mechanical.py` are now byte-identical to `main`).
+- **Fixed at the data layer instead:** added the capitalized variant `"All done"` directly to the
+  three scenarios that actually need it (`2-first-step`, `2-beads-ordering-capture`,
+  `2-ponytail-precedence`) in `eval/scenarios/2_scenarios.json`, leaving every other
+  `must_not_contain` phrase's case-sensitivity untouched.
+  `test_all_done_guard_catches_sentence_initial_capitalization` in `tests/test_build.py` pins the
+  fix against the real scenario data (RED confirmed before the data edit, GREEN after), and the
+  two previously-broken compliant responses were re-verified to pass clean against the final
+  scenario file.
 
 ### run-evals.sh now offers to promote a full sweep to the tracked baseline
 
