@@ -54,6 +54,16 @@ to appear in some baseline here.
 dependency bump, and a report without that line predates the mechanism — treat its numbers
 as unattributable, which is precisely why #122 could not be answered in retrospect.
 
+**The rubric ladder itself is a version, and nothing records it.** #153 added a `0.6 —
+Borderline` band to all five rubrics, between the pre-existing `0.7` and `0.4` bands. That
+shifts scores upward by construction wherever a response lands in the newly-populated
+0.5–0.6 region — the fix is meant to, that's the point — so a GEval delta measured against
+`report_20260909_174245.md` (which predates #153) is not evidence of a prompt regression or
+improvement; it may just be the ladder. No report currently records which rubric-ladder
+version produced it. Until that's tracked (#172), treat any GEval comparison spanning #153
+the same way as a dependency-bump comparison above: don't trust it without independently
+checking which ladder each side used.
+
 **Mechanical checks are the reliable gate.** They were steady across every measured run
 (17/18, 22/23, 17/18 on the #136 diagnostic).
 

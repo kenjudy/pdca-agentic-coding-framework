@@ -2,6 +2,70 @@
 
 ## Unreleased
 
+### All five rubrics gain a scoring band anchored across the 0.5 threshold (#153)
+
+- **Every rubric's bands jumped straight from 0.7 to 0.4, straddling `THRESHOLD = 0.5` with
+  nothing between them.** A genuinely borderline response — one the judge considers neither
+  "mostly compliant" nor "partially compliant" — had no band to land on, so a small judgment
+  difference flipped pass/fail. The pre-fix #136 score distribution showed this directly: an
+  empty 0.5–0.6 region, previously misread as judge instability rather than a structural gap
+  in the ladder itself (corrected in #147).
+- **This work already existed, unfinished, on a stale local branch (`claude/rubric-band-gap`,
+  `10cc63f`) from a prior session — rediscovered only after independently re-implementing the
+  same fix with bespoke, per-rubric band text and pushing it. That branch's design was better:
+  wording is IDENTICAL across all five rubrics on purpose**, adding no phase-specific
+  vocabulary a judge could over-index on — #149 measured naming a concept in a rubric making
+  the judge score against it, twice, both times worsening scores. Five bespoke bands would
+  have reintroduced exactly that risk. Discarded the bespoke version and adopted the identical
+  wording instead: `0.6 — Borderline: every hard constraint for this phase is met, but the
+  response has a soft weakness — it is verbose, leaves an edge case unraised, or its reasoning
+  is sound yet thin. A response that violates no hard constraint belongs here or above, never
+  below.`
+- **Also adopted the prior branch's structural test** (`TestScoringBandsSpanTheThreshold` in
+  `tests/test_rubrics.py`, replacing a weaker string-literal version written during
+  reimplementation): it parses each rubric's score ladder and asserts a band strictly between
+  0.4 and 0.7 *at or above that rubric's own threshold* — immune to a future rewording, and it
+  catches a band placed below threshold (which would relabel the same failure rather than fix
+  the gap), which a literal `"0.6 —"` match cannot.
+- **Validated by reusing an already-spent full eval sweep from the prior branch** (GitHub
+  Actions run `34510501344`, since the wording is now identical to what that run measured)
+  rather than dispatching a redundant paid run: `4-short-session` — the scenario #153 itself
+  names as the validation candidate — scored **0.60**, landing exactly in the previously-empty
+  0.5–0.6 region. `4-tdd-breakdown` (already known-red, #151) stayed failing (2 of 3 shots at
+  0.20) rather than flipping to pass, which is #153's own anti-masking check: a stably-failing
+  scenario that starts passing would be evidence the band is masking real failures, not fixing
+  a structural artifact.
+- **`tests/fixtures/rubric_criteria_snapshot.json` updated deliberately.** The byte-identity
+  test it backs (`test_assembled_criteria_is_byte_identical_to_the_published_string`) exists to
+  prove #148's phase-1 decomposition changed no behavior — it is not a freeze on rubric content
+  for all time. This change is an intentional content edit, so the snapshot was regenerated to
+  match; the new structural test above is what guards this specific change going forward.
+- **Adversarial critic pass (Opus) on the PR found the reused-evidence claim above was
+  overstated: valid for phase 4, but not phase 2.** `2. Do/2. Test Drive the Change.md` and
+  `eval/scenarios/2_scenarios.json` both changed after run `34510501344` was recorded (#155,
+  #170), so that run's phase-2 numbers reflect a system prompt and scenario set that no longer
+  exist. Closed the gap with a scoped, phase-2-only CI dispatch
+  (`tests/test_evals.py::TestPrompt2Evals`, single pass) rather than assuming the reused
+  evidence covered it. Result: `2-first-step` failed its GEval majority vote (1/3 shots passed:
+  0.20, 0.30, 0.70) — but this is the *same* pre-existing "mechanical pass, GEval FAIL"
+  divergence already visible in run `34510501344`'s own analyst notes, before #153 existed. No
+  scenario flipped from a stable failure to a false pass; #153's anti-masking property holds for
+  phase 2 too, on the scenario actually checked.
+- **Two more critic findings, both fixed:** `TestScoringBandsSpanTheThreshold`'s existing tests
+  call a band-extraction helper that sorts, so a band physically misplaced in the ladder (e.g.
+  written after the 0.0 band instead of between 0.7 and 0.4) passed undetected — added
+  `test_bands_appear_in_descending_order_as_written`, mutation-tested against exactly that
+  misplacement. Nothing enforced the PR's own stated safety property (identical 0.6 wording
+  across all five rubrics) — added `test_the_0_6_band_text_is_identical_across_all_rubrics`,
+  mutation-tested against a one-word wording drift in one rubric.
+- **Remaining critic findings filed rather than fixed inline:** #172 (eval validation evidence
+  is ephemeral — GitHub Actions log retention is the only record, and no report captures which
+  rubric-ladder version produced it) and #173 (the new band's "hard constraint" language is
+  undefined in four of the five rubrics, checked empirically on phase 4 only). Also documented
+  in `skill/eval/baselines/README.md`: the tracked baseline (`report_20260909_174245.md`)
+  predates #153, so a future GEval comparison against it needs the same care as a
+  dependency-version mismatch.
+
 ### Called shot must predict the first-executing assertion, not the most meaningful one
 
 - **The DO master's CALLED SHOT block named "the exact assertion message or error expected" with
