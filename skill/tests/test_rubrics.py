@@ -192,7 +192,7 @@ class TestScoringBandsSpanTheThreshold(unittest.TestCase):
         for name in self.RUBRICS:
             module = importlib.import_module(f"eval.rubrics.rubric_{name}")
             match = re.search(r"^0\.6 —.*?(?=\n\n0\.4 —)", module.CRITERIA, re.S | re.M)
-            self.assertIsNotNone(match, f"rubric_{name} has no 0.6 band block")
+            assert match is not None, f"rubric_{name} has no 0.6 band block"
             texts[name] = match.group(0)
         self.assertEqual(
             len(set(texts.values())),
