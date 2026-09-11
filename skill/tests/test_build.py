@@ -305,6 +305,43 @@ class TestEvalScenarios(unittest.TestCase):
                         "as a pass forever",
                     )
 
+    def test_all_done_guard_catches_sentence_initial_capitalization(self):
+        """#116: "all done" missed the natural sentence-initial phrasing "All done."
+
+        Demonstrated live in the issue: a model opening a response with "All done"
+        evaded must_not_contain: ["all done"] entirely under case-sensitive matching,
+        and after #112 this is 2-first-step's *only* mechanical signal.
+
+        Fixed by adding the capitalized variant directly to the three affected
+        scenarios' forbidden-phrase lists -- not by case-folding must_not_contain
+        globally in eval/mechanical.py. A fresh adversarial critic pass on that
+        approach found it broke two *other* scenarios that rely on capitalization
+        to distinguish a directive statement from an incidental mention:
+        1a-vague-goal's "Add an index" and 4-tdd-breakdown's "you should" both
+        started matching compliant, lowercase incidental usage once must_not_contain
+        was folded suite-wide. Scoping the fix to the three scenarios that actually
+        need it leaves those two signals' case-sensitivity intact.
+        """
+        import json
+
+        from eval.mechanical import check_mechanical
+
+        scenarios = json.loads((EVAL_SCENARIOS_DIR / "2_scenarios.json").read_text())
+        affected = {"2-first-step", "2-beads-ordering-capture", "2-ponytail-precedence"}
+        targets = [s for s in scenarios if s["scenario_id"] in affected]
+        self.assertEqual(len(targets), 3, "expected all three #116-affected scenarios")
+        for scenario in targets:
+            with self.subTest(scenario=scenario["scenario_id"]):
+                results = check_mechanical(
+                    "All done — the implementation is finished.",
+                    scenario["expected_signals"],
+                )
+                mnc_results = [r for r in results if r.field.startswith("must_not_contain")]
+                self.assertTrue(
+                    any(not r.passed for r in mnc_results),
+                    f"{scenario['scenario_id']} did not flag sentence-initial 'All done'",
+                )
+
     def test_scenario_files_valid_against_schema(self):
         """All JSON files in eval/scenarios/ must pass validate_scenario.
         Passes vacuously until scenario files are added in Step 4."""
@@ -414,6 +451,73 @@ class TestProjectSetup(unittest.TestCase):
                 f"run-tests.sh's sync does not request '{extra}', so the tools it then "
                 "invokes with 'uv run' may resolve outside the venv (issue #89)",
             )
+
+
+class TestDependencyFloors(unittest.TestCase):
+    """pyproject.toml's declared floors must not understate what is actually locked.
+
+    #127, #128 and #129 (dependabot) each correctly reported a real gap: uv.lock had
+    already resolved anthropic 1.4.0, deepeval 4.2.2 and ruff 0.16.6 -- the earlier batch
+    relock in this CHANGELOG's Dependency Updates section did that -- but the floors in
+    `[project.optional-dependencies]` were never raised to match, so a `pip install` of
+    this package with no lock (or an older compatible resolution) could silently receive
+    versions below what the project actually builds and tests against.
+
+    Generalized rather than hardcoded to today's three numbers: any future floor that
+    drifts behind its own lock fails this the same way, not just these three packages.
+    """
+
+    @staticmethod
+    def _floors():
+        import re
+        import tomllib
+
+        data = tomllib.loads((CLAUDE_SKILL_DIR / "pyproject.toml").read_text())
+        floors = {}
+        for extra_deps in data["project"]["optional-dependencies"].values():
+            for spec in extra_deps:
+                m = re.match(r"^([A-Za-z0-9_.-]+)>=([0-9][0-9A-Za-z.]*)$", spec)
+                if m:
+                    floors[m.group(1).lower()] = m.group(2)
+        return floors
+
+    @staticmethod
+    def _locked():
+        import re
+
+        text = (CLAUDE_SKILL_DIR / "uv.lock").read_text()
+        locked = {}
+        for m in re.finditer(r'name = "([^"]+)"\nversion = "([^"]+)"', text):
+            locked[m.group(1).lower()] = m.group(2)
+        return locked
+
+    def test_declared_floor_matches_the_locked_version(self):
+        """Not '<=' -- that is a tautology as long as uv.lock is valid at all: `uv lock`
+        guarantees the resolved graph satisfies pyproject.toml's declared constraints, so
+        floor <= locked can never fail while the lock resolves. It would pass with the
+        exact gap #127-129 reported still wide open, which very nearly happened here.
+
+        '==' is this project's own stated convention, confirmed against every OTHER
+        floor before relying on it: pytest, python-dotenv and mypy already satisfy it.
+        anthropic, deepeval and ruff are exactly the three that do not -- exactly the
+        three dependabot flagged. The CHANGELOG's Dependency Updates entry describes the
+        convention directly: "Floors raised and the lockfile relocked in one pass."
+        """
+        from packaging.version import Version
+
+        floors, locked = self._floors(), self._locked()
+        for name, floor in floors.items():
+            if name not in locked:
+                continue
+            with self.subTest(package=name):
+                self.assertEqual(
+                    Version(floor),
+                    Version(locked[name]),
+                    f"pyproject.toml declares {name}>={floor}, but uv.lock resolves "
+                    f"{name} {locked[name]} -- the floor has drifted behind what this "
+                    f"project actually builds and tests against, so an install without "
+                    f"the lock could silently receive an older, untested version",
+                )
 
 
 class TestReadme(unittest.TestCase):
@@ -568,6 +672,16 @@ class TestSkillPackage(unittest.TestCase):
             distinctive,
             packaged,
             "do-prompts.md doesn't contain expected master content",
+        )
+
+    def test_do_prompts_contains_the_first_executing_assertion_language(self):
+        """#155's DO master edit must reach the packaged skill, not just the source.
+        Mirrors test_do_prompts_contains_master_content's pattern."""
+        packaged = read_zip_file(SKILL_FILE, f"{SKILL_NAME}/references/do-prompts.md")
+        self.assertIn(
+            "the assertion expected to fail first",
+            packaged,
+            "do-prompts.md does not contain the #155 called-shot wording",
         )
 
     def test_working_agreements_matches_master(self):
@@ -751,6 +865,139 @@ class TestBuildScript(unittest.TestCase):
 
 class TestHookInfrastructure(unittest.TestCase):
     """Verify git hook infrastructure files exist and are correctly structured."""
+
+    def test_called_shot_requires_predicting_the_first_executing_assertion(self):
+        """#155: the called shot's 'Expected failure' field named the most meaningful
+        assertion in a multi-assertion test, not the one the runner reports first. When
+        those differ, a correct test's RED reads as a misprediction and the STOP rule
+        fires for the wrong reason -- or worse, trains the operator to wave it through,
+        which erodes the rule for the case it exists to catch.
+
+        Checked against the master source directly (unconditional, no build needed).
+        assertTrue rather than assertIn per #143.
+        """
+        master = (REPO_ROOT / "2. Do" / "2. Test Drive the Change.md").read_text()
+        self.assertTrue(
+            "the assertion expected to fail first" in master,
+            "the DO master's CALLED SHOT block does not ask for the first-executing "
+            "assertion specifically, so a loose prediction against a different "
+            "assertion in the same test cannot be told apart from a genuine "
+            "misprediction (#155)",
+        )
+        self.assertTrue(
+            "ordered so a secondary one runs before the one that expresses the "
+            "behavior under test" in master,
+            "the DO master's STOP-rule sentence does not name assertion ordering as a "
+            "possible cause of a RED mismatch, only 'testing the wrong thing' (#155)",
+        )
+        self.assertTrue(
+            "aggregate failures per test" in master,
+            "the DO master's STOP-rule sentence has no qualification for assertion "
+            "styles that aggregate failures (subTest, soft assertions) -- for those, "
+            "'ran first' is the wrong question and the ordering-based rule above "
+            "would misfire on the repo's own subTest-based tests (found in adversarial "
+            "review of #155)",
+        )
+
+    def test_testing_anti_patterns_names_the_loose_called_shot_pattern(self):
+        """#155's own suggestion: name the pattern so it is citable in retros, the way
+        #8 (Partial-Instance Coverage) has been used as diagnostic vocabulary all
+        cycle rather than re-explained from scratch each time.
+
+        Pins the Rule paragraph, not just the heading. An earlier version of this test
+        pinned only the heading and was found, by adversarial review, to pass against
+        an empty section -- mutation-tested afterward here to confirm it no longer does.
+        """
+        master = (REPO_ROOT / "2. Do" / "Testing Anti-Patterns.md").read_text()
+        self.assertTrue(
+            "## 9. Loose Called Shot" in master,
+            "Testing Anti-Patterns.md has no item 9 for a called shot that predicts "
+            "the most meaningful assertion rather than the first-executing one (#155)",
+        )
+        self.assertTrue(
+            "Predict the exact message of the first assertion that will fail, not "
+            "the most meaningful one" in master,
+            "item 9's Rule paragraph is missing -- a heading alone does not tell "
+            "anyone what to do differently (#155)",
+        )
+        self.assertTrue(
+            "the mismatch is the predicted assertion being absent from the report, "
+            "not out of order" in master,
+            "item 9's Diagnosis does not qualify for assertion styles that aggregate "
+            "failures per test, so it states a false universal -- 'the runner stops "
+            "at the first failing assertion' is untrue for subTest, soft assertions, "
+            "and aggregate_failures, which this repo's own test suite uses (found in "
+            "adversarial review of #155)",
+        )
+
+    def test_testing_anti_patterns_item_9_matches_the_established_layout(self):
+        """Items 1-8 each open with a '---' separator and get a Quick Check line;
+        item 9 initially had neither, which is precisely item 8's own anti-pattern
+        (a document that indexes its items in several places, updated in only one)."""
+        master = (REPO_ROOT / "2. Do" / "Testing Anti-Patterns.md").read_text()
+        self.assertTrue(
+            "---\n\n## 9. Loose Called Shot" in master,
+            "item 9 has no '---' separator before it, unlike every other item in "
+            "this file (#155)",
+        )
+        self.assertTrue(
+            "(see #9)" in master,
+            "Quick Check Before Committing has no line referencing item 9, unlike "
+            "every other numbered item (#155)",
+        )
+
+    def test_do_master_cross_references_the_loose_called_shot_anti_pattern(self):
+        """Items 7 and 8 are both cross-referenced from the DO master at the exact
+        point their guidance applies (see '2. Do/2. Test Drive the Change.md:60,72,129').
+        Item 9 had no reference from anywhere outside its own section."""
+        master = (REPO_ROOT / "2. Do" / "2. Test Drive the Change.md").read_text()
+        self.assertTrue(
+            "references/testing-anti-patterns.md` #9" in master,
+            "the DO master's CALLED SHOT section does not cross-reference "
+            "testing-anti-patterns.md #9, unlike the #7 and #8 references elsewhere "
+            "in this same file (#155)",
+        )
+
+    def test_working_agreements_asks_which_assertion_fired(self):
+        """The operator-side half of #155: an intervention question matching the
+        format already used by every other line in this section, so 'the called shot
+        drifted' is as askable in the moment as 'where's the failing test first'."""
+        master = (REPO_ROOT / "Human Working Agreements.md").read_text()
+        self.assertTrue(
+            "Which assertion did you predict, and which one fired?" in master,
+            "Human Working Agreements.md's Process Discipline section has no "
+            "intervention question for a called shot that predicted the wrong "
+            "assertion (#155)",
+        )
+
+    def test_working_agreements_requires_verifying_a_prior_commands_result(self):
+        """#138: a command chain where one step fails silently must not let a later
+        step assert something the failed step never accomplished.
+
+        Concrete incident: `bd update --append-notes` (a heredoc) failed with a bash
+        syntax error; the three commands in the invocation were not `&&`-chained, so
+        execution continued past the failure into two `bd close` calls whose
+        --reason text claimed the notes had been recorded. They had not. The agent
+        caught this only by later re-running `bd show` against its own claim rather
+        than trusting it.
+
+        The working agreements already require verifying test expectations (item 4)
+        and RED before GREEN in the DO master, but neither generalizes to CLI/tool
+        orchestration -- a beads state change, a multi-step shell command, any case
+        where step N's success is assumed rather than checked before step N+1 asserts
+        something about it. Checked against the master source directly rather than the
+        built package, so this runs in the default suite with no build step required --
+        unlike TestSkillPackage, which skips entirely when the .skill zip is absent.
+        assertTrue rather than assertIn, per #143: assertIn dumps the entire file into
+        the failure message and buries the one line that matters.
+        """
+        master = (REPO_ROOT / "Human Working Agreements.md").read_text()
+        self.assertTrue(
+            "VERIFY BEFORE CLAIMING" in master,
+            "Human Working Agreements.md has no rule requiring a prior command's "
+            "actual result be checked before a later command, commit, or close "
+            "reason asserts something depended on it (#138)",
+        )
 
     def test_run_tests_script_exists(self):
         self.assertTrue(
@@ -1070,12 +1317,12 @@ class TestHookInfrastructure(unittest.TestCase):
         """Something must import tests/test_evals.py without spending money.
 
         It is excluded from the default suite (it makes real API calls), so a broken
-        import or a bad node id there surfaces only when someone dispatches a run --
-        half an hour and a few dollars later. #148 rewired its rubric lookup, which is
-        exactly the kind of edit that breaks collection and nothing else.
+        import or bad node id there surfaces only when someone dispatches a run -- half an
+        hour and a few dollars later.
 
-        --collect-only imports the module and enumerates tests without executing any, so
-        this costs nothing and needs no key.
+        It also cannot be imported without a credential: it builds AnthropicModel at module
+        import time. That is why every cheap check has skipped this file, and why the CI
+        step passes a deliberately fake key -- collection executes nothing.
         """
         workflow = REPO_ROOT / ".github" / "workflows" / "test.yml"
         content = workflow.read_text()

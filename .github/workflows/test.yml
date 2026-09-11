@@ -93,8 +93,11 @@ jobs:
       # tests/test_evals.py is excluded from the default suite because it makes real API
       # calls, so a broken import or a bad node id there is otherwise only discoverable by
       # dispatching an eval run -- half an hour and a few dollars to learn that a module
-      # does not import. --collect-only imports and enumerates without executing anything,
-      # so it needs no key and costs nothing.
+      # does not import. --collect-only imports and enumerates without executing anything.
+      # Runs with NO key at all, deliberately. The judge is constructed lazily (#156), so
+      # importing the module needs no credential -- and running this without one is what
+      # proves it stays that way. A dummy key here would let module-scope construction
+      # return unnoticed, since the step would keep passing.
       - name: Collect the eval suite without running it
         run: uv run --locked python -m pytest --collect-only tests/test_evals.py -q
         working-directory: skill

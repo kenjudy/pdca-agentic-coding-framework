@@ -2,6 +2,61 @@
 
 ## Unreleased
 
+### Fixed: the stale-patch mechanism had silently deleted unrelated test coverage in 3 more files
+
+- **The earlier "restore #156's lazy judge construction" fix only treated the one symptom
+  CI caught. It should have been a full audit.** Re-applying `5680ce5`'s diff (computed
+  between an old abandoned commit and the *old* `main` it was based on) onto *current*
+  `main` doesn't just risk reverting one known fix — `git apply` matches on surrounding
+  context lines, not semantics, so wherever a file had been modified by *other*, unrelated
+  later work the old diff never saw, applying it silently deletes content that exists in
+  current `main` but wasn't in the old diff's frame of reference. It reports success either
+  way, and the full local suite stays green throughout, because deleting a *test* doesn't
+  fail anything — it just makes coverage vanish.
+- **Auditing every file the mechanism patch touched (`git diff <branch-base> -- <file>`,
+  read in full, not just grepped for the one symptom already found) turned up two more
+  instances**, both in files `5680ce5` also touched:
+  - `tests/test_build.py` had lost 8 tests and an entire class
+    (`TestDependencyFloors`) spanning four unrelated issues: #116/#170 (the "All done"
+    guard), #127-129 (dependency floor guards), #155 (called-shot first-executing-
+    assertion tests), and #138 (verify-before-claiming).
+  - `tests/test_rubrics.py` had lost the entire `TestScoringBandsSpanTheThreshold` class
+    from #153/#171 (band ordering, threshold placement, cross-rubric wording identity).
+  - `.github/workflows/test.yml` had a comment reverted to a shorter, less informative
+    pre-#156 version (functionally harmless — the actual no-key behavior was already
+    covered by the restored guard test — but restored anyway since it's the exact
+    explanation for the bug class this whole incident is about).
+- **Fix: reset each corrupted file to the correct base (the actual commit this branch
+  forked from, not the stale diff's original target) and re-applied only the genuinely
+  new #148 content on top, verified this time by diffing the WHOLE file against the base
+  and confirming zero unexplained deletions** — not just checking that my own new tests
+  passed, which is what let two of these three slip through review earlier today.
+- One incidental fix needed after restoring `TestScoringBandsSpanTheThreshold`: its
+  band-ladder marker string (`"Then assign a score on a scale of 0 to 1:"`) no longer
+  matched `GENERIC_TAIL`'s phrasing (`"...based only on the criteria listed above:"`).
+  Loosened the marker to the stable prefix both share.
+- 275 passed, 244 subtests — up from 261 before this audit, entirely restored coverage,
+  no new production behavior.
+
+### Fixed: 2-first-step truncated mid-response; 2-beads-ordering-capture lacked file locations
+
+- Prompted by re-validating #148's band-reframing fix: two of five phase-2 scenarios still
+  failed against the branch while passing against `main` at the same time. Reading the
+  actual judge reasoning (not just the pass/fail count) showed two distinct, unrelated,
+  non-rubric causes:
+  - `2-first-step`'s response was cut off mid-sentence — the judge's own words: "cuts off
+    mid-sentence... never reaching the required completion phrase." `eval/executor.py`'s
+    `MAX_TOKENS = 2048` wasn't enough room for a called shot plus code across several
+    tests plus the handoff phrase. Raised to 4096, pinned by
+    `test_max_tokens_gives_room_for_a_multi_test_called_shot_walkthrough`.
+  - `2-beads-ordering-capture`'s input never stated where `draft_step` or its tests live
+    — unlike its sibling `2-first-step`, which explicitly says "File locations confirmed:
+    ...". The model reasonably paused to ask, and was penalized for not proceeding.
+    Added the same "File locations confirmed" convention to this scenario's input.
+- Neither fix touches rubric prose — both are genuine harness/scenario-design gaps, found
+  by reading *why* the judge failed the response rather than assuming the rubric was still
+  at fault.
+
 ### Fixed: GENERIC_TAIL's bands scored correct refusals near zero (#148)
 
 - **Dispatched 5 phase-scoped CI eval runs against the generic-tail rewrite (no
