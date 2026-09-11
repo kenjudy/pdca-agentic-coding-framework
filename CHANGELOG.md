@@ -40,6 +40,31 @@
   prove #148's phase-1 decomposition changed no behavior — it is not a freeze on rubric content
   for all time. This change is an intentional content edit, so the snapshot was regenerated to
   match; the new structural test above is what guards this specific change going forward.
+- **Adversarial critic pass (Opus) on the PR found the reused-evidence claim above was
+  overstated: valid for phase 4, but not phase 2.** `2. Do/2. Test Drive the Change.md` and
+  `eval/scenarios/2_scenarios.json` both changed after run `34510501344` was recorded (#155,
+  #170), so that run's phase-2 numbers reflect a system prompt and scenario set that no longer
+  exist. Closed the gap with a scoped, phase-2-only CI dispatch
+  (`tests/test_evals.py::TestPrompt2Evals`, single pass) rather than assuming the reused
+  evidence covered it. Result: `2-first-step` failed its GEval majority vote (1/3 shots passed:
+  0.20, 0.30, 0.70) — but this is the *same* pre-existing "mechanical pass, GEval FAIL"
+  divergence already visible in run `34510501344`'s own analyst notes, before #153 existed. No
+  scenario flipped from a stable failure to a false pass; #153's anti-masking property holds for
+  phase 2 too, on the scenario actually checked.
+- **Two more critic findings, both fixed:** `TestScoringBandsSpanTheThreshold`'s existing tests
+  call a band-extraction helper that sorts, so a band physically misplaced in the ladder (e.g.
+  written after the 0.0 band instead of between 0.7 and 0.4) passed undetected — added
+  `test_bands_appear_in_descending_order_as_written`, mutation-tested against exactly that
+  misplacement. Nothing enforced the PR's own stated safety property (identical 0.6 wording
+  across all five rubrics) — added `test_the_0_6_band_text_is_identical_across_all_rubrics`,
+  mutation-tested against a one-word wording drift in one rubric.
+- **Remaining critic findings filed rather than fixed inline:** #172 (eval validation evidence
+  is ephemeral — GitHub Actions log retention is the only record, and no report captures which
+  rubric-ladder version produced it) and #173 (the new band's "hard constraint" language is
+  undefined in four of the five rubrics, checked empirically on phase 4 only). Also documented
+  in `skill/eval/baselines/README.md`: the tracked baseline (`report_20260909_174245.md`)
+  predates #153, so a future GEval comparison against it needs the same care as a
+  dependency-version mismatch.
 
 ### Called shot must predict the first-executing assertion, not the most meaningful one
 
