@@ -416,6 +416,73 @@ class TestProjectSetup(unittest.TestCase):
             )
 
 
+class TestDependencyFloors(unittest.TestCase):
+    """pyproject.toml's declared floors must not understate what is actually locked.
+
+    #127, #128 and #129 (dependabot) each correctly reported a real gap: uv.lock had
+    already resolved anthropic 1.4.0, deepeval 4.2.2 and ruff 0.16.6 -- the earlier batch
+    relock in this CHANGELOG's Dependency Updates section did that -- but the floors in
+    `[project.optional-dependencies]` were never raised to match, so a `pip install` of
+    this package with no lock (or an older compatible resolution) could silently receive
+    versions below what the project actually builds and tests against.
+
+    Generalized rather than hardcoded to today's three numbers: any future floor that
+    drifts behind its own lock fails this the same way, not just these three packages.
+    """
+
+    @staticmethod
+    def _floors():
+        import re
+        import tomllib
+
+        data = tomllib.loads((CLAUDE_SKILL_DIR / "pyproject.toml").read_text())
+        floors = {}
+        for extra_deps in data["project"]["optional-dependencies"].values():
+            for spec in extra_deps:
+                m = re.match(r"^([A-Za-z0-9_.-]+)>=([0-9][0-9A-Za-z.]*)$", spec)
+                if m:
+                    floors[m.group(1).lower()] = m.group(2)
+        return floors
+
+    @staticmethod
+    def _locked():
+        import re
+
+        text = (CLAUDE_SKILL_DIR / "uv.lock").read_text()
+        locked = {}
+        for m in re.finditer(r'name = "([^"]+)"\nversion = "([^"]+)"', text):
+            locked[m.group(1).lower()] = m.group(2)
+        return locked
+
+    def test_declared_floor_matches_the_locked_version(self):
+        """Not '<=' -- that is a tautology as long as uv.lock is valid at all: `uv lock`
+        guarantees the resolved graph satisfies pyproject.toml's declared constraints, so
+        floor <= locked can never fail while the lock resolves. It would pass with the
+        exact gap #127-129 reported still wide open, which very nearly happened here.
+
+        '==' is this project's own stated convention, confirmed against every OTHER
+        floor before relying on it: pytest, python-dotenv and mypy already satisfy it.
+        anthropic, deepeval and ruff are exactly the three that do not -- exactly the
+        three dependabot flagged. The CHANGELOG's Dependency Updates entry describes the
+        convention directly: "Floors raised and the lockfile relocked in one pass."
+        """
+        from packaging.version import Version
+
+        floors, locked = self._floors(), self._locked()
+        for name, floor in floors.items():
+            if name not in locked:
+                continue
+            with self.subTest(package=name):
+                self.assertEqual(
+                    Version(floor),
+                    Version(locked[name]),
+                    f"pyproject.toml declares {name}>={floor}, but uv.lock resolves "
+                    f"{name} {locked[name]} -- the floor has drifted behind what this "
+                    f"project actually builds and tests against, so an install without "
+                    f"the lock could silently receive an older, untested version",
+                )
+
+
 class TestReadme(unittest.TestCase):
     """Validate README quality for marketplace distribution."""
 
