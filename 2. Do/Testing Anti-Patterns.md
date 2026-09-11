@@ -92,6 +92,18 @@ Testing the first edited instance of a repeated assumption -- one step of a mult
 
 ---
 
+## 9. Loose Called Shot
+
+The called shot's "Expected failure" names the assertion that best expresses the behavior under test, rather than the assertion the test runner will actually report first when the test has several. The prediction and the RED are both individually reasonable; they just describe different lines.
+
+*Diagnosis:* A test carries more than one assertion, and the one chosen as "Expected failure" is not the first to execute. In fail-fast assertion styles, the runner stops at the first failing assertion, so RED fires there regardless of which assertion the called shot named. In styles that aggregate failures per test (`unittest.subTest`, soft assertions, `pytest-check`, RSpec's `aggregate_failures`), the runner instead reports every failing assertion together — there, the mismatch is the predicted assertion being absent from the report, not out of order.
+
+*Rule:* Predict the exact message of the first assertion that will fail, not the most meaningful one. If the assertion that defines the behavior is not first, either reorder the assertions so it is, or split the test so each assertion has its own called shot. A RED on any assertion other than the predicted one means the prediction was wrong, not that the test needs re-explaining. In aggregating styles, a RED naming several assertions including the predicted one is not a misprediction; only the predicted assertion's absence is.
+
+*Origin:* A test with eight assertions across two files predicted `toContain("Verification Log")` as the expected failure; the RED fired two lines earlier, on `expected.toLowerCase()).toContain(reviewer)`. Both phrases were genuinely absent, so the test was sound -- the prediction was simply about a different, later assertion than the one that ran. Twenty other called shots in the same session predicted correctly because each test happened to lead with its defining assertion; the one that did not was the one that misfired. See #155.
+
+---
+
 ## Quick Check Before Committing
 
 - [ ] Every assertion is on real behavior, not mock call counts
@@ -100,3 +112,4 @@ Testing the first edited instance of a repeated assumption -- one step of a mult
 - [ ] No production methods exist solely for test access
 - [ ] Every test watched fail before watching it pass
 - [ ] If the acceptance criteria makes a whole-flow/whole-file claim, a test exercises the complete thing -- not just the edited piece (see #8)
+- [ ] The called shot's "Expected failure" names the assertion that will actually run first, not just the most meaningful one (see #9)

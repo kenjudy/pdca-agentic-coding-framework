@@ -14,6 +14,7 @@
 - "Where's the failing test first?"
 - "You're fixing multiple things. Focus on one failing test?"
 - "This feels like scope creep. Are we still on step [N]?"
+- "Which assertion did you predict, and which one fired?"
 
 **You must:** Stop and answer the process question before continuing. Process discipline trumps immediate progress.
 

@@ -2,6 +2,44 @@
 
 ## Unreleased
 
+### Called shot must predict the first-executing assertion, not the most meaningful one
+
+- **The DO master's CALLED SHOT block named "the exact assertion message or error expected" with
+  no anchor to *which* assertion, when a test carries several (#155).** In practice the prediction
+  drifts to the assertion that best expresses the behavior, while the test runner reports the
+  first one that executes. When those differ, a correct test's RED reads as a misprediction and
+  the STOP rule fires for the wrong reason — or worse, trains the operator to wave the mismatch
+  through, eroding the rule for the case it exists to catch. `Expected failure:` now asks purely
+  for the assertion expected to fail first; the remedy (reorder the assertions or split the test)
+  moved out of the bracket and into the STOP sentence itself, next to the ordering guidance it's
+  paired with.
+- **`Testing Anti-Patterns.md` gains item 9, "Loose Called Shot,"** naming the pattern so it is
+  citable in retros the way item 8 has been used as diagnostic vocabulary all cycle rather than
+  re-explained from scratch each time. Matches item 8's own layout: `---` separator, a Quick Check
+  line, and a cross-reference from the DO master at the point the guidance applies.
+- **`Human Working Agreements.md` gains the matching intervention question** — "Which assertion
+  did you predict, and which one fired?" — alongside the section's existing TDD-discipline
+  questions.
+- **Caught by an adversarial critic pass, per this cycle's own CHECK requirement: the first version
+  stated a false universal.** "The test runner stops and reports at the first failing assertion"
+  is true for fail-fast styles and false for styles that intentionally aggregate multiple
+  assertions per test — `unittest.subTest`, soft assertions, `pytest-check`, RSpec's
+  `aggregate_failures`. Under those, a legitimate RED report names several assertions together, and
+  "a RED on any other assertion is a misprediction" would falsely STOP the model — reintroducing,
+  for a different framework family, the exact bug #155 was filed to eliminate. Not hypothetical:
+  `skill/tests/test_build.py` uses `subTest` in several places written this same cycle. Both the DO
+  master and item 9 now qualify for aggregating styles: check whether the predicted assertion is
+  among those reported, not whether it ran first. The test that pinned item 9's heading alone
+  (passing against an empty section) was also caught the same way and now pins the Rule paragraph;
+  mutation-tested afterward to confirm it no longer passes vacuously.
+- **Not verifiable by the eval harness, and said so rather than hidden.** The harness is
+  single-turn and never executes real code — the same structural limit #136 already found for
+  "Run the test." Whether a model predicted the actual first-executing assertion can only be
+  observed in real TDD work, not a synthetic scenario, so `rubric_2.py` and the scenario JSON are
+  deliberately untouched. Confirmed instead that the four labels `called_shot_required` matches on
+  (`Test name:`, `Behavior under test:`, `Expected failure:`, `Why this test first:`) are unchanged
+  — this edit only touches bracket-instruction text and the follow-up sentence, so the mechanical
+  tier's behavior across every scenario that uses it is unaffected.
 ### must_not_contain now matches case-insensitively (#116)
 
 - **`check_mechanical`'s `must_not_contain` matched case-sensitively, so `"all done"` missed the
