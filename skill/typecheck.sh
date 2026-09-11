@@ -24,4 +24,5 @@ exec uv run --locked mypy \
   check_changelog.py \
   check_eval_ran.py \
   check_release_version.py \
+  promote_baseline.py \
   "$@"
