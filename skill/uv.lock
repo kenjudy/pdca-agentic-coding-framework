@@ -1326,12 +1326,12 @@ test = [
 
 [package.metadata]
 requires-dist = [
-    { name = "anthropic", marker = "extra == 'eval'", specifier = ">=1.0.0" },
-    { name = "deepeval", marker = "extra == 'eval'", specifier = ">=4.1.10" },
+    { name = "anthropic", marker = "extra == 'eval'", specifier = ">=1.4.0" },
+    { name = "deepeval", marker = "extra == 'eval'", specifier = ">=4.2.2" },
     { name = "mypy", marker = "extra == 'lint'", specifier = ">=2.3.1" },
     { name = "pytest", marker = "extra == 'test'", specifier = ">=9.1.1" },
     { name = "python-dotenv", marker = "extra == 'eval'", specifier = ">=1.2.2" },
-    { name = "ruff", marker = "extra == 'lint'", specifier = ">=0.16.4" },
+    { name = "ruff", marker = "extra == 'lint'", specifier = ">=0.16.6" },
 ]
 provides-extras = ["test", "eval", "lint"]
 
