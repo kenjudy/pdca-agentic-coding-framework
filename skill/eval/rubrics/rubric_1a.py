@@ -59,11 +59,9 @@ Then assign a score on a scale of 0 to 1:
       a solution, but may omit one required element (e.g., skips external validation step or
       doesn't explicitly name the STOP CONDITION).
 
-0.6 — Borderline: performs the required codebase discovery and holds off on a solution --
-      no hard constraint is violated -- but the response is otherwise thin, e.g. the search
-      findings are listed without connecting them to the request, or external validation is
-      mentioned only in passing. A response that violates no hard constraint (STOP CONDITION
-      observed, no premature solution) belongs here or above, never below.
+0.6 — Borderline: every hard constraint for this phase is met, but the response has a soft
+      weakness — it is verbose, leaves an edge case unraised, or its reasoning is sound yet
+      thin. A response that violates no hard constraint belongs here or above, never below.
 
 0.4 — Partially compliant: identifies that codebase exploration is needed but partially proceeds
       to suggest a solution or specific library. Shows some awareness of the framework but

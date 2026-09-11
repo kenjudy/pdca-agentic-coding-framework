@@ -10,6 +10,7 @@ what the rubric must not SAY, sparingly; do not assume an added instruction will
 """
 
 import importlib
+import re
 import unittest
 
 from eval.rubrics import rubric_2
@@ -107,26 +108,55 @@ class TestRubricDecomposition(unittest.TestCase):
                 self.assertEqual(module.THRESHOLD, snapshot[name]["threshold"])
 
 
-class TestScoringBandsHaveAnAnchorAcrossTheThreshold(unittest.TestCase):
-    """#153: every rubric's bands jump straight from 0.7 to 0.4, straddling the 0.5
-    threshold with nothing between them. A genuinely borderline response has no band to
-    land on, so small judgment differences flip pass/fail -- measured as the empty
-    0.5-0.6 region in the pre-fix #136 score distribution.
+class TestScoringBandsSpanTheThreshold(unittest.TestCase):
+    """Every rubric's bands must include an anchor across the decision boundary (#153).
 
-    A new 0.6 band must exist between the two, worded as positive structure (what IS
-    present) rather than a "do not penalise" exclusion -- #149 measured that the latter
-    phrasing reliably backfires on an LLM judge.
+    All five rubrics define 1.0 / 0.7 / 0.4 / 0.0 against THRESHOLD = 0.5, so the two
+    nearest anchors straddle the threshold with nothing between them. A response the judge
+    considers neither "mostly compliant" nor "partially compliant" has no band to land on
+    and is pushed to one side, close to arbitrarily -- which converts a small judgment
+    difference into a pass/fail flip and presents as scenario flakiness.
+
+    The pre-fix #136 distribution had 13 shots at 0.20-0.40, 5 at 0.70-0.90, and nothing at
+    0.50 or 0.60. That hole was first read as pure judge instability; it is at least partly
+    the ladder's shape.
+
+    This asserts structure, not wording: a band strictly between the 0.4 and 0.7 anchors,
+    at or above each rubric's own threshold, so that "violates no hard constraint" can land
+    on the passing side.
     """
 
     RUBRICS = ("1a", "1b", "2", "3", "4")
 
-    def test_every_rubric_has_a_band_anchored_at_0_6(self):
+    @staticmethod
+    def _bands(criteria: str) -> list[float]:
+        marker = "Then assign a score on a scale of 0 to 1:"
+        ladder = criteria[criteria.index(marker):]
+        return sorted(float(m) for m in re.findall(r"^(\d\.\d+) —", ladder, re.M))
+
+    def test_every_rubric_has_a_band_between_0_4_and_0_7(self):
         for name in self.RUBRICS:
             module = importlib.import_module(f"eval.rubrics.rubric_{name}")
             with self.subTest(rubric=name):
-                self.assertIn(
-                    "0.6 —",
-                    module.CRITERIA,
-                    f"rubric_{name} has no band between 0.7 and 0.4 -- a borderline "
-                    "response has nowhere to land across the 0.5 threshold",
+                bands = self._bands(module.CRITERIA)
+                spanning = [b for b in bands if 0.4 < b < 0.7]
+                self.assertTrue(
+                    spanning,
+                    f"rubric_{name} bands are {bands} with threshold {module.THRESHOLD}: "
+                    "nothing sits between 0.4 and 0.7, so a borderline response has no band "
+                    "to land on and is pushed across the threshold in one direction or the "
+                    "other",
+                )
+
+    def test_the_spanning_band_is_not_below_its_rubrics_threshold(self):
+        """The band exists so that violating no hard constraint can PASS. One placed below
+        the threshold would relabel the same failure rather than fix the gap."""
+        for name in self.RUBRICS:
+            module = importlib.import_module(f"eval.rubrics.rubric_{name}")
+            with self.subTest(rubric=name):
+                spanning = [b for b in self._bands(module.CRITERIA) if 0.4 < b < 0.7]
+                self.assertTrue(
+                    spanning and max(spanning) >= module.THRESHOLD,
+                    f"rubric_{name}'s spanning band {spanning} is below its threshold "
+                    f"{module.THRESHOLD}",
                 )

@@ -10,21 +10,36 @@
   difference flipped pass/fail. The pre-fix #136 score distribution showed this directly: an
   empty 0.5–0.6 region, previously misread as judge instability rather than a structural gap
   in the ladder itself (corrected in #147).
-- **Added a `0.6 — Borderline` band to all five rubrics**, worded as positive structure — what
-  IS present — rather than a "do not penalise X" exclusion. #149 measured that phrasing
-  backfiring twice on rubric 2: telling an LLM judge what not to penalize makes it salient and
-  it gets penalized harder. Each band ends with the same invariant: "a response that violates
-  no hard constraint belongs here or above, never below." Rubric 2's band text matches the
-  draft already proposed in #153 itself (from `b779436`, since reverted with the rest of that
-  commit).
-  `test_every_rubric_has_a_band_anchored_at_0_6` in `tests/test_rubrics.py` pins the new band
-  across all five rubrics (RED confirmed before the edit — all five subtests failed with the
-  exact predicted message).
+- **This work already existed, unfinished, on a stale local branch (`claude/rubric-band-gap`,
+  `10cc63f`) from a prior session — rediscovered only after independently re-implementing the
+  same fix with bespoke, per-rubric band text and pushing it. That branch's design was better:
+  wording is IDENTICAL across all five rubrics on purpose**, adding no phase-specific
+  vocabulary a judge could over-index on — #149 measured naming a concept in a rubric making
+  the judge score against it, twice, both times worsening scores. Five bespoke bands would
+  have reintroduced exactly that risk. Discarded the bespoke version and adopted the identical
+  wording instead: `0.6 — Borderline: every hard constraint for this phase is met, but the
+  response has a soft weakness — it is verbose, leaves an edge case unraised, or its reasoning
+  is sound yet thin. A response that violates no hard constraint belongs here or above, never
+  below.`
+- **Also adopted the prior branch's structural test** (`TestScoringBandsSpanTheThreshold` in
+  `tests/test_rubrics.py`, replacing a weaker string-literal version written during
+  reimplementation): it parses each rubric's score ladder and asserts a band strictly between
+  0.4 and 0.7 *at or above that rubric's own threshold* — immune to a future rewording, and it
+  catches a band placed below threshold (which would relabel the same failure rather than fix
+  the gap), which a literal `"0.6 —"` match cannot.
+- **Validated by reusing an already-spent full eval sweep from the prior branch** (GitHub
+  Actions run `34510501344`, since the wording is now identical to what that run measured)
+  rather than dispatching a redundant paid run: `4-short-session` — the scenario #153 itself
+  names as the validation candidate — scored **0.60**, landing exactly in the previously-empty
+  0.5–0.6 region. `4-tdd-breakdown` (already known-red, #151) stayed failing (2 of 3 shots at
+  0.20) rather than flipping to pass, which is #153's own anti-masking check: a stably-failing
+  scenario that starts passing would be evidence the band is masking real failures, not fixing
+  a structural artifact.
 - **`tests/fixtures/rubric_criteria_snapshot.json` updated deliberately.** The byte-identity
   test it backs (`test_assembled_criteria_is_byte_identical_to_the_published_string`) exists to
   prove #148's phase-1 decomposition changed no behavior — it is not a freeze on rubric content
   for all time. This change is an intentional content edit, so the snapshot was regenerated to
-  match; the new test above is what guards this specific change going forward.
+  match; the new structural test above is what guards this specific change going forward.
 
 ### Called shot must predict the first-executing assertion, not the most meaningful one
 
