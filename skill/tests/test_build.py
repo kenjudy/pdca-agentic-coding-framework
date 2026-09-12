@@ -245,33 +245,49 @@ EVAL_BASELINES_DIR = CLAUDE_SKILL_DIR / "eval" / "baselines"
 class TestEvalScenarios(unittest.TestCase):
     """Structural validation: every scenario JSON file must conform to the schema."""
 
-    def test_superpowers_tdd_precedence_skips_geval(self):
-        """#136: GEval on this scenario measures noise, so it is turned off.
+    def test_superpowers_tdd_precedence_scopes_geval_to_called_shot(self):
+        """#136/#148: GEval was off entirely; it is now on, scoped to what this scenario
+        actually claims.
 
         Three measured rounds (34245608454, 34275465380, 34372905517) established that
-        the Phase 2 judge scores this scenario against criteria it does not declare, and
-        that saying so in the rubric makes it worse -- a "do not penalise X" clause became
-        "penalise X", and scores fell to 0.00-0.10. The two prose fixes were reverted.
+        the Phase 2 judge, scored against the FULL rubric, docked this scenario for test
+        ordering and for not executing tests -- neither of which it claims to measure, and
+        the latter impossible in a single-turn harness. Scores swung 0.00-0.90 on
+        behaviour the mechanical tier confirmed compliant at 17/18, 22/23, 17/18 across
+        those same three runs. `skip_geval` silenced the noise but also silenced the one
+        signal this scenario exists to carry: whether the called shot survives when
+        superpowers' TDD skill offers a different ordering (test-then-confirm) than
+        PDCA's (predict-then-test).
 
-        What the scenario claims is that the called shot survives when superpowers' TDD
-        skill is active. The mechanical tier verifies exactly that, and did so at 17/18,
-        22/23 and 17/18 across those three runs -- rock steady while GEval swung from 0.00
-        to 0.90 on the same behaviour. Turning GEval off here keeps the signal and drops
-        the noise.
-
-        This is not hiding the fault. #147's divergence note reports mechanical/GEval
-        disagreement in the report itself, and #148 tracks the root cause: rubrics score
-        every criterion against every scenario, including ones it does not claim.
+        #148 built scoping precisely so `skip_geval` would not have to be the last word.
+        With it, this scenario is judged on `called-shot` alone -- the criterion the
+        mechanical tier already confirms and the only one the scenario's input actually
+        exercises. Left in scope, `degenerate-first` and `stub-discipline` would still
+        dock unclaimed behaviour (the fixture's stub already hardcodes 0, so ordering
+        isn't tested here), `refuse-to-skip-tests` and `no-completion-claim` describe
+        situations this single-step input never presents, and `stub-based-red` needs test
+        execution this single-turn harness cannot observe.
         """
         import json
 
         scenarios = json.loads((EVAL_SCENARIOS_DIR / "2_scenarios.json").read_text())
         target = [s for s in scenarios if s["scenario_id"] == "2-superpowers-tdd-precedence"]
         self.assertEqual(len(target), 1, "2-superpowers-tdd-precedence not found")
+        signals = target[0]["expected_signals"]
+        self.assertFalse(
+            signals.get("skip_geval"),
+            "2-superpowers-tdd-precedence should scope GEval via geval_criteria now that "
+            "#148 exists, not silence it entirely with skip_geval",
+        )
+        self.assertEqual(
+            signals.get("geval_criteria"),
+            ["called-shot"],
+            "2-superpowers-tdd-precedence should be judged only on the called-shot "
+            "criterion -- the one behaviour its input actually exercises",
+        )
         self.assertTrue(
-            target[0]["expected_signals"].get("skip_geval"),
-            "2-superpowers-tdd-precedence still runs GEval, which was measured scoring the "
-            "same behaviour anywhere from 0.00 to 0.90 across three runs (#136)",
+            (signals.get("geval_criteria_reason") or "").strip(),
+            "narrowing geval_criteria requires a stated reason (#148/eval/schema.py)",
         )
 
     def test_skip_geval_scenarios_still_assert_something(self):
@@ -1893,6 +1909,43 @@ class TestEvalBaselines(unittest.TestCase):
             f"{len(missing)} scenario(s) have no baseline in skill/eval/baselines/: "
             f"{', '.join(missing)}",
         )
+
+    def test_declared_geval_criteria_exist_in_their_rubric(self):
+        """A criteria id that no rubric defines must fail here, not mid-run (#148).
+
+        `assemble` raises on an unknown id, but that happens inside an eval run costing
+        real money and taking half an hour. Catching it in the unit suite makes a typo a
+        five-second failure instead.
+
+        Deliberately NOT asserting that a narrowed scenario keeps mechanical signals.
+        Narrowing leaves GEval active with at least one criterion, so the scenario still
+        has teeth -- unlike skip_geval, which removes the tier entirely and is why
+        test_skip_geval_scenarios_still_assert_something exists. Requiring mechanical
+        signals here would forbid narrowing on scenarios that legitimately have none.
+        """
+        import json
+        import sys
+
+        sys.path.insert(0, str(CLAUDE_SKILL_DIR))
+        from eval.rubrics import RUBRICS
+
+        for path in sorted(EVAL_SCENARIOS_DIR.glob("*.json")):
+            scenarios = json.loads(path.read_text())
+            if not isinstance(scenarios, list):
+                scenarios = [scenarios]
+            for scenario in scenarios:
+                declared = scenario["expected_signals"].get("geval_criteria")
+                if not declared:
+                    continue
+                with self.subTest(scenario=scenario["scenario_id"]):
+                    module = RUBRICS[scenario["prompt_id"]]
+                    unknown = sorted(set(declared) - set(module.CRITERIA_ITEMS))
+                    self.assertEqual(
+                        unknown,
+                        [],
+                        f"{scenario['scenario_id']} names criteria its rubric does not "
+                        f"define: {unknown}; available: {sorted(module.CRITERIA_ITEMS)}",
+                    )
 
     def test_baselines_dir_is_not_gitignored(self):
         """The mechanism that stops #122's defect recurring.

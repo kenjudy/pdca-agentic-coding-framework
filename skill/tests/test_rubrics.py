@@ -130,13 +130,13 @@ class TestScoringBandsSpanTheThreshold(unittest.TestCase):
 
     @staticmethod
     def _bands(criteria: str) -> list[float]:
-        marker = "Then assign a score on a scale of 0 to 1:"
+        marker = "Then assign a score on a scale of 0 to 1"
         ladder = criteria[criteria.index(marker):]
         return sorted(float(m) for m in re.findall(r"^(\d\.\d+) —", ladder, re.M))
 
     @staticmethod
     def _bands_as_written(criteria: str) -> list[float]:
-        marker = "Then assign a score on a scale of 0 to 1:"
+        marker = "Then assign a score on a scale of 0 to 1"
         ladder = criteria[criteria.index(marker):]
         return [float(m) for m in re.findall(r"^(\d\.\d+) —", ladder, re.M)]
 
@@ -199,3 +199,134 @@ class TestScoringBandsSpanTheThreshold(unittest.TestCase):
             1,
             f"0.6 band text differs across rubrics: {texts}",
         )
+
+
+class TestCriteriaSelection(unittest.TestCase):
+    """A scenario may narrow the criteria it is judged against (#148 phase 2).
+
+    Out-of-scope criteria are OMITTED from the assembled text, never named. #149 measured
+    the alternative twice on rubric 2: a "do not penalise X" clause reliably becomes
+    "penalise X", and both attempts drove scores down rather than sideways.
+
+    Numbering stays contiguous over whatever subset is passed, so the judge never sees a
+    gap that implies something was withheld.
+    """
+
+    ITEMS = {"alpha": "First criterion.", "beta": "Second criterion.", "gamma": "Third criterion."}
+
+    def test_selection_renumbers_contiguously(self):
+        from eval.rubrics.assemble import assemble
+
+        out = assemble("P:\n", self.ITEMS, "TAIL", selected=["alpha", "gamma"])
+        self.assertEqual(out, "P:\n  1. First criterion.\n  2. Third criterion.\nTAIL")
+
+    def test_selection_follows_rubric_order_not_caller_order(self):
+        """Otherwise the same subset renders two different prompts depending on how a
+        scenario happened to list its ids, and two scenarios' scores stop being
+        comparable."""
+        from eval.rubrics.assemble import assemble
+
+        forward = assemble("P:\n", self.ITEMS, "T", selected=["alpha", "beta"])
+        reversed_ = assemble("P:\n", self.ITEMS, "T", selected=["beta", "alpha"])
+        self.assertEqual(forward, reversed_)
+
+    def test_unknown_criteria_id_raises(self):
+        """A typo must fail loudly. Silently ignoring it would either score against every
+        criterion or against none, and both look like a normal result in the report."""
+        from eval.rubrics.assemble import UnknownCriterion, assemble
+
+        with self.assertRaises(UnknownCriterion) as ctx:
+            assemble("P:\n", self.ITEMS, "T", selected=["alpha", "delta"])
+        self.assertIn("delta", str(ctx.exception))
+
+    def test_empty_selection_raises(self):
+        """Selecting nothing is not scoping, it is skip_geval with extra steps -- and it
+        would hand the judge a rubric with no criteria at all."""
+        from eval.rubrics.assemble import assemble
+
+        with self.assertRaises(ValueError):
+            assemble("P:\n", self.ITEMS, "T", selected=[])
+
+
+class TestRubricForScenario(unittest.TestCase):
+    """The harness must key the rubric on the scenario, not only on the phase.
+
+    tests/test_evals.py is excluded from the default suite, so selection logic living
+    there would be untested everywhere. It lives in eval.rubrics instead, where it runs on
+    every push.
+    """
+
+    def test_unscoped_scenario_gets_the_whole_rubric(self):
+        from eval.rubrics import rubric_2, rubric_for_scenario
+
+        criteria, threshold = rubric_for_scenario("2", {})
+        self.assertEqual(criteria, rubric_2.CRITERIA)
+        self.assertEqual(threshold, rubric_2.THRESHOLD)
+
+    def test_scoped_scenario_gets_only_the_named_criteria(self):
+        from eval.rubrics import rubric_2, rubric_for_scenario
+
+        criteria, _ = rubric_for_scenario("2", {"geval_criteria": ["called-shot"]})
+        self.assertIn(rubric_2.CRITERIA_ITEMS["called-shot"], criteria)
+        self.assertNotIn(rubric_2.CRITERIA_ITEMS["degenerate-first"], criteria)
+
+    def test_omitted_criteria_are_not_mentioned_at_all(self):
+        """The #149 constraint, asserted rather than trusted: an omitted criterion must
+        leave no trace in the prompt for the judge to score against."""
+        from eval.rubrics import rubric_2, rubric_for_scenario
+
+        criteria, _ = rubric_for_scenario("2", {"geval_criteria": ["called-shot"]})
+        for dropped in ("degenerate-first", "stub-discipline", "refuse-to-skip-tests"):
+            with self.subTest(dropped=dropped):
+                self.assertNotIn(rubric_2.CRITERIA_ITEMS[dropped], criteria)
+
+    def test_unknown_prompt_id_still_raises(self):
+        from eval.rubrics import rubric_for_scenario
+
+        with self.assertRaises(ValueError):
+            rubric_for_scenario("99", {})
+
+    def test_scoped_criteria_leave_no_trace_in_bands_or_scaffold(self):
+        """The exact defect that sank the first #148 phase-2 attempt (12ad72e): scoping
+        the numbered list removed a criterion's own text, but its concept still appeared
+        in the scoring bands and Strengths/Weaknesses scaffold under different wording --
+        "stub implementation contains conditional logic" in the 0.4 band, for example,
+        with no "stub-discipline" criterion in scope to license it. A scenario scoped to
+        only "called-shot" must not be judged against "stub" or "happy path" anywhere in
+        the assembled prompt, not just absent from the numbered list. ("degenerate" is
+        deliberately not checked here -- it legitimately appears inside the "called-shot"
+        item's own text, describing what "Why this test first" should cite.)"""
+        from eval.rubrics import rubric_for_scenario
+
+        criteria, _ = rubric_for_scenario("2", {"geval_criteria": ["called-shot"]})
+        lowered = criteria.lower()
+        for leaked_concept in ("stub", "happy path"):
+            with self.subTest(concept=leaked_concept):
+                self.assertNotIn(leaked_concept, lowered)
+
+
+class TestEveryRubricUsesTheSharedGenericTail(unittest.TestCase):
+    """Every rubric's TAIL must contain GENERIC_TAIL verbatim (#148).
+
+    Scoping only works because the scaffold and bands never name a specific criterion --
+    they say "the criteria listed above" instead. That property holds only as long as
+    every rubric actually uses the shared GENERIC_TAIL string; a future edit that inlines
+    a rubric-specific tweak into one rubric's own TAIL would silently reintroduce the exact
+    defect #148 exists to fix, without the string-literal snapshot test (which only proves
+    *some* text changed, not that it changed the right way) catching it.
+    """
+
+    RUBRICS = ("1a", "1b", "2", "3", "4")
+
+    def test_generic_tail_is_present_verbatim_in_every_rubric(self):
+        from eval.rubrics.generic_tail import GENERIC_TAIL
+
+        for name in self.RUBRICS:
+            module = importlib.import_module(f"eval.rubrics.rubric_{name}")
+            with self.subTest(rubric=name):
+                self.assertIn(
+                    GENERIC_TAIL,
+                    module.CRITERIA,
+                    f"rubric_{name} does not contain GENERIC_TAIL verbatim -- its scaffold "
+                    "or bands may have drifted into rubric-specific wording again",
+                )

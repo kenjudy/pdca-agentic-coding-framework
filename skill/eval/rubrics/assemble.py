@@ -18,23 +18,59 @@ and free to verify — no API spend can be required to confirm an identical prom
 
 from __future__ import annotations
 
-from collections.abc import Mapping
+from collections.abc import Iterable, Mapping
 
 # Criteria render as "  1. text", with continuation lines carrying their own indentation
-# verbatim inside the item. Nested numbered lists elsewhere in a rubric (rubric_2's Stub
-# Discipline section has one) are part of the tail and are never renumbered -- renumbering
-# them was the failure mode this format exists to avoid.
+# verbatim inside the item. Any nested numbered list inside a criterion's own item text
+# (e.g. rubric_2's stub-discipline entry, formerly a standalone Stub Discipline section in
+# the tail before #148 folded it into CRITERIA_ITEMS) is never renumbered by this function
+# -- renumbering it was the failure mode this format exists to avoid.
 ITEM_PREFIX = "  {number}. "
 
 
-def assemble(preamble: str, items: Mapping[str, str], tail: str) -> str:
+class UnknownCriterion(KeyError):
+    """A scenario named a criterion its rubric does not define.
+
+    Raised rather than ignored: a typo that silently resolved to "all criteria" or to
+    "none" would produce a perfectly normal-looking report, and the scenario would be
+    measuring something other than what it says.
+    """
+
+
+def assemble(
+    preamble: str,
+    items: Mapping[str, str],
+    tail: str,
+    selected: Iterable[str] | None = None,
+) -> str:
     """Render preamble + the numbered criteria + tail.
 
-    Numbering is positional over `items`, so it stays contiguous no matter which subset is
-    passed. Item keys are stable identifiers for scenarios to reference; they never appear
-    in the rendered text, so renaming one cannot change what the judge reads.
+    `selected` narrows to a subset by key; None means every criterion. Selection follows
+    the rubric's own declared order, NOT the caller's -- otherwise the same subset would
+    render differently depending on how a scenario happened to list its ids, and two
+    scenarios' scores would stop being comparable.
+
+    Numbering is positional over whatever survives selection, so it stays contiguous and
+    the judge never sees a gap implying something was withheld. Item keys never appear in
+    the rendered text, so renaming one cannot change what the judge reads.
     """
+    chosen = items
+    if selected is not None:
+        wanted = set(selected)
+        unknown = wanted - set(items)
+        if unknown:
+            raise UnknownCriterion(
+                f"criteria not defined by this rubric: {sorted(unknown)}; "
+                f"available: {sorted(items)}"
+            )
+        chosen = {key: text for key, text in items.items() if key in wanted}
+        if not chosen:
+            raise ValueError(
+                "an empty criteria selection would hand the judge a rubric with no "
+                "criteria at all -- use skip_geval if GEval should not run"
+            )
+
     numbered = "\n".join(
-        ITEM_PREFIX.format(number=n) + text for n, text in enumerate(items.values(), 1)
+        ITEM_PREFIX.format(number=n) + text for n, text in enumerate(chosen.values(), 1)
     )
     return preamble + numbered + "\n" + tail

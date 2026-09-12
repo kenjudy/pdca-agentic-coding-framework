@@ -23,6 +23,7 @@ and reasoning before assigning a score.
 """
 
 from eval.rubrics.assemble import assemble
+from eval.rubrics.generic_tail import GENERIC_TAIL
 
 PREAMBLE = """
 You are evaluating an AI assistant's response to a PDCA Planning Phase request.
@@ -46,42 +47,7 @@ CRITERIA_ITEMS = {
     "acceptance-criteria": """Acceptance criteria and definition of done for each step.""",
 }
 
-TAIL = """
-Before scoring, think through the following:
-
-**Strengths** — What does the response do well? List specific structural elements
-  (numbered steps, test list, refactor/feat tagging) that are present and correct.
-
-**Weaknesses** — What is missing or incorrect? Does the response jump to implementation?
-  Skip the test list? Fail to separate refactor from feature work when it should?
-
-**Reasoning** — Based on your analysis, explain the score you will assign.
-
-Then assign a score on a scale of 0 to 1:
-
-1.0 — Fully compliant: numbered atomic steps, complete test list, explicit refactor/feat
-      separation (or explicit confirmation that none is needed), no runnable code,
-      acceptance criteria per step.
-
-0.7 — Mostly compliant: has numbered steps and test list, but step descriptions include
-      some technical specifics (method names, column names, interface references) as
-      context rather than pure behavioral expectations — OR one element is thin (e.g.,
-      no explicit refactor confirmation, or acceptance criteria are vague). No runnable
-      code present.
-
-0.6 — Borderline: every hard constraint for this phase is met, but the response has a soft
-      weakness — it is verbose, leaves an edge case unraised, or its reasoning is sound yet
-      thin. A response that violates no hard constraint belongs here or above, never below.
-
-0.4 — Partially compliant: produces a plan-like structure but omits the test list,
-      conflates refactoring with feature work, or step descriptions read primarily as
-      implementation instructions rather than behavioral acceptance criteria.
-
-0.0 — Non-compliant: produces runnable implementation code (method bodies, migration
-      DSL blocks, executable code that could be pasted and run), skips planning
-      entirely, or produces a high-level design doc without actionable numbered steps.
-      Note: ASCII structural diagrams showing class relationships are NOT runnable code.
-"""
+TAIL = GENERIC_TAIL
 
 CRITERIA = assemble(PREAMBLE, CRITERIA_ITEMS, TAIL)
 

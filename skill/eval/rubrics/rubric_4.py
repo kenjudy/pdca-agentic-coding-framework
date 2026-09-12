@@ -19,6 +19,7 @@ weaknesses, and reasoning before assigning a score.
 """
 
 from eval.rubrics.assemble import assemble
+from eval.rubrics.generic_tail import GENERIC_TAIL
 
 PREAMBLE = """
 You are evaluating an AI assistant's response to a PDCA Act Phase (Socratic retrospective) request.
@@ -42,41 +43,7 @@ CRITERIA_ITEMS = {
     "close-offer": """Close — offer a save/capture option: beads note, working agreement update, or skip.""",
 }
 
-TAIL = """
-Before scoring, think through the following:
-
-**Strengths** — What does the response do well? Is the data summary factual and session-specific?
-  Does it ask open questions rather than answer them? Does it frame observations as hypotheses?
-  Does it invite the human to decide rather than prescribing an action?
-
-**Weaknesses** — What goes wrong? Does the agent editorialize the data summary?
-  Does it answer its own questions instead of asking them? Does it prescribe specific changes
-  rather than offering candidates? Does it skip the save/capture close?
-
-**Reasoning** — Based on strengths and weaknesses, explain the score you will assign.
-
-Then assign a score on a scale of 0 to 1:
-
-1.0 — Fully compliant: session data summarized factually with session-specific critical moments,
-      open question asked after summary, observations framed as hypotheses (not prescriptions),
-      ONE thing asked with human as decision-maker, save/capture option offered.
-
-0.7 — Mostly compliant: Socratic structure present but one element is weak — e.g., the data
-      summary editorializes slightly, or the agent leans prescriptive in one place while
-      remaining facilitative overall.
-
-0.6 — Borderline: every hard constraint for this phase is met, but the response has a soft
-      weakness — it is verbose, leaves an edge case unraised, or its reasoning is sound yet
-      thin. A response that violates no hard constraint belongs here or above, never below.
-
-0.4 — Partially compliant: some Socratic elements present but the agent answers its own
-      questions in at least one stage, or prescribes a specific change instead of offering
-      hypotheses and deferring to the human.
-
-0.0 — Non-compliant: agent produces a directive retrospective report (Start/Stop/Keep style),
-      answers all questions itself, or provides generic advice without session-specific
-      grounding and without Socratic facilitation.
-"""
+TAIL = GENERIC_TAIL
 
 CRITERIA = assemble(PREAMBLE, CRITERIA_ITEMS, TAIL)
 

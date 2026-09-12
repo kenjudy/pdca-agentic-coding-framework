@@ -2,6 +2,225 @@
 
 ## Unreleased
 
+### `2-superpowers-tdd-precedence` scoped to `called-shot` instead of skipping GEval entirely (#136, #148)
+
+- **#148's mechanism landed with nothing using it.** The scoping infrastructure (per-scenario
+  `geval_criteria`, the genericized bands/scaffold, the validation to catch a typo'd id) was
+  built and audited, but every scenario still either got the whole rubric or `skip_geval`
+  wholesale — the actual defects the mechanism exists to fix were all still open.
+- **First real scenario converted: `2-superpowers-tdd-precedence`.** #136 measured this
+  scenario scoring anywhere from 0.00 to 0.90 against the full rubric_2 across three 10-shot
+  runs, docking it for test ordering and for not executing tests — neither of which it
+  claims, and the latter impossible in this single-turn harness. `skip_geval` silenced the
+  noise but also silenced the only signal this scenario exists to carry.
+- Now scoped to `geval_criteria: ["called-shot"]` — the one criterion the mechanical tier
+  already confirms reliably (17/18, 22/23, 17/18 across those same three runs) and the only
+  behaviour this scenario's input actually exercises. `degenerate-first` and `stub-discipline`
+  would still dock unclaimed behaviour (the fixture's stub already hardcodes `0`, so ordering
+  isn't tested here); `refuse-to-skip-tests` and `no-completion-claim` describe situations
+  this single-step input never presents; `stub-based-red` needs test execution this
+  single-turn harness cannot observe.
+- `test_superpowers_tdd_precedence_skips_geval` replaced with
+  `test_superpowers_tdd_precedence_scopes_geval_to_called_shot`, RED-confirmed against the
+  prior `skip_geval: true` state before the scenario data changed.
+- **Not yet done:** `3-all-complete` (#111) and `4-tdd-breakdown` (#151) are the other two
+  scenarios named in #148's original root-cause list. `3-all-complete` currently passes
+  cleanly (1.00) against the full rubric in the tracked baseline — every criterion appears
+  to genuinely apply to its input — so scoping it may not be warranted; needs a closer read
+  before deciding either way, rather than scoping on the strength of an old issue number
+  alone. `4-tdd-breakdown` is still measured failing, but the recorded judge reasoning reads
+  like a genuine response-quality gap (editorializing, no single "what would you change"
+  ask) rather than out-of-scope criteria being scored — needs the same scrutiny before
+  assuming scoping is the fix. Controlled validation below covers only the scenario
+  actually converted here.
+- **Controlled validation (CI runs 34661817784 treatment / 34661822147 control, same-time-
+  window per CLAUDE.md).** Treatment = this branch (scoped to `called-shot`); control = a
+  throwaway branch reverting only this scenario's `expected_signals` to the pre-#148 full
+  rubric, both dispatched seconds apart, 8 shots each. Control reproduced the historical
+  #136 pattern almost exactly: 1/7 shots passed (one retrieval-truncated shot's data
+  unavailable), scores mostly 0.10-0.30 with two high outliers (0.90, 1.00) buried inside
+  failed majority votes — the same low-with-occasional-spike shape #136 measured, not
+  noise. Treatment: 7/8 shots passed, scores clustered 0.70-0.90 with one low outlier.
+  Fisher exact test on pass/fail counts (7/1 vs 1/6): p ≈ 0.010. Scoping did not just
+  change the number, it changed the shape of the distribution, consistent with the
+  diagnosis that the full rubric was scoring criteria this scenario never claimed.
+
+### Fixed: the stale-patch mechanism had silently deleted unrelated test coverage in 3 more files
+
+- **The earlier "restore #156's lazy judge construction" fix only treated the one symptom
+  CI caught. It should have been a full audit.** Re-applying `5680ce5`'s diff (computed
+  between an old abandoned commit and the *old* `main` it was based on) onto *current*
+  `main` doesn't just risk reverting one known fix — `git apply` matches on surrounding
+  context lines, not semantics, so wherever a file had been modified by *other*, unrelated
+  later work the old diff never saw, applying it silently deletes content that exists in
+  current `main` but wasn't in the old diff's frame of reference. It reports success either
+  way, and the full local suite stays green throughout, because deleting a *test* doesn't
+  fail anything — it just makes coverage vanish.
+- **Auditing every file the mechanism patch touched (`git diff <branch-base> -- <file>`,
+  read in full, not just grepped for the one symptom already found) turned up two more
+  instances**, both in files `5680ce5` also touched:
+  - `tests/test_build.py` had lost 8 tests and an entire class
+    (`TestDependencyFloors`) spanning four unrelated issues: #116/#170 (the "All done"
+    guard), #127-129 (dependency floor guards), #155 (called-shot first-executing-
+    assertion tests), and #138 (verify-before-claiming).
+  - `tests/test_rubrics.py` had lost the entire `TestScoringBandsSpanTheThreshold` class
+    from #153/#171 (band ordering, threshold placement, cross-rubric wording identity).
+  - `.github/workflows/test.yml` had a comment reverted to a shorter, less informative
+    pre-#156 version (functionally harmless — the actual no-key behavior was already
+    covered by the restored guard test — but restored anyway since it's the exact
+    explanation for the bug class this whole incident is about).
+- **Fix: reset each corrupted file to the correct base (the actual commit this branch
+  forked from, not the stale diff's original target) and re-applied only the genuinely
+  new #148 content on top, verified this time by diffing the WHOLE file against the base
+  and confirming zero unexplained deletions** — not just checking that my own new tests
+  passed, which is what let two of these three slip through review earlier today.
+- One incidental fix needed after restoring `TestScoringBandsSpanTheThreshold`: its
+  band-ladder marker string (`"Then assign a score on a scale of 0 to 1:"`) no longer
+  matched `GENERIC_TAIL`'s phrasing (`"...based only on the criteria listed above:"`).
+  Loosened the marker to the stable prefix both share.
+- 275 passed, 244 subtests — up from 261 before this audit, entirely restored coverage,
+  no new production behavior.
+
+### Fixed: 2-first-step truncated mid-response; 2-beads-ordering-capture lacked file locations
+
+- Prompted by re-validating #148's band-reframing fix: two of five phase-2 scenarios still
+  failed against the branch while passing against `main` at the same time. Reading the
+  actual judge reasoning (not just the pass/fail count) showed two distinct, unrelated,
+  non-rubric causes:
+  - `2-first-step`'s response was cut off mid-sentence — the judge's own words: "cuts off
+    mid-sentence... never reaching the required completion phrase." `eval/executor.py`'s
+    `MAX_TOKENS = 2048` wasn't enough room for a called shot plus code across several
+    tests plus the handoff phrase. Raised to 4096, pinned by
+    `test_max_tokens_gives_room_for_a_multi_test_called_shot_walkthrough`.
+  - `2-beads-ordering-capture`'s input never stated where `draft_step` or its tests live
+    — unlike its sibling `2-first-step`, which explicitly says "File locations confirmed:
+    ...". The model reasonably paused to ask, and was penalized for not proceeding.
+    Added the same "File locations confirmed" convention to this scenario's input.
+- Neither fix touches rubric prose — both are genuine harness/scenario-design gaps, found
+  by reading *why* the judge failed the response rather than assuming the rubric was still
+  at fault.
+
+### Fixed: GENERIC_TAIL's bands scored correct refusals near zero (#148)
+
+- **Dispatched 5 phase-scoped CI eval runs against the generic-tail rewrite (no
+  scenario scoped yet) to check the rewrite itself didn't regress anything.** Phases
+  1a, 1b, 3, 4 looked safe. Phase 2 — the exact rubric #136/#148's motivating example
+  came from — showed all 5 GEval-scored scenarios flip from pass to fail, two with
+  zero variance across 3 shots (not flaky noise).
+- **Controlled the finding before trusting it.** The harness calls the API fresh
+  every run, so a sequential comparison against the old tracked baseline can't
+  distinguish "my rewrite caused this" from "the model just sampled worse this
+  time" — exactly the uncontrolled-comparison risk `CLAUDE.md` already warns about
+  for prompt changes. Dispatched a same-time-window control run of phase 2 against
+  unmodified `main`. Result: `2-superpowers-branch-finish`'s correct refusal to
+  merge before CHECK/ACT scored **0.90** under the old bespoke rubric at the same
+  time my branch scored a similar correct-refusal response **0.00**. Model behavior
+  was consistent; the judge's scoring under my new prompt was not — this is a
+  rubric-wording effect, not sampling noise.
+- **Root cause: `GENERIC_TAIL`'s bands were framed around positive demonstration**
+  ("1.0 = every criterion listed above is fully met"), which reads as a checklist
+  requiring every criterion to be affirmatively shown — with no room for a criterion
+  that simply doesn't apply, like "called shot" when the scenario's correct behavior
+  is refusing to write a test at all. The old bespoke bands were framed more
+  holistically and left the judge room to reason that a response violates nothing
+  even when it doesn't engage with most criteria.
+- **Fix: reworded bands 1.0/0.7/0.4/0.0 around violation** ("no criterion listed
+  above is violated"), matching the already-shipped, already-validated 0.6 band's
+  own framing (#153) — the whole ladder is now internally consistent about what
+  "compliant" means. Scope kept minimal: only the bands changed, not the
+  Strengths/Weaknesses scaffold, which wasn't implicated by the evidence.
+- Not yet re-validated against the judge — that's the next step before this can be
+  considered mergeable.
+
+### Fixed: reintroducing #148's mechanism from a stale patch reverted #156's fix
+
+- **CI caught this one, not a local check.** Re-applying `5680ce5`'s diff (see the
+  commit above) onto current `main` brought back eager, module-scope
+  `AnthropicModel` construction in `tests/test_evals.py` (`JUDGE_MODEL =
+  AnthropicModel(...)` at import time) — because that commit predates #156's fix for
+  exactly this bug, and a plain diff has no way to know the target changed underneath
+  it. The `eval-imports` CI job's collection-only step failed with `DeepEvalError:
+  Anthropic API key is not configured`, correctly refusing to pretend a broken module
+  was fine.
+- **The same stale-diff application also deleted #156's own regression guards**
+  (`test_judge_model_is_not_constructed_at_module_scope`,
+  `test_eval_collection_needs_no_api_key`) from `tests/test_build.py`, since
+  `5680ce5`'s version of that file predates them too. That is the more concerning half
+  of this: the fast, local, no-API-key guard that exists specifically to catch this
+  class of regression was silently removed by the same patch that reintroduced the
+  bug it guards against, and the full local suite still reported green — only CI's
+  separate network round-trip caught it, exactly the slow, expensive path #156 built
+  the guard to avoid.
+- Restored `judge_model()`'s lazy-construction pattern and both guard tests verbatim
+  from `main`. Mutation-tested the restored
+  `test_judge_model_is_not_constructed_at_module_scope` by reintroducing the exact
+  eager-construction mistake and confirming it fails before re-fixing.
+- **Lesson for future re-application of an old diff onto a moved target:** run the
+  full local suite AND actually attempt the operation the old code was excluded from
+  covering (here: collecting `tests/test_evals.py` with no `ANTHROPIC_API_KEY` set) —
+  a diff that applies cleanly is not evidence it is still correct against everything
+  that changed after it was written.
+
+### Rubric scaffold and bands genericized so per-scenario scoping actually scopes (#148)
+
+- **The mechanism above only fixed the numbered criteria list. Every rubric's scoring bands
+  and Strengths/Weaknesses scaffold still narrated specific criteria by name** — "did it
+  start with the happy path?", "stub implementation contains conditional logic" — so a
+  scenario scoped away from a criterion in the numbered list was still judged against it
+  invisibly, one section down. This is the exact defect that sank the first #148 phase-2
+  attempt (`12ad72e`): "the mechanism worked and the feature did not."
+- **Added `eval/rubrics/generic_tail.py`'s `GENERIC_TAIL`** — one shared scaffold-and-bands
+  string, imported verbatim by all five rubrics, that never names a specific criterion or
+  behavior; every reference is to "the criteria listed above". It scopes automatically with
+  whatever `CRITERIA_ITEMS` subset a scenario selects, with no separate narrowing logic.
+  Identical wording across all five rubrics is deliberate — the same principle #153 already
+  established for the 0.6 band alone, generalized to the whole tail: rubric-specific phrasing
+  here would itself be judge vocabulary, and #149 measured that backfiring twice already.
+  Rubric-specific whole-response short-circuits (rubric_1a's vague-input exception, rubric_2's
+  Process Police refusal exception) stay as a rubric-specific prefix before the shared text —
+  they're overrides, not per-criterion narration.
+- **rubric_2's dedicated "Stub Discipline" scaffold section was folded into the
+  `stub-discipline` `CRITERIA_ITEMS` entry** rather than kept as a separate always-shown
+  section, so its content is now properly scoped through the same mechanism as every other
+  criterion instead of needing its own carve-out.
+- **`test_scoped_criteria_leave_no_trace_in_bands_or_scaffold`** reproduces the exact prior
+  failure: scoping rubric 2 to only `called-shot` and asserting "stub" and "happy path" don't
+  appear anywhere in the assembled prompt, not just absent from the numbered list. Confirmed
+  RED against the mechanism-only state (both concepts leaked via the hardcoded bands), GREEN
+  after genericizing. `test_generic_tail_is_present_verbatim_in_every_rubric` guards the
+  "identical across rubrics" property going forward — mutation-tested by inlining a
+  rubric-specific tweak into one rubric's tail and confirming it's caught.
+- **`tests/fixtures/rubric_criteria_snapshot.json` updated deliberately** — same rationale as
+  #153: the byte-identity test it backs guards #148 phase-1's decomposition refactor, not
+  rubric content for all time; this is an intentional content edit.
+- **Not yet applied to any scenario, and not yet validated against the judge.** No scenario
+  declares `geval_criteria` yet, so this ships as a structural capability. Unlike #153, this
+  is not behavior-neutral for unscoped scenarios either — every rubric's scaffold and bands
+  are now different prose than what shipped before, for every scenario in every phase, not
+  just scoped ones. That needs real eval validation before this is considered done.
+
+### Rubrics can score a scenario against only the criteria it claims (#148, mechanism)
+
+- **Reintroduced `geval_criteria` scoping** (`eval/rubrics/assemble.py`, `eval/rubrics/__init__.py`,
+  `eval/schema.py`), previously implemented in `5680ce5` and reverted in `12ad72e` — not because
+  the mechanism was wrong, but because scoping the numbered criteria list left the scoring bands
+  and Strengths/Weaknesses scaffold still narrating every criterion, so a "scoped" scenario was
+  still evaluated on dimensions it never claimed. That prose-level gap is fixed separately below;
+  this commit restores the mechanism unchanged and behavior-neutral (no scenario opts in yet, so
+  every rubric renders identically to before).
+- **Design constraints, unchanged from the original attempt, each backed by something measured
+  rather than assumed:** out-of-scope criteria are omitted from the assembled text, never named
+  as exclusions (#149 measured "do not penalise X" backfiring twice); selection follows the
+  rubric's own declared order, not the caller's, so two scenarios naming the same subset in a
+  different order still get the same prompt; numbering stays contiguous so the judge never sees
+  a gap implying something was withheld; an unknown criterion id raises rather than silently
+  resolving to "all" or "none"; narrowing requires a stated `geval_criteria_reason`, without
+  which the field would be a nicer-looking `skip_geval` — a way to make a red scenario green by
+  quietly dropping the criterion it fails.
+- CI's `eval-imports` job collection-only check is restored alongside it, closing the same gap
+  #156 found: `tests/test_evals.py` is excluded from the default suite, so a broken import there
+  was previously only discoverable by dispatching a paid eval run.
+
 ### All five rubrics gain a scoring band anchored across the 0.5 threshold (#153)
 
 - **Every rubric's bands jumped straight from 0.7 to 0.4, straddling `THRESHOLD = 0.5` with

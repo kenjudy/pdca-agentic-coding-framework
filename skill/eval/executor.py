@@ -10,7 +10,11 @@ from pathlib import Path
 from typing import Any
 
 DEFAULT_MODEL = "claude-sonnet-4-6"
-MAX_TOKENS = 2048
+# 2048 truncated a legitimate multi-test TDD walkthrough mid-sentence (#148 validation,
+# eval run 34640545802): the judge's own reasoning said so -- "cuts off mid-sentence...
+# never reaching the required completion phrase." A phase-2 scenario with several called
+# shots plus code plus the handoff phrase needs more room than that.
+MAX_TOKENS = 4096
 
 
 def strip_decision_probes(text: str) -> str:

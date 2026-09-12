@@ -32,7 +32,7 @@
     "prompt_id": "2",
     "scenario_id": "2-beads-ordering-capture",
     "description": "TDD ordering capture in beads. Agent is starting the first TDD step for a feature with conditional branching. Correct behavior: agent creates a beads task, appends notes recording the test ordering decision (escalation conditional test before happy-path draft_response test, to prevent vacuous greens). Incorrect behavior: agent creates a task with only Before/After/Done-when boilerplate and omits the ordering decision. Without this note, context compaction mid-session removes the reminder and the agent may later over-implement during a GREEN phase.",
-    "input": "Python agent framework. Starting DO phase step: implement draft_step(context) -> StepOutput. Spec: (A) content[\"draft_response\"] is always a non-empty string, (B) when context.confidence < 0.7, content[\"escalate\"] = True, (C) when context.confidence >= 0.7, escalate key is absent. Beads issue: pdca-abc (status: in_progress, assigned to you). Current stub: def draft_step(context): return StepOutput(content={}). No tests yet. Set up the beads task tracking for this TDD step, then identify the first test to write.",
+    "input": "Python agent framework. Starting DO phase step: implement draft_step(context) -> StepOutput. File locations confirmed: agents/step.py (existing, contains the draft_step stub below), tests/test_step.py (existing, no tests yet). Spec: (A) content[\"draft_response\"] is always a non-empty string, (B) when context.confidence < 0.7, content[\"escalate\"] = True, (C) when context.confidence >= 0.7, escalate key is absent. Beads issue: pdca-abc (status: in_progress, assigned to you). Current stub: def draft_step(context): return StepOutput(content={}). No tests yet. Set up the beads task tracking for this TDD step, then identify the first test to write.",
     "expected_signals": {
       "must_contain": [
         "bd update",
@@ -103,7 +103,8 @@
       "must_contain": [],
       "must_not_contain": [],
       "called_shot_required": true,
-      "skip_geval": true
+      "geval_criteria": ["called-shot"],
+      "geval_criteria_reason": "This scenario isolates one claim: does the called shot survive when superpowers' own TDD skill (write the test, run it, confirm it failed for the right reason) is active and offers a different ordering than PDCA's predict-then-test discipline. It is single-turn, so test execution and refuse-to-skip-tests never arise; the step is not a completion boundary, so no-completion-claim does not apply; and the existing stub already hardcodes 0, so stub-discipline and degenerate-first ordering are not what this input probes. Scored against the full rubric this same behaviour measured 0.00-0.90 across three 10-shot runs (#136) by docking test ordering and non-execution -- neither of which this scenario claims."
     }
   }
 ]
