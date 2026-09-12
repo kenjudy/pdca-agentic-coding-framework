@@ -102,9 +102,7 @@
     "expected_signals": {
       "must_contain": [],
       "must_not_contain": [],
-      "called_shot_required": true,
-      "geval_criteria": ["called-shot"],
-      "geval_criteria_reason": "This scenario isolates one claim: does the called shot survive when superpowers' own TDD skill (write the test, run it, confirm it failed for the right reason) is active and offers a different ordering than PDCA's predict-then-test discipline. It is single-turn, so test execution and refuse-to-skip-tests never arise; the step is not a completion boundary, so no-completion-claim does not apply; and the existing stub already hardcodes 0, so stub-discipline and degenerate-first ordering are not what this input probes. Scored against the full rubric this same behaviour measured 0.00-0.90 across three 10-shot runs (#136) by docking test ordering and non-execution -- neither of which this scenario claims."
+      "called_shot_required": true
     }
   }
 ]
