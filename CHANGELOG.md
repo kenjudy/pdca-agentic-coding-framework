@@ -31,8 +31,19 @@
   alone. `4-tdd-breakdown` is still measured failing, but the recorded judge reasoning reads
   like a genuine response-quality gap (editorializing, no single "what would you change"
   ask) rather than out-of-scope criteria being scored — needs the same scrutiny before
-  assuming scoping is the fix. Controlled validation (below) covers only the scenario
+  assuming scoping is the fix. Controlled validation below covers only the scenario
   actually converted here.
+- **Controlled validation (CI runs 34661817784 treatment / 34661822147 control, same-time-
+  window per CLAUDE.md).** Treatment = this branch (scoped to `called-shot`); control = a
+  throwaway branch reverting only this scenario's `expected_signals` to the pre-#148 full
+  rubric, both dispatched seconds apart, 8 shots each. Control reproduced the historical
+  #136 pattern almost exactly: 1/7 shots passed (one retrieval-truncated shot's data
+  unavailable), scores mostly 0.10-0.30 with two high outliers (0.90, 1.00) buried inside
+  failed majority votes — the same low-with-occasional-spike shape #136 measured, not
+  noise. Treatment: 7/8 shots passed, scores clustered 0.70-0.90 with one low outlier.
+  Fisher exact test on pass/fail counts (7/1 vs 1/6): p ≈ 0.010. Scoping did not just
+  change the number, it changed the shape of the distribution, consistent with the
+  diagnosis that the full rubric was scoring criteria this scenario never claimed.
 
 ### Fixed: the stale-patch mechanism had silently deleted unrelated test coverage in 3 more files
 
