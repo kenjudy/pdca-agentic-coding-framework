@@ -113,6 +113,106 @@ class TestMustNotContain(unittest.TestCase):
         self.assertFalse(results[0].passed)
 
 
+class TestVerdictFieldsRequired(unittest.TestCase):
+    """verdict_fields_required checks — a verdict field's label and value must appear
+    together, in ANY rendering, not just the template's own literal line format (#49
+    regression, second round of #111's loosening).
+
+    A same-time-window CI comparison measured `3-superpowers-verification-not-check`
+    drop from 6/8 to 1/8 passing shots after #49 added evidence-citation wording to the
+    CHECK checklist (Fisher p ~= 0.041) -- not because the model's judgment got worse
+    (GEval scored every one of those responses 0.90-1.00), but because responses shifted
+    toward markdown-table formatting throughout, and the verdict section followed:
+    "| **Status** | Needs work |" instead of "**Status:** Needs work". The literal
+    substring "Status:" never appears in the table rendering -- there is no colon
+    anywhere -- so `must_contain: ["Status:"]` failed on a response the judge, and a
+    human reading it, would call correct.
+    """
+
+    def test_line_format_passes(self):
+        signals = {**EMPTY_SIGNALS, "verdict_fields_required": ["Status"]}
+        results = check_mechanical("**Status:** Needs work", signals)
+        self.assertEqual(len(results), 1)
+        self.assertTrue(results[0].passed)
+
+    def test_table_format_passes(self):
+        signals = {**EMPTY_SIGNALS, "verdict_fields_required": ["Status"]}
+        results = check_mechanical("| **Status** | Needs work |", signals)
+        self.assertTrue(results[0].passed)
+
+    def test_heading_then_table_passes(self):
+        """The exact shape captured from the real CI regression: a "### Status" heading
+        with the actual value two rows into a table below it, no colon anywhere."""
+        output = "### Status\n\n| | |\n|---|---|\n| **Status** | Needs work |"
+        signals = {**EMPTY_SIGNALS, "verdict_fields_required": ["Status"]}
+        results = check_mechanical(output, signals)
+        self.assertTrue(results[0].passed)
+
+    def test_ready_to_close_table_format_passes(self):
+        signals = {**EMPTY_SIGNALS, "verdict_fields_required": ["Ready to close"]}
+        results = check_mechanical("| **Ready to close** | No |", signals)
+        self.assertTrue(results[0].passed)
+
+    def test_missing_value_fails(self):
+        signals = {**EMPTY_SIGNALS, "verdict_fields_required": ["Status"]}
+        results = check_mechanical("### Status\n\nSee above for details.", signals)
+        self.assertFalse(results[0].passed)
+
+    def test_label_absent_entirely_fails(self):
+        signals = {**EMPTY_SIGNALS, "verdict_fields_required": ["Status"]}
+        results = check_mechanical("Everything looks fine.", signals)
+        self.assertFalse(results[0].passed)
+
+    def test_emoji_between_label_and_value_passes(self):
+        """Real regression-run capture: replaying the actual CI outputs from the #49
+        regression through an earlier version of this check found responses like this
+        one failing -- the gap regex's character whitelist didn't include the checkmark
+        emoji the model inserted between the colon and the value."""
+        signals = {**EMPTY_SIGNALS, "verdict_fields_required": ["Status"]}
+        results = check_mechanical("**Status:** ❌ Needs work — two findings block close", signals)
+        self.assertTrue(results[0].passed)
+
+    def test_capitalized_value_passes(self):
+        """Also found by replaying real captures: "### Status: ❌ Needs Work" (capital
+        W) failed against a value list that only had "Needs work" (lowercase w) --
+        capitalization is formatting, not a different verdict."""
+        signals = {**EMPTY_SIGNALS, "verdict_fields_required": ["Status"]}
+        results = check_mechanical("### Status: ❌ Needs Work", signals)
+        self.assertTrue(results[0].passed)
+
+
+class TestVerdictMustNotBe(unittest.TestCase):
+    """verdict_must_not_be checks — a verdict field's stated value must not equal a
+    forbidden one, in any rendering. Replaces `must_not_contain: ["Status: Complete"]`,
+    which the same table-formatting shift would silently defeat the same way it broke
+    verdict_fields_required's predecessor: "| Status | Complete |" contains no literal
+    "Status: Complete" substring for the old guard to catch.
+    """
+
+    def test_line_format_forbidden_value_fails(self):
+        signals = {**EMPTY_SIGNALS, "verdict_must_not_be": {"Status": "Complete"}}
+        results = check_mechanical("**Status:** Complete", signals)
+        self.assertEqual(len(results), 1)
+        self.assertFalse(results[0].passed)
+
+    def test_table_format_forbidden_value_fails(self):
+        signals = {**EMPTY_SIGNALS, "verdict_must_not_be": {"Status": "Complete"}}
+        results = check_mechanical("| **Status** | Complete |", signals)
+        self.assertFalse(results[0].passed)
+
+    def test_different_value_passes(self):
+        signals = {**EMPTY_SIGNALS, "verdict_must_not_be": {"Status": "Complete"}}
+        results = check_mechanical("| **Status** | Needs work |", signals)
+        self.assertTrue(results[0].passed)
+
+    def test_label_absent_entirely_passes(self):
+        """No stated verdict at all is not the same failure this guard exists to
+        catch -- verdict_fields_required is the check for that."""
+        signals = {**EMPTY_SIGNALS, "verdict_must_not_be": {"Status": "Complete"}}
+        results = check_mechanical("Everything looks fine.", signals)
+        self.assertTrue(results[0].passed)
+
+
 class TestCalledShotRequired(unittest.TestCase):
     """called_shot_required checks — all four fields must be present in output."""
 
