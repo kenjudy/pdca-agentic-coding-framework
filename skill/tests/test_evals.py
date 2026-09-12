@@ -70,8 +70,6 @@ def load_scenarios(prompt_id: str) -> list[dict]:
         return json.load(f)
 
 
-
-
 def _run_scenario(scenario: dict, include_skill_prompt: bool = True) -> dict:
     prompt_id = scenario["prompt_id"]
     phase_prompt_path = PHASE_PROMPTS_DIR / PROMPT_FILE[prompt_id]

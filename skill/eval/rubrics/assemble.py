@@ -21,9 +21,10 @@ from __future__ import annotations
 from collections.abc import Iterable, Mapping
 
 # Criteria render as "  1. text", with continuation lines carrying their own indentation
-# verbatim inside the item. Nested numbered lists elsewhere in a rubric (rubric_2's Stub
-# Discipline section has one) are part of the tail and are never renumbered -- renumbering
-# them was the failure mode this format exists to avoid.
+# verbatim inside the item. Any nested numbered list inside a criterion's own item text
+# (e.g. rubric_2's stub-discipline entry, formerly a standalone Stub Discipline section in
+# the tail before #148 folded it into CRITERIA_ITEMS) is never renumbered by this function
+# -- renumbering it was the failure mode this format exists to avoid.
 ITEM_PREFIX = "  {number}. "
 
 
