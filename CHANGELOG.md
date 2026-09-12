@@ -2,6 +2,19 @@
 
 ## Unreleased
 
+### `testing-anti-patterns.md` now has a propagation test (#167)
+
+- `do-prompts.md`, `check-prompts.md`, `act-prompts.md`, and `working-agreements.md` all
+  had a test guarding that `build.py` actually copies their master source content into the
+  packaged skill. `testing-anti-patterns.md` had none — nothing would have failed if
+  `build.py` silently stopped copying it, or copied stale content.
+- Added `test_testing_anti_patterns_matches_master`, asserting exact equality between the
+  packaged file and `2. Do/Testing Anti-Patterns.md` — stronger than a substring pin since
+  this file is copied verbatim (`COPIED_FROM_MASTER`, no license stripping, no injections),
+  so equality catches truncation or staleness anywhere in the file, not just around one item.
+- Mutation-tested before trusting it: temporarily pointed `COPIED_FROM_MASTER` at the wrong
+  master file, confirmed the new test fails, then reverted and confirmed it passes again.
+
 ### `2-superpowers-tdd-precedence` scoped to `called-shot` instead of skipping GEval entirely (#136, #148)
 
 - **#148's mechanism landed with nothing using it.** The scoping infrastructure (per-scenario

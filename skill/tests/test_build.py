@@ -710,6 +710,27 @@ class TestSkillPackage(unittest.TestCase):
             "working-agreements.md content doesn't match license-stripped master source",
         )
 
+    def test_testing_anti_patterns_matches_master(self):
+        """#167: nothing previously asserted that build.py copies
+        "2. Do/Testing Anti-Patterns.md" into the packaged skill at all -- unlike
+        do-prompts.md, check-prompts.md, act-prompts.md, and working-agreements.md, which
+        all have a propagation test. build.py's own COPIED_FROM_MASTER comment says this
+        file is copied verbatim, not license-stripped, so exact equality (not a substring
+        pin) is the right guard -- it fails on truncation or staleness anywhere in the
+        file, not just around one item, and needs no update when the master's content
+        changes shape.
+
+        Mirrors test_working_agreements_matches_master's pattern, without the license
+        split that file's master needs and this one's does not.
+        """
+        packaged = read_zip_file(SKILL_FILE, f"{SKILL_NAME}/references/testing-anti-patterns.md")
+        master = (REPO_ROOT / "2. Do" / "Testing Anti-Patterns.md").read_text()
+        self.assertEqual(
+            packaged.strip(),
+            master.strip(),
+            "testing-anti-patterns.md content doesn't match its master source",
+        )
+
     def test_addon_files_match_source(self):
         """Addon files in package should match their source files exactly."""
         for slug, files in ADDON_SOURCE_FILES.items():
