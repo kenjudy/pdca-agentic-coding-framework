@@ -35,11 +35,14 @@ _LABEL_TO_VALUE_GAP = r"\W{0,20}"
 
 
 def _verdict_pattern(label: str, values: list[str]) -> re.Pattern[str]:
-    # Case-insensitive on the value only ("Needs Work" vs "Needs work" is formatting,
-    # not a different verdict) -- the label itself stays case-sensitive so "Status"
-    # doesn't match incidental lowercase uses of the word elsewhere in the response.
+    # Case-insensitive on both label and value. Originally only the value was
+    # case-folded, on the theory that a capitalized "Status" wouldn't collide with
+    # incidental lowercase uses of the word elsewhere -- but a fresh CI re-validation
+    # sample immediately produced two real, correct verdicts this missed: "Overall
+    # status: Needs work" (lowercase label) and "Ready to Close: No" (title-cased
+    # label). Capitalization is formatting on both sides, not a different field.
     value_alt = "|".join(re.escape(v) for v in values)
-    return re.compile(re.escape(label) + _LABEL_TO_VALUE_GAP + r"(?i:" + value_alt + r")")
+    return re.compile(r"(?i:" + re.escape(label) + _LABEL_TO_VALUE_GAP + value_alt + r")")
 
 
 def _verdict_field_present(output: str, label: str) -> bool:

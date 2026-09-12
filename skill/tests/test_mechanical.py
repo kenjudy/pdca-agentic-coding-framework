@@ -180,6 +180,22 @@ class TestVerdictFieldsRequired(unittest.TestCase):
         results = check_mechanical("### Status: ❌ Needs Work", signals)
         self.assertTrue(results[0].passed)
 
+    def test_lowercase_label_passes(self):
+        """Found from a fresh CI re-validation sample after the emoji/case-value fixes
+        above: "Overall status: Needs work" (lowercase "status") failed against a label
+        that only matched capital-S "Status". The label's case is formatting too --
+        "status" and "Status" name the same field."""
+        signals = {**EMPTY_SIGNALS, "verdict_fields_required": ["Status"]}
+        results = check_mechanical("**Overall status: Needs work**", signals)
+        self.assertTrue(results[0].passed)
+
+    def test_title_case_label_passes(self):
+        """Same CI sample, different field: "### Ready to Close: **No**" (capital C in
+        Close) failed against the label "Ready to close" (lowercase c)."""
+        signals = {**EMPTY_SIGNALS, "verdict_fields_required": ["Ready to close"]}
+        results = check_mechanical("### Ready to Close: **No**", signals)
+        self.assertTrue(results[0].passed)
+
 
 class TestVerdictMustNotBe(unittest.TestCase):
     """verdict_must_not_be checks — a verdict field's stated value must not equal a
