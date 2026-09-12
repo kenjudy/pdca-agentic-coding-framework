@@ -1,7 +1,7 @@
 """Unit tests for eval.reporter — no API calls, no pytest markers."""
 
 from eval.mechanical import CheckResult
-from eval.reporter import EvalReporter
+from eval.reporter import EvalReporter, rubric_ladder_fingerprint
 
 
 def _make_result(
@@ -327,6 +327,68 @@ class TestReportProvenance:
         '5 shot(s); 5 did not pass'."""
         content = EvalReporter().write_report(tmp_path / "empty.md").read_text()
         assert "deepeval" in content
+
+
+class TestRubricLadderFingerprint:
+    """A report must record which rubric-ladder version produced it (#172).
+
+    #153 added a new scoring band to all five rubrics; #148 rewrote the shared bands and
+    scaffold again. Either change moves scores upward or downward by construction wherever
+    a response lands in the newly affected range, so a GEval delta measured across such a
+    change is not evidence of a prompt regression or improvement on its own --
+    eval/baselines/README.md already warns about this, but nothing let a reader tell FROM
+    THE REPORT ITSELF whether two reports were produced by the same rubric text.
+
+    A content hash, not a git commit reference: a commit reference is fragile under
+    shallow clones and squash merges, and it couples report generation to git state. A
+    hash needs neither and answers the actual question -- did the ladder change between
+    these two reports -- directly.
+    """
+
+    def test_identical_criteria_produce_identical_fingerprint(self):
+        a = {"1a": "same text", "2": "other text"}
+        b = {"1a": "same text", "2": "other text"}
+        assert rubric_ladder_fingerprint(a) == rubric_ladder_fingerprint(b)
+
+    def test_changed_criteria_produce_a_different_fingerprint(self):
+        a = {"1a": "same text", "2": "other text"}
+        b = {"1a": "same text", "2": "DIFFERENT text"}
+        assert rubric_ladder_fingerprint(a) != rubric_ladder_fingerprint(b)
+
+    def test_fingerprint_is_independent_of_mapping_insertion_order(self):
+        """Two reports built from the same rubric content must fingerprint identically
+        regardless of dict iteration order, or an unrelated refactor of RUBRICS' literal
+        ordering would look like a rubric change."""
+        a = {"1a": "x", "2": "y"}
+        b = {"2": "y", "1a": "x"}
+        assert rubric_ladder_fingerprint(a) == rubric_ladder_fingerprint(b)
+
+    def test_id_and_text_do_not_collide_across_the_boundary(self):
+        """Concatenating rubric id and text with no separator lets {"1a": "X"} and
+        {"1": "aX"} hash identically despite different content ("1a" + "X" == "1" + "aX").
+        Catches that specific naive-join regression, not collisions in general."""
+        a = {"1a": "X"}
+        b = {"1": "aX"}
+        assert rubric_ladder_fingerprint(a) != rubric_ladder_fingerprint(b)
+
+
+class TestReportRecordsRubricLadder:
+    """Wiring check: the rendered report actually carries the fingerprint, computed from
+    the real rubrics, not just the pure function in isolation."""
+
+    def _report_text(self, tmp_path):
+        reporter = EvalReporter()
+        reporter.add(_make_result())
+        return reporter.write_report(tmp_path / "report.md").read_text()
+
+    def test_report_contains_a_rubric_ladder_line(self, tmp_path):
+        assert "**Rubric ladder:**" in self._report_text(tmp_path)
+
+    def test_recorded_fingerprint_matches_the_real_rubrics(self, tmp_path):
+        from eval.rubrics import RUBRICS
+
+        expected = rubric_ladder_fingerprint({rid: mod.CRITERIA for rid, mod in RUBRICS.items()})
+        assert f"**Rubric ladder:** {expected}" in self._report_text(tmp_path)
 
 
 class TestDivergenceNote:

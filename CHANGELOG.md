@@ -2,6 +2,42 @@
 
 ## Unreleased
 
+### Eval reports now record which rubric-ladder version produced them (#172)
+
+- No report could previously tell a reader whether it was produced by the same rubric
+  text as another report. #153 added a scoring band to all five rubrics; #148 rewrote
+  the shared bands and scaffold again. Either shift moves scores by construction wherever
+  a response lands in the newly affected range, so a GEval delta measured across such a
+  change was easy to misattribute to a prompt regression rather than the instrument.
+- Every report now carries a `**Rubric ladder:**` line — a 12-character sha256
+  fingerprint of all five rubrics' assembled `CRITERIA` text (`eval/reporter.py`'s new
+  `rubric_ladder_fingerprint`), right after the existing `**Environment:**`
+  (deepeval/anthropic version) line. Same "before the results" placement rationale as
+  #145's mechanism, which this directly extends.
+- `eval/baselines/README.md` updated to describe reading the new line: two reports with
+  matching fingerprints are safely comparable; a report from before this line existed
+  (e.g. `report_20260909_174245.md`) carries none, so the fingerprint can only rule
+  reports *in*, never rule an unfingerprinted one out.
+- **Second gap #172 named:** validation evidence for a rubric/prompt PR was previously
+  citable only by a GitHub Actions run ID or job log — both subject to retention and
+  eventually stop resolving (this branch's own #136 controlled A/B validation, cited only
+  by CI run ID two commits ago, is exactly this pattern). `CLAUDE.md`'s "Validating Prompt
+  Changes" gained a new step 5: save the justifying run under `eval/results/` (or promote
+  it to `eval/baselines/`) and reference it by filename, not only by run ID.
+
+### `testing-anti-patterns.md` now has a propagation test (#167)
+
+- `do-prompts.md`, `check-prompts.md`, `act-prompts.md`, and `working-agreements.md` all
+  had a test guarding that `build.py` actually copies their master source content into the
+  packaged skill. `testing-anti-patterns.md` had none — nothing would have failed if
+  `build.py` silently stopped copying it, or copied stale content.
+- Added `test_testing_anti_patterns_matches_master`, asserting exact equality between the
+  packaged file and `2. Do/Testing Anti-Patterns.md` — stronger than a substring pin since
+  this file is copied verbatim (`COPIED_FROM_MASTER`, no license stripping, no injections),
+  so equality catches truncation or staleness anywhere in the file, not just around one item.
+- Mutation-tested before trusting it: temporarily pointed `COPIED_FROM_MASTER` at the wrong
+  master file, confirmed the new test fails, then reverted and confirmed it passes again.
+
 ### `2-superpowers-tdd-precedence` scoped to `called-shot` instead of skipping GEval entirely (#136, #148)
 
 - **#148's mechanism landed with nothing using it.** The scoping infrastructure (per-scenario

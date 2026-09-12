@@ -1,5 +1,6 @@
 """EvalReporter: collects scenario results and writes a Markdown report."""
 
+import hashlib
 import importlib.metadata
 import textwrap
 from pathlib import Path
@@ -9,6 +10,29 @@ from pathlib import Path
 # scoring, and the question was unanswerable because every report on record carried a
 # timestamp and nothing else. No run could be attributed to a version.
 PROVENANCE_PACKAGES = ("deepeval", "anthropic")
+
+
+def rubric_ladder_fingerprint(criteria_by_id: dict[str, str]) -> str:
+    """Short, deterministic fingerprint of a set of rubric CRITERIA strings (#172).
+
+    A rubric's bands and scaffold are a version, same as a dependency, but nothing
+    recorded which version produced a given report. #153 added a scoring band to all
+    five rubrics; #148 rewrote the shared bands and scaffold again. Either shifts scores
+    by construction wherever a response lands in the newly affected range, so a GEval
+    delta measured across such a change is not evidence of a prompt regression or
+    improvement by itself -- see eval/baselines/README.md. A fingerprint lets a reader
+    tell whether two reports share a rubric-ladder version without re-deriving it.
+
+    A content hash rather than a git commit reference: a commit reference is fragile
+    under shallow clones and squash merges, and it couples report generation to git
+    state. This needs neither.
+
+    Sorted by id and joined with an explicit separator between id and text -- an
+    unseparated join lets {"1a": "X"} and {"1": "aX"} collide ("1a" + "X" ==
+    "1" + "aX") despite different content.
+    """
+    combined = "\n".join(f"{rid}:{criteria_by_id[rid]}" for rid in sorted(criteria_by_id))
+    return hashlib.sha256(combined.encode()).hexdigest()[:12]
 
 
 def _installed_version(package: str) -> str:
@@ -83,6 +107,11 @@ class EvalReporter:
         # the scores below are comparable to the ones they are comparing them against.
         versions = ", ".join(f"{p}: {_installed_version(p)}" for p in PROVENANCE_PACKAGES)
         lines.append(f"**Environment:** {versions}\n")
+
+        from eval.rubrics import RUBRICS
+
+        ladder = rubric_ladder_fingerprint({rid: mod.CRITERIA for rid, mod in RUBRICS.items()})
+        lines.append(f"**Rubric ladder:** {ladder}\n")
 
         # Summary table
         lines.append("## Summary\n")

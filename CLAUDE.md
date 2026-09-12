@@ -179,6 +179,12 @@ Any edit to master prompt files or eval rubrics requires:
 2. Make one discrete change, rebuild (`bash skill/build-skill.sh`)
 3. Re-run only the affected phase evals
 4. All previously passing scenarios must still pass — see `skill/SUPERVISION-PROTOCOL.md` for the full table of phase → eval class mappings
+5. **Save the run that justifies the change, don't just cite it.** A validation run
+   dispatched specifically to support a rubric/prompt PR should be saved under
+   `skill/eval/results/` (or promoted to `skill/eval/baselines/`) and referenced by
+   filename in the PR/CHANGELOG — not only by a GitHub Actions run ID or job log, which
+   are subject to retention and eventually stop resolving (#172). A CI run ID is fine as
+   a pointer to *where the numbers came from*; it is not durable evidence on its own.
 
 **Read the baseline's caveats before comparing against it.** Each baseline records the
 `deepeval` and `anthropic` versions that produced it, and scores are not comparable across
