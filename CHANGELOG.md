@@ -2,6 +2,38 @@
 
 ## Unreleased
 
+### Phase-3 verdict matching loosened to any rendering, and a residual gap disclosed (#49)
+
+- **Validating #49 (below) surfaced a real regression**, caught before merging rather
+  than after: a same-time-window CI comparison on `3-superpowers-verification-not-check`
+  (control on unmodified `main`, treatment with #49's evidence-citation wording, 8 shots
+  each) measured 6/8 → 1/8 passing shots (Fisher p ≈ 0.041). GEval scored every one of
+  those responses 0.90–1.00 — the judgment was right — but responses increasingly
+  rendered the final verdict as a markdown table (`| Status | Needs work |`) instead of
+  the template's literal line (`**Status:** Needs work`), and the table contains no
+  `Status:` substring anywhere for the old `must_contain` check to find.
+- Added `verdict_fields_required` / `verdict_must_not_be` to `eval/mechanical.py`: a
+  verdict field's label and value must appear together, separated by anything that
+  isn't a letter/digit/underscore (colon, table pipe, heading, or an emoji the model
+  inserted between them), matched fully case-insensitively. Replaces the literal
+  `must_contain: ["Status:", "Ready to close:"]` / `must_not_contain: ["Status:
+  Complete"]` pattern across all five phase-3 scenarios.
+- **Validated against real captured data, twice.** Replaying the actual regression-run
+  outputs (21 shots) and a fresh post-fix CI sample (15 sub-shots) through the checker
+  found two more real formatting variants synthetic tests missed — an emoji between
+  label and value, and case variation on both the label (`status`, `Close`) and value
+  (`Needs Work`) — each fixed and pinned as a regression test using the real captured
+  text, not invented examples. Net effect on the original 21-shot capture: 3/21 → 9/21
+  passing, zero regressions introduced anywhere.
+- **Honest residual gap, not chased further here:** even after all of the above, the
+  real pass rate stays below the control's 6/8. Reading a remaining failure directly:
+  some responses give a per-item status breakdown table (build evidence, TDD
+  discipline, docs, critic pass) but never state one holistic `Status: X` verdict,
+  giving only `Ready to close: No` as the disposition. That's a genuine content gap, not
+  a matching bug — plausibly #49's evidence-citation wording nudging the model toward
+  itemized tables at the expense of the single required verdict field. Flagged for a
+  decision rather than assumed away with another matcher tweak.
+
 ### CHECK phase requires cited evidence and degrades sensibly with no operator (#49, #165)
 
 - **#111 closed, not fixed — re-measured first.** Before designing a fix for `3-all-
