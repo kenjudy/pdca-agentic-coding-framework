@@ -700,6 +700,39 @@ class TestSkillPackage(unittest.TestCase):
             "do-prompts.md does not contain the #155 called-shot wording",
         )
 
+    def test_check_prompts_contains_master_content(self):
+        """check-prompts.md must contain master source content (injections may add to it).
+
+        No test previously asserted this at all -- found while editing the CHECK master
+        for #49/#165, the same class of gap #167 fixed for testing-anti-patterns.md.
+        Mirrors test_do_prompts_contains_master_content's pattern: a substring pin, not
+        exact equality, since check-review-probe is injected on top of the master here.
+        """
+        packaged = read_zip_file(SKILL_FILE, f"{SKILL_NAME}/references/check-prompts.md")
+        distinctive = "Review our original goal outcome and plan against our execution."
+        self.assertIn(
+            distinctive,
+            packaged,
+            "check-prompts.md doesn't contain expected master content",
+        )
+
+    def test_check_prompts_contains_the_evidence_and_autonomous_fallback_wording(self):
+        """#49/#165's CHECK master edits must reach the packaged skill, not just the
+        source. Mirrors test_do_prompts_contains_the_first_executing_assertion_language's
+        pattern."""
+        packaged = read_zip_file(SKILL_FILE, f"{SKILL_NAME}/references/check-prompts.md")
+        for distinctive, label in (
+            ("All tests passing — show output", "#49's evidence requirement"),
+            ("show git diff of implementation vs test files", "#49's evidence requirement"),
+            ("no third-party review skill", "#165's autonomous-mode fallback"),
+        ):
+            with self.subTest(label=label):
+                self.assertIn(
+                    distinctive,
+                    packaged,
+                    f"check-prompts.md does not contain {label} wording",
+                )
+
     def test_working_agreements_matches_master(self):
         packaged = read_zip_file(SKILL_FILE, f"{SKILL_NAME}/references/working-agreements.md")
         master = (REPO_ROOT / "Human Working Agreements.md").read_text()
@@ -713,12 +746,15 @@ class TestSkillPackage(unittest.TestCase):
     def test_testing_anti_patterns_matches_master(self):
         """#167: nothing previously asserted that build.py copies
         "2. Do/Testing Anti-Patterns.md" into the packaged skill at all -- unlike
-        do-prompts.md, check-prompts.md, act-prompts.md, and working-agreements.md, which
-        all have a propagation test. build.py's own COPIED_FROM_MASTER comment says this
-        file is copied verbatim, not license-stripped, so exact equality (not a substring
-        pin) is the right guard -- it fails on truncation or staleness anywhere in the
-        file, not just around one item, and needs no update when the master's content
-        changes shape.
+        do-prompts.md and working-agreements.md, which have a propagation test.
+        (check-prompts.md and act-prompts.md turned out NOT to have one either when this
+        was checked again while fixing #49/#165 -- this file's own docstring overclaimed
+        that when it was written. test_check_prompts_contains_master_content below closes
+        that gap for check-prompts.md; act-prompts.md's remains open.)
+        build.py's own COPIED_FROM_MASTER comment says this file is copied verbatim, not
+        license-stripped, so exact equality (not a substring pin) is the right guard -- it
+        fails on truncation or staleness anywhere in the file, not just around one item,
+        and needs no update when the master's content changes shape.
 
         Mirrors test_working_agreements_matches_master's pattern, without the license
         split that file's master needs and this one's does not.

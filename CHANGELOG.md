@@ -2,6 +2,46 @@
 
 ## Unreleased
 
+### CHECK phase requires cited evidence and degrades sensibly with no operator (#49, #165)
+
+- **#111 closed, not fixed — re-measured first.** Before designing a fix for `3-all-
+  complete`'s documented mechanical flakiness, re-ran it fresh: 10/10 shots against
+  unmodified `main` (CI run 34665413721), every single shot scoring exactly 1.00, zero
+  retries. A materially different result from the 83%/58%/67% pass rates this issue
+  documented from 2026-08. The scenario input already carries defensible evidence
+  (specific test counts, a named refactor commit, a specific critic-pass detail) —
+  apparently fixed as a side effect of other work, never attributed to this issue. Closed
+  with the numbers quoted in the issue itself, since a CI run ID alone isn't durable
+  evidence (#172).
+- **#49 — two CHECK checklist items now demand a cited artifact, not a checkbox:**
+  `All tests passing` → `All tests passing — show output`; `No untested implementation was
+  committed` → `No untested implementation was committed — show git diff of implementation
+  vs test files`. Matches the issue's own examples exactly.
+- **#165 — core prompt change only** (the new addon for model-tier tables and skill-
+  enumeration mechanics is deliberately deferred to a follow-up, not built here). Both
+  places the CHECK phase asks "which model should the critic use?" now degrade the same
+  way when there's no operator to ask, reusing #143's existing autonomous-mode convention
+  (prose, not a flag) rather than inventing a second one:
+  - The checklist item in `3. Check/3. Completeness Check.md` (the master template).
+  - The Claude-Code-specific "Decision probe" injection
+    (`claude-addon/injections/check-review-probe.md`) — found while writing this fix's own
+    propagation test, described below. This is the more prominent surface (it fires
+    *before* the checklist template), and fixing only the checklist item would have left
+    #165 genuinely incomplete.
+  - Default when autonomous: fresh subagent, no third-party review skill, a different
+    model at the same or higher reasoning tier than the one that did the work — never an
+    escalation to a human, and never the same model re-reviewing its own work (per
+    `testing-anti-patterns.md` #8's own finding that self-review is what repeatedly missed
+    findings).
+- **Discovered and fixed in passing: `check-prompts.md` had no propagation test at all**,
+  and `test_testing_anti_patterns_matches_master`'s own docstring (#167, merged one PR ago)
+  incorrectly claimed it did. Neither `check-prompts.md` nor `act-prompts.md` actually had
+  one — only `do-prompts.md` and `working-agreements.md` did. Added
+  `test_check_prompts_contains_master_content` and
+  `test_check_prompts_contains_the_evidence_and_autonomous_fallback_wording` (RED-confirmed
+  by stashing the master edit, rebuilding, and watching both new-wording assertions fail,
+  then restoring). `act-prompts.md`'s equivalent gap remains open, out of scope here.
+
 ### Eval reports now record which rubric-ladder version produced them (#172)
 
 - No report could previously tell a reader whether it was produced by the same rubric
