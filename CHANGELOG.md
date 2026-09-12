@@ -2,6 +2,38 @@
 
 ## Unreleased
 
+### `2-superpowers-tdd-precedence` scoped to `called-shot` instead of skipping GEval entirely (#136, #148)
+
+- **#148's mechanism landed with nothing using it.** The scoping infrastructure (per-scenario
+  `geval_criteria`, the genericized bands/scaffold, the validation to catch a typo'd id) was
+  built and audited, but every scenario still either got the whole rubric or `skip_geval`
+  wholesale — the actual defects the mechanism exists to fix were all still open.
+- **First real scenario converted: `2-superpowers-tdd-precedence`.** #136 measured this
+  scenario scoring anywhere from 0.00 to 0.90 against the full rubric_2 across three 10-shot
+  runs, docking it for test ordering and for not executing tests — neither of which it
+  claims, and the latter impossible in this single-turn harness. `skip_geval` silenced the
+  noise but also silenced the only signal this scenario exists to carry.
+- Now scoped to `geval_criteria: ["called-shot"]` — the one criterion the mechanical tier
+  already confirms reliably (17/18, 22/23, 17/18 across those same three runs) and the only
+  behaviour this scenario's input actually exercises. `degenerate-first` and `stub-discipline`
+  would still dock unclaimed behaviour (the fixture's stub already hardcodes `0`, so ordering
+  isn't tested here); `refuse-to-skip-tests` and `no-completion-claim` describe situations
+  this single-step input never presents; `stub-based-red` needs test execution this
+  single-turn harness cannot observe.
+- `test_superpowers_tdd_precedence_skips_geval` replaced with
+  `test_superpowers_tdd_precedence_scopes_geval_to_called_shot`, RED-confirmed against the
+  prior `skip_geval: true` state before the scenario data changed.
+- **Not yet done:** `3-all-complete` (#111) and `4-tdd-breakdown` (#151) are the other two
+  scenarios named in #148's original root-cause list. `3-all-complete` currently passes
+  cleanly (1.00) against the full rubric in the tracked baseline — every criterion appears
+  to genuinely apply to its input — so scoping it may not be warranted; needs a closer read
+  before deciding either way, rather than scoping on the strength of an old issue number
+  alone. `4-tdd-breakdown` is still measured failing, but the recorded judge reasoning reads
+  like a genuine response-quality gap (editorializing, no single "what would you change"
+  ask) rather than out-of-scope criteria being scored — needs the same scrutiny before
+  assuming scoping is the fix. Controlled validation (below) covers only the scenario
+  actually converted here.
+
 ### Fixed: the stale-patch mechanism had silently deleted unrelated test coverage in 3 more files
 
 - **The earlier "restore #156's lazy judge construction" fix only treated the one symptom
