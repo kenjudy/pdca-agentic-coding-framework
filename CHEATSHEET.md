@@ -80,8 +80,7 @@ from `references/check-prompts.md`.
 - Read the outstanding items before the verdict. Open items and "Complete" don't coexist.
 
 A "Complete" verdict it wrote itself is not your approval. Nothing closes — no issue, no
-commit — until you say so explicitly. The one exception is running fully autonomous, with
-nobody there to approve.
+commit — until you say so explicitly.
 
 ## ACT
 
@@ -93,8 +92,7 @@ as one step: *"Committed and closed. Two findings worth noting for future work: 
 u2eq, or do you want to look at GitHub issues first?"* That's not proof you approved the
 close — check separately whether you actually signed off.
 
-Unless you're running fully autonomous, work isn't done when tests pass. It's done when
-you've signed off on both CHECK and ACT.
+Work isn't done when tests pass. It's done when you've signed off on both CHECK and ACT.
 
 ## What you say when something's off
 
