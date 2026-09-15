@@ -7,28 +7,44 @@ Full prompts: `skill/pdca-framework/references/` (or `1. Plan/` – `4. Act/` in
 State the goal in one sentence: *"After this session, ___."* Can't finish it, don't start —
 nothing else knows what you're trying to accomplish.
 
+## Invoking a phase
+
+Natural language, not a template. Name "pdca," the phase, and what you want — the skill
+expands it, you don't paste anything:
+
+- *"use pdca to analyze what we need to do to get meaningful metrics from this repo."*
+- *"per pdca plan the work in beads, look for opportunities for parallel work, use sonnet
+  subagents to perform the work."*
+- *"per pdca analyze, plan with beads, and spawn subagents to remedy the P1 bug."*
+
+Name the model or subagent strategy in the same breath if you have one — "use sonnet
+subagents," "spawn an opus subagent for that" — it doesn't default to anything sane on its own.
+
 ## PLAN
 
-Analysis (1a) — send: *"I need to do a high level design brainstorm. The overall goal is
-to ___."* The architecture search before any recommendation is already mandatory in the
-prompt. Your job: check it happened. The output should name specific files and existing
-patterns it found, not gesture at "similar functionality." No evidence, no plan — send it
-back.
+The architecture search before any recommendation is already mandatory in the prompt. Your
+job is to check it happened — the plan should name specific files and existing patterns it
+found, not gesture at "similar functionality." No evidence, no plan. Send it back.
 
-The plan itself (1b) — once 1a is refined with questions, send: *"Based on our analysis,
-provide a coherent plan incorporating our refinements..."* Each numbered step should be
-small enough to test alone. Too big — say so before DO starts.
+Each step should be small enough to test alone, and land in beads if the work will outlive
+this context window or run across parallel subagents.
 
 ## DO
 
-No fill-in-the-blank template — name the step and the concrete unit of work, e.g.:
-*"Step 2: implement `WebhookDelivery.create(event_type:, payload:)`. Begin this step."*
+Before you let it start — or before you hand a step to a subagent — ask: *"Have you given it
+pdca do guidance?"* Guidance not loaded is guidance not followed.
 
 - The called shot — test name, behavior, expected failure, why this test — is already
   mandatory before every test. If it starts writing one without saying this first, stop it.
 - A RED that's a compile error, not a behavioral failure, is already something the prompt
   tells it to catch and diagnose. Notice when it doesn't.
 - "All done" mid-DO is premature. DO ends with a handoff line. The verdict is CHECK's.
+
+## Staying on plan
+
+A long session drifts. Check in against beads, not memory: *"are we on our plan or not?"*
+*"what's left in the plan?"* *"there are still N open tasks."* Do this every time you resume
+after a break, a context reset, or a subagent report — not just once at the start.
 
 ## CHECK
 
@@ -43,19 +59,24 @@ checklist from `references/check-prompts.md`.
 
 ## ACT
 
-Invoke it. It opens with *"Let's take a few minutes to reflect on this session,"* presents
-its analysis, then asks what stood out to you — yours to answer, not to skip. Hypotheses
-come from it; the choice of what changes next session is yours. One thing.
+The open question is yours to answer, not the agent's to answer for you. Hypotheses come from
+it; the choice of what changes next session is yours. One thing.
+
+Honestly: this is the phase most likely to get skipped once a session runs long and parallel.
+Skipping it once is a missed cycle. Skipping it every time means you're not running PDCA,
+you're running DO with extra paperwork.
 
 ## What you say when something's off
 
-Interrupt mid-response, not after.
+Interrupt mid-response, not after. The canonical four:
 - *"You broke from test-driving. Is there adequate test coverage?"*
 - *"Where's the failing test first?"*
 - *"You're fixing multiple things. Focus on one failing test?"*
 - *"This feels like scope creep. Are we still on step [N]?"*
 
-It stops and answers before continuing. Every time.
+In practice you'll also just say what's actually wrong, plainly: *"I don't understand what
+you're saying — say it in plainer English."* *"Don't delete the data."* However you say it,
+it stops and answers before continuing. Every time.
 
 ## Nothing catches this but you
 
