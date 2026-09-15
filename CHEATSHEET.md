@@ -28,7 +28,10 @@ job is to check it happened — the plan should name specific files and existing
 found, not gesture at "similar functionality." No evidence, no plan. Send it back.
 
 Each step should be small enough to test alone, and land in beads if the work will outlive
-this context window or run across parallel subagents.
+this context window or run across parallel subagents. Say the standard explicitly if you want
+it — real example: *"make sure the beads issue(s) have the complete details per PDCA plan and
+do"* — because "complete" isn't a checkbox, it means the epic has acceptance criteria and
+resumption context, and each task under it has Before / After / Done-when, not just a title.
 
 ## DO
 
