@@ -4,6 +4,8 @@ A Claude skill for human-supervised AI-assisted software development using Plan-
 
 > **Looking to build a custom AI workflow for any domain?** See [human-directed-ai-workflow-builder](https://github.com/kenjudy/human-directed-ai-workflow-builder) — generates a tailored PDCA skill for any complex repeatable task, with a built-in learning loop that sharpens it each cycle.
 
+> **Already know the framework and just need a reference?** See [CHEATSHEET.md](CHEATSHEET.md) — a one-page guide to running a PDCA session: what to say at each phase, and what only the human operator can catch.
+
 ---
 
 ## pdca-framework — Three Ways to Use This Framework
@@ -433,6 +435,7 @@ New-Item -ItemType Directory -Path ".claude\prompts" -Force
 - [Claude Code Documentation](https://docs.anthropic.com/en/docs/claude-code)
 - [PDCA Process Repository](https://github.com/kenjudy/pdca-agentic-coding-framework)
 - [skill/README.md](skill/README.md) — recommended skill-based setup
+- [CHEATSHEET.md](CHEATSHEET.md) — one-page operator reference
 
 ## License
 
