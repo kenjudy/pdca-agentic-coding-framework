@@ -71,8 +71,9 @@ fixing it or ignoring it. You decide.
 
 ## CHECK
 
-Send: *"Review our original goal outcome and plan against our execution,"* then the
-checklist from `references/check-prompts.md`.
+If it isn't prompting you into CHECK on its own, invoke it explicitly — don't wait on it.
+Send *"Review our original goal outcome and plan against our execution,"* then the checklist
+from `references/check-prompts.md`.
 
 - The checklist doesn't require evidence for "tests passing" or "no untested implementation."
   You do. Don't accept either without the actual output or diff in front of you.
