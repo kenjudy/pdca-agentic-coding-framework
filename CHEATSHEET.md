@@ -98,11 +98,12 @@ you've signed off on both CHECK and ACT.
 
 ## What you say when something's off
 
-Interrupt mid-response, not after. The canonical four:
+Interrupt mid-response, not after. From `Human Working Agreements.md`:
 - *"You broke from test-driving. Is there adequate test coverage?"*
 - *"Where's the failing test first?"*
 - *"You're fixing multiple things. Focus on one failing test?"*
 - *"This feels like scope creep. Are we still on step [N]?"*
+- *"Which assertion did you predict, and which one fired?"*
 
 In practice you'll also just say what's actually wrong, plainly: *"I don't understand what
 you're saying — say it in plainer English."* *"Don't delete the data."* However you say it,
