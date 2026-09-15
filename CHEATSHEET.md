@@ -2,38 +2,46 @@
 
 Full prompts: `skill/pdca-framework/references/` (or `1. Plan/` – `4. Act/` in this source repo).
 
-## Nothing else knows the goal
+## Using the skill
 
-State the goal in one sentence: *"After this session, ___."* Can't finish it, don't start —
-nothing else knows what you're trying to accomplish.
+1. Aside from calling out PDCA to invoke the skill, use natural language.
+2. You can invite the agent to use subagents if you run in a more autonomous mode. Name the
+   model or subagent strategy in the same prompt if you have one — "use sonnet subagents,"
+   "spawn an opus subagent for that."
 
-## Nobody pastes the template
+## State a user-focused goal
 
-Natural language, not a template. Name "pdca," the phase, and what you want — the skill
-expands it, you don't paste anything:
-
-- *"use pdca to analyze what we need to do to get meaningful metrics from this repo."*
-- *"per pdca plan the work in beads, look for opportunities for parallel work, use sonnet
-  subagents to perform the work."*
-- *"per pdca analyze, plan with beads, and spawn subagents to remedy the P1 bug."*
-- *"per pdca do 0a3m"* — a specific, already-planned beads item, nothing else needed.
-
-Name the model or subagent strategy in the same breath if you have one — "use sonnet
-subagents," "spawn an opus subagent for that" — it doesn't default to anything sane on its own.
+Not "refactor the auth module" — "so a user can reset their password without emailing
+support." What value does this work create for someone? State it in one sentence: *"After
+this session, ___."* Can't finish it, don't start — nothing else knows what you're trying to
+accomplish.
 
 ## PLAN
 
-The architecture search before any recommendation is already mandatory in the prompt. Your
-job is to check it happened — the plan should name specific files and existing patterns it
-found, not gesture at "similar functionality." No evidence, no plan. Send it back.
+- *"use pdca to analyze what we need to do to get meaningful metrics from this repo."*
 
-Each step should be small enough to test alone, and land in beads if the work will outlive
-this context window or run across parallel subagents. Say the standard explicitly if you want
-it — real example: *"make sure the beads issue(s) have the complete details per PDCA plan and
-do"* — because "complete" isn't a checkbox, it means the epic has acceptance criteria and
-resumption context, and each task under it has Before / After / Done-when, not just a title.
+  The architecture search before any recommendation is already mandatory in the prompt. Your
+  job is to check it happened — the plan should name specific files and existing patterns it
+  found, not gesture at "similar functionality." No evidence, no plan. Send it back.
+
+- *"per pdca plan the work in beads, look for opportunities for parallel work, use sonnet
+  subagents to perform the work."*
+
+  Planning itself isn't delegated — "perform the work" means the DO steps that come out of
+  this plan, decided here so parallel execution is already set up before DO starts. Each step
+  should be small enough to test alone, and land in beads if the work will outlive this
+  context window or run across parallel subagents.
+
+- *"make sure the beads issue(s) have the complete details per PDCA plan and do"*
+
+  A separate, explicit instruction — say it if you want it enforced, it isn't automatic.
+  "Complete" isn't a checkbox: the epic needs acceptance criteria and resumption context, and
+  each task under it needs Before / After / Done-when, not just a title.
 
 ## DO
+
+- *"per pdca do 0a3m"* — a specific, already-planned beads item. Nothing else needed; the
+  detail lives in the plan.
 
 Before you let it start — or before you hand a step to a subagent — ask: *"Have you given it
 pdca do guidance?"* Guidance not loaded is guidance not followed.
@@ -46,9 +54,9 @@ pdca do guidance?"* Guidance not loaded is guidance not followed.
 
 ## Long sessions drift
 
-A long session drifts. Check in against beads, not memory: *"are we on our plan or not?"*
-*"what's left in the plan?"* *"there are still N open tasks."* Do this every time you resume
-after a break, a context reset, or a subagent report — not just once at the start.
+Check in against beads, not memory: *"are we on our plan or not?"* *"what's left in the
+plan?"* *"there are still N open tasks."* Do this every time you resume after a break, a
+context reset, or a subagent report — not just once at the start.
 
 ## The moment this is actually for
 
