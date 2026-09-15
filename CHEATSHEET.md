@@ -134,9 +134,9 @@ unmodified text too. Interleave control/treatment, read the Fisher p-value. See 
 
 ## Running autonomously
 
-Auto mode (Claude Code's permission setting) skips the tool-approval popups for edits and
-commands — it doesn't touch what the PDCA prompts ask the agent to present or wait for. DO
-still stops for plan approval before writing code, still diagnoses a non-behavioral RED before
-proceeding, ACT still requires you to answer the open question. Telling it to run autonomously
-changes exactly one documented thing, in this repo's own `CLAUDE.md`/`AGENTS.md`: it pushes
-without waiting for your go-ahead. Nothing else changes either way.
+Auto mode (Claude Code's permission setting) plus subagent guidance changes DO in practice:
+with tool-approval popups off and subagents running the assigned steps, DO proceeds through
+without stopping for the per-step approval the prompt otherwise asks for. It moves into CHECK
+on its own from there — but CHECK still stops for your review, and ACT still prompts you for
+the open question. Telling it to run autonomously additionally skips the push-approval wait,
+documented in this repo's own `CLAUDE.md`/`AGENTS.md`.
