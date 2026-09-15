@@ -85,15 +85,13 @@ nobody there to approve.
 
 ## ACT
 
-Requires your actual participation, not a nod-through. Answer the open question yourself —
-don't let it interpret the session for you. Hypotheses come from it; the choice of what
-changes next session is yours. One thing.
+Answer the open question yourself — don't let it interpret the session for you. Hypotheses
+come from it; the choice of what changes next session is yours. One thing.
 
 In a fast beads cycle this takes a compressed shape — you'll see it announce **"CHECK / ACT"**
 as one step: *"Committed and closed. Two findings worth noting for future work: ... Next:
-u2eq, or do you want to look at GitHub issues first?"* Notice what that isn't: proof the
-closing was approved. "Committed and closed" is what it did — whether you'd actually signed
-off is a separate question, worth checking rather than assuming from the phrasing.
+u2eq, or do you want to look at GitHub issues first?"* That's not proof you approved the
+close — check separately whether you actually signed off.
 
 Unless you're running fully autonomous, work isn't done when tests pass. It's done when
 you've signed off on both CHECK and ACT.
