@@ -107,7 +107,7 @@ Interrupt mid-response, not after. From `Human Working Agreements.md`:
 
 In practice you'll also just say what's actually wrong, plainly: *"I don't understand what
 you're saying — say it in plainer English."* *"Don't delete the data."* However you say it,
-it stops and answers before continuing. Every time.
+it stops and answers before continuing.
 
 ## What only you check
 
