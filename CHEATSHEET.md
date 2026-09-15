@@ -44,7 +44,7 @@ accomplish.
   detail lives in the plan.
 
 Before you let it start — or before you hand a step to a subagent — ask: *"Have you given it
-pdca do guidance?"* Guidance not loaded is guidance not followed.
+pdca do guidance?"*
 
 - The called shot — test name, behavior, expected failure, why this test — is already
   mandatory before every test. If it starts writing one without saying this first, stop it.
@@ -56,8 +56,7 @@ pdca do guidance?"* Guidance not loaded is guidance not followed.
 
 A long or resumed session drifts from what you actually agreed to. Check beads, not memory:
 *"are we on our plan or not?"* *"what's left in the plan?"* *"there are still N open tasks."*
-Ask every time you resume — after a break, a context reset, a subagent report. Not just once
-at the start.
+Ask every time you resume — after a break, a context reset, a subagent report.
 
 ## When it finds something wrong
 
@@ -66,8 +65,7 @@ Mid-investigation, before writing anything, it stopped: *"The acceptance criteri
 Should I correct the acceptance criteria before committing?"* The human's answer was one
 word: *"yes."*
 
-That's the point of the whole discipline. It surfaced a wrong finding instead of quietly
-fixing it or ignoring it. You decide.
+It surfaced a wrong finding instead of quietly fixing it or ignoring it. You decide.
 
 ## CHECK
 
