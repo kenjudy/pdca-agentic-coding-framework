@@ -54,20 +54,20 @@ pdca do guidance?"* Guidance not loaded is guidance not followed.
 
 ## Long sessions drift
 
-Check in against beads, not memory: *"are we on our plan or not?"* *"what's left in the
-plan?"* *"there are still N open tasks."* Do this every time you resume after a break, a
-context reset, or a subagent report — not just once at the start.
+A long or resumed session drifts from what you actually agreed to. Check beads, not memory:
+*"are we on our plan or not?"* *"what's left in the plan?"* *"there are still N open tasks."*
+Ask every time you resume — after a break, a context reset, a subagent report. Not just once
+at the start.
 
 ## The moment this is actually for
 
-Real example, verbatim in shape: mid-investigation, before writing anything, it stopped —
-*"The acceptance criteria says 'fresh clone reproduces 0.00% duplication.' That's wrong — the
-actual result is 1.57%. Should I correct the acceptance criteria before committing?"* The
-human's whole job at that moment was one word: *"yes."*
+Mid-investigation, before writing anything, it stopped: *"The acceptance criteria says
+'fresh clone reproduces 0.00% duplication.' That's wrong — the actual result is 1.57%.
+Should I correct the acceptance criteria before committing?"* The human's answer was one
+word: *"yes."*
 
-That's the real trade. It surfaces a finding that contradicts the plan instead of silently
-fixing it or silently ignoring it; you make the call. If it never stops to ask, either nothing
-has been wrong yet or it's not surfacing what it finds — the second one you won't see coming.
+That's the point of the whole discipline. It surfaced a wrong finding instead of quietly
+fixing it or ignoring it. You decide.
 
 ## CHECK
 
