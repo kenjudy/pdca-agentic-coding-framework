@@ -131,3 +131,12 @@ Can't answer one from what's on screen — ask before you approve the step.
 
 A single eval run doesn't tell you a prompt edit caused a failure — scenarios fail on
 unmodified text too. Interleave control/treatment, read the Fisher p-value. See `CLAUDE.md`.
+
+## Running autonomously
+
+Auto mode (Claude Code's permission setting) skips the tool-approval popups for edits and
+commands — it doesn't touch what the PDCA prompts ask the agent to present or wait for. DO
+still stops for plan approval before writing code, still diagnoses a non-behavioral RED before
+proceeding, ACT still requires you to answer the open question. Telling it to run autonomously
+changes exactly one documented thing, in this repo's own `CLAUDE.md`/`AGENTS.md`: it pushes
+without waiting for your go-ahead. Nothing else changes either way.
