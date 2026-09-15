@@ -59,7 +59,7 @@ A long or resumed session drifts from what you actually agreed to. Check beads, 
 Ask every time you resume — after a break, a context reset, a subagent report. Not just once
 at the start.
 
-## The moment this is actually for
+## When it finds something wrong
 
 Mid-investigation, before writing anything, it stopped: *"The acceptance criteria says
 'fresh clone reproduces 0.00% duplication.' That's wrong — the actual result is 1.57%.
@@ -81,16 +81,24 @@ from `references/check-prompts.md`.
   quietly.
 - Read the outstanding items before the verdict. Open items and "Complete" don't coexist.
 
+A "Complete" verdict it wrote itself is not your approval. Nothing closes — no issue, no
+commit — until you say so explicitly. The one exception is running fully autonomous, with
+nobody there to approve.
+
 ## ACT
 
-In fast beads-driven cycles this compresses — you'll see it announce **"CHECK / ACT"** as one
-step, not a separate five-stage session: what changed, what's worth noting for later, what's
-next. Real example: *"Committed and closed. Two findings worth noting for future work: ...
-Next: u2eq, or do you want to look at GitHub issues first?"* Your job is the same either way —
-the choice of what's next, or what ONE thing changes, is yours. It proposes; you decide.
+Requires your actual participation, not a nod-through. Answer the open question yourself —
+don't let it interpret the session for you. Hypotheses come from it; the choice of what
+changes next session is yours. One thing.
 
-Don't mistake the compressed version for a skipped one. It's skipped when nothing gets named
-for later and nothing gets asked — not when the asking is short.
+In a fast beads cycle this takes a compressed shape — you'll see it announce **"CHECK / ACT"**
+as one step: *"Committed and closed. Two findings worth noting for future work: ... Next:
+u2eq, or do you want to look at GitHub issues first?"* Notice what that isn't: proof the
+closing was approved. "Committed and closed" is what it did — whether you'd actually signed
+off is a separate question, worth checking rather than assuming from the phrasing.
+
+Unless you're running fully autonomous, work isn't done when tests pass. It's done when
+you've signed off on both CHECK and ACT.
 
 ## What you say when something's off
 
@@ -104,7 +112,7 @@ In practice you'll also just say what's actually wrong, plainly: *"I don't under
 you're saying — say it in plainer English."* *"Don't delete the data."* However you say it,
 it stops and answers before continuing. Every time.
 
-## Nothing catches this but you
+## What only you check
 
 - Smallest change that addresses the issue, or is it doing more than asked?
 - Working inside the existing architecture, or quietly rewriting it?
@@ -124,7 +132,7 @@ Can't answer one from what's on screen — ask before you approve the step.
 3. Repost the relevant phase prompt.
 4. Redirect and resume.
 
-## One eval run tells you nothing
+## Validating a prompt or rubric change
 
 A single eval run doesn't tell you a prompt edit caused a failure — scenarios fail on
 unmodified text too. Interleave control/treatment, read the Fisher p-value. See `CLAUDE.md`.
