@@ -73,8 +73,8 @@ If it isn't prompting you into CHECK on its own, invoke it explicitly — don't 
 Send *"Review our original goal outcome and plan against our execution,"* then the checklist
 from `references/check-prompts.md`.
 
-- The checklist doesn't require evidence for "tests passing" or "no untested implementation."
-  You do. Don't accept either without the actual output or diff in front of you.
+- Checking the box for "tests passing" or "no untested implementation" doesn't mean you've
+  seen either. Don't accept either without the actual output or diff in front of you.
 - When it asks which model runs the critic pass, that question is yours. Don't let it pick
   quietly.
 - Read the outstanding items before the verdict. Open items and "Complete" don't coexist.
