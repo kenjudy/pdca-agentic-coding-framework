@@ -16,6 +16,7 @@ expands it, you don't paste anything:
 - *"per pdca plan the work in beads, look for opportunities for parallel work, use sonnet
   subagents to perform the work."*
 - *"per pdca analyze, plan with beads, and spawn subagents to remedy the P1 bug."*
+- *"per pdca do 0a3m"* — a specific, already-planned beads item, nothing else needed.
 
 Name the model or subagent strategy in the same breath if you have one — "use sonnet
 subagents," "spawn an opus subagent for that" — it doesn't default to anything sane on its own.
@@ -46,6 +47,17 @@ A long session drifts. Check in against beads, not memory: *"are we on our plan 
 *"what's left in the plan?"* *"there are still N open tasks."* Do this every time you resume
 after a break, a context reset, or a subagent report — not just once at the start.
 
+## The moment this is actually for
+
+Real example, verbatim in shape: mid-investigation, before writing anything, it stopped —
+*"The acceptance criteria says 'fresh clone reproduces 0.00% duplication.' That's wrong — the
+actual result is 1.57%. Should I correct the acceptance criteria before committing?"* The
+human's whole job at that moment was one word: *"yes."*
+
+That's the real trade. It surfaces a finding that contradicts the plan instead of silently
+fixing it or silently ignoring it; you make the call. If it never stops to ask, either nothing
+has been wrong yet or it's not surfacing what it finds — the second one you won't see coming.
+
 ## CHECK
 
 Send: *"Review our original goal outcome and plan against our execution,"* then the
@@ -59,12 +71,14 @@ checklist from `references/check-prompts.md`.
 
 ## ACT
 
-The open question is yours to answer, not the agent's to answer for you. Hypotheses come from
-it; the choice of what changes next session is yours. One thing.
+In fast beads-driven cycles this compresses — you'll see it announce **"CHECK / ACT"** as one
+step, not a separate five-stage session: what changed, what's worth noting for later, what's
+next. Real example: *"Committed and closed. Two findings worth noting for future work: ...
+Next: u2eq, or do you want to look at GitHub issues first?"* Your job is the same either way —
+the choice of what's next, or what ONE thing changes, is yours. It proposes; you decide.
 
-Honestly: this is the phase most likely to get skipped once a session runs long and parallel.
-Skipping it once is a missed cycle. Skipping it every time means you're not running PDCA,
-you're running DO with extra paperwork.
+Don't mistake the compressed version for a skipped one. It's skipped when nothing gets named
+for later and nothing gets asked — not when the asking is short.
 
 ## What you say when something's off
 
