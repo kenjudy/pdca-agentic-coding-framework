@@ -2,22 +2,26 @@
 
 Full prompts: `skill/pdca-framework/references/` (or `1. Plan/` – `4. Act/` in this source repo).
 
-## Before PLAN starts
+## Before you start
 
-- State the goal in one sentence: *"After this session, ___."* Can't finish it, don't start.
-- Say out loud what you expect: TDD, no exceptions. One thing at a time. Work inside the
-  existing architecture. No phase prompt is loaded yet — nothing else is holding this line.
-- Decide now: you will stop the agent mid-response on a violation. Not after it finishes. Mid.
+State the goal in one sentence: *"After this session, ___."* Can't finish it, don't start —
+nothing else knows what you're trying to accomplish.
 
 ## PLAN
 
-The architecture search before any recommendation is already mandatory in the prompt. Your
-job is to check it happened — the plan should name specific files and existing patterns it
-found, not gesture at "similar functionality." No evidence, no plan. Send it back.
+Analysis (1a) — send: *"I need to do a high level design brainstorm. The overall goal is
+to ___."* The architecture search before any recommendation is already mandatory in the
+prompt. Your job: check it happened. The output should name specific files and existing
+patterns it found, not gesture at "similar functionality." No evidence, no plan — send it
+back.
 
-Each numbered step should be small enough to test alone. Too big — say so before DO starts.
+The plan itself (1b) — once 1a is refined with questions, send: *"Based on our analysis,
+provide a coherent plan incorporating our refinements..."* Each numbered step should be
+small enough to test alone. Too big — say so before DO starts.
 
 ## DO
+
+No fill-in-the-blank opener. Say which step you're starting.
 
 - The called shot — test name, behavior, expected failure, why this test — is already
   mandatory before every test. If it starts writing one without saying this first, stop it.
@@ -27,6 +31,9 @@ Each numbered step should be small enough to test alone. Too big — say so befo
 
 ## CHECK
 
+Send: *"Review our original goal outcome and plan against our execution,"* then the
+checklist from `references/check-prompts.md`.
+
 - The checklist doesn't require evidence for "tests passing" or "no untested implementation."
   You do. Don't accept either without the actual output or diff in front of you.
 - When it asks which model runs the critic pass, that question is yours. Don't let it pick
@@ -35,8 +42,9 @@ Each numbered step should be small enough to test alone. Too big — say so befo
 
 ## ACT
 
-The open question is yours to answer, not the agent's to answer for you. Hypotheses come from
-it; the choice is yours. One thing.
+Invoke it. It opens with *"Let's take a few minutes to reflect on this session,"* presents
+its analysis, then asks what stood out to you — yours to answer, not to skip. Hypotheses
+come from it; the choice of what changes next session is yours. One thing.
 
 ## What you say when something's off
 
