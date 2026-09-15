@@ -2,12 +2,12 @@
 
 Full prompts: `skill/pdca-framework/references/` (or `1. Plan/` – `4. Act/` in this source repo).
 
-## Before you start
+## Nothing else knows the goal
 
 State the goal in one sentence: *"After this session, ___."* Can't finish it, don't start —
 nothing else knows what you're trying to accomplish.
 
-## Invoking a phase
+## Nobody pastes the template
 
 Natural language, not a template. Name "pdca," the phase, and what you want — the skill
 expands it, you don't paste anything:
@@ -44,7 +44,7 @@ pdca do guidance?"* Guidance not loaded is guidance not followed.
   tells it to catch and diagnose. Notice when it doesn't.
 - "All done" mid-DO is premature. DO ends with a handoff line. The verdict is CHECK's.
 
-## Staying on plan
+## Long sessions drift
 
 A long session drifts. Check in against beads, not memory: *"are we on our plan or not?"*
 *"what's left in the plan?"* *"there are still N open tasks."* Do this every time you resume
@@ -115,7 +115,7 @@ Can't answer one from what's on screen — ask before you approve the step.
 3. Repost the relevant phase prompt.
 4. Redirect and resume.
 
-## Validating a prompt/rubric change
+## One eval run tells you nothing
 
 A single eval run doesn't tell you a prompt edit caused a failure — scenarios fail on
 unmodified text too. Interleave control/treatment, read the Fisher p-value. See `CLAUDE.md`.
