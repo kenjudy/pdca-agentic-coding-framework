@@ -21,7 +21,8 @@ small enough to test alone. Too big — say so before DO starts.
 
 ## DO
 
-No fill-in-the-blank opener. Say which step you're starting.
+No fill-in-the-blank template — name the step and the concrete unit of work, e.g.:
+*"Step 2: implement `WebhookDelivery.create(event_type:, payload:)`. Begin this step."*
 
 - The called shot — test name, behavior, expected failure, why this test — is already
   mandatory before every test. If it starts writing one without saying this first, stop it.
