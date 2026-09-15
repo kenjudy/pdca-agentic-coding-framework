@@ -34,7 +34,7 @@ accomplish.
 
 - *"make sure the beads issue(s) have the complete details per PDCA plan and do"*
 
-  A separate, explicit instruction — say it if you want it enforced, it isn't automatic.
+  A separate, explicit instruction — say it if you want it enforced.
   "Complete" isn't a checkbox: the epic needs acceptance criteria and resumption context, and
   each task under it needs Before / After / Done-when, not just a title.
 
