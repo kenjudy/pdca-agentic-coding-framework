@@ -2,6 +2,45 @@
 
 ## Unreleased
 
+### Called shot requires a sixth field, Oracle: where the expected value comes from (#181)
+
+- Found via production use on an unrelated project: a test can compute its expected value
+  with the same logic it's testing, so the assertion holds regardless of whether that logic
+  is correct. Not a vacuous green (#7) — it fails when stubbed and passes when implemented,
+  so RED/GREEN looks clean. Two real defects (missing install-path files in a manifest,
+  a Windows path-separator bug) survived exactly this shape, caught only by the CHECK
+  phase critic, not by DO-phase tests.
+- `2. Do/2. Test Drive the Change.md`'s called shot now requires a sixth field: **Oracle**
+  — a source independent of the code under test (a file, an HTTP response, a database row,
+  an external tool), not re-derived using the same logic under test.
+- Added anti-pattern #10 (Self-Referential Oracle) to `Testing Anti-Patterns.md`; extended
+  #8 to cover one-directional set claims ("covers every X" needs both directions checked).
+  CHECK phase's critic-pass briefing now asks which tests would still pass if the
+  implementation were subtly wrong.
+- **Validated via interleaved A/B CI runs** (control = pre-#181 master text, treatment =
+  current text, same measuring rubric both arms, 8 single shots per scenario): both
+  `2-first-step` and `3-critic-pass-missing` came back statistically indistinguishable
+  (Fisher p = 1.0) — no regression attributable to this change. An initial, more verbose
+  wording was trimmed after a first-pass single-run eval showed concerning scores; the A/B
+  above confirmed those scores were noise, not caused by either wording.
+
+### Phase-3 verdict matching no longer false-fails on table/heading renderings (#183)
+
+- `3-critic-pass-missing`'s mechanical check failed on both arms of #181's A/B validation
+  (including the unmodified control) on a literal `must_contain: 'Status:'` match, defeated
+  whenever the model rendered its verdict as a heading or markdown table instead of the
+  template's own `**Status:** ...` line — a pre-existing brittleness, not something #181
+  introduced.
+- Already diagnosed and fixed on an unmerged branch from #49's work; ported the fix (not
+  that branch's unrelated evidence-citation feature): `verdict_fields_required` /
+  `verdict_must_not_be` in `eval/mechanical.py` now match a verdict field's label and value
+  together in any rendering (colon, table pipe, heading gap, emoji), case-insensitively on
+  both sides.
+- Validated with a full `TestPrompt3Evals` run (all 5 phase-3 scenarios, 2 shots): the false
+  -positive table/heading failures are gone; the one remaining single-shot miss was a
+  genuine case where the model never stated a holistic Status line at all — a known,
+  previously-flagged content gap, not a matcher defect.
+
 ### Eval reports now record which rubric-ladder version produced them (#172)
 
 - No report could previously tell a reader whether it was produced by the same rubric
