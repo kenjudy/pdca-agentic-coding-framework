@@ -2,6 +2,31 @@
 
 ## Unreleased
 
+### ACT phase stays factual and completes all 5 stages instead of editorializing (#151)
+
+- `4-tdd-breakdown`'s original judge-reading-only-the-first-line bug (found in the first
+  full-sweep baseline) was gone by the time this was re-checked, but a real content gap
+  remained: the initial retrospective summary had no constraint against editorializing —
+  only Stage 3 did — so responses stated conclusions ("that reasoning was backwards")
+  before reaching the hypothesis-framing stage, and some stopped after Stage 2's question
+  instead of completing all five stages.
+- `4. Act/4. Retrospect for continuous improvement.md` now requires the initial summary to
+  state what happened, not what it means, deferring interpretation to Stage 3; and
+  instructs the agent to write through all five stages itself when no live human reply is
+  available, generalizing Stage 4's existing "offer candidates when stuck" allowance.
+- A first round of this fix surfaced a third, narrower failure mode: responses now
+  completed all five stages but tipped their hand at Stage 4/5 with a soft recommendation
+  ("my lean is A or B, not C"), undermining the choice just offered. Added an explicit
+  no-ranking/no-recommendation instruction to both Stage 4's candidate-hypothesis offer
+  and Stage 5's capture-option list.
+- **Validated via interleaved A/B CI runs** (control = unmodified pre-fix master, treatment
+  = current text, 10 single-shot runs per arm, fired alternately): treatment passed 10/10
+  clean with zero new failure modes, versus control's 6/10 (Fisher p = 0.087 — short of the
+  conventional 0.05 threshold, but this scenario is documented elsewhere in this project as
+  high-variance, and every control failure cited the identical root cause the fix targets).
+  An earlier, smaller round (8 shots/arm, two of the three fixes) measured 6/8 vs 2/8,
+  p = 0.132.
+
 ### Called shot requires a sixth field, Oracle: where the expected value comes from (#181)
 
 - Found via production use on an unrelated project: a test can compute its expected value
