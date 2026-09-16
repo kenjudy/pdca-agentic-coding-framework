@@ -2,6 +2,38 @@
 
 ## Unreleased
 
+### Autonomous-mode fallback for the CHECK critic pass (#165)
+
+- `3. Check/3. Completeness Check.md`'s adversarial-critic-pass requirement had no answer for
+  "model chosen by the operator" when there is no operator. Added a short portable-core
+  conditional line, plus a new opt-in `autonomous-critic-addon` (following the beads/
+  ponytail/superpowers pattern) holding the Claude-Code-specific mechanics (model-tier table,
+  Agent-tool invocation) and a setup file for declaring a preferred review skill/model in the
+  operator's own project `CLAUDE.md`. Deliberately does *not* extend `claude-addon` — that
+  ships unconditionally into both Claude Code's and Codex's copy of the packaged skill, and
+  would have leaked Claude-Code-specific tool syntax into Codex's.
+- Reuses the project's existing autonomous-mode signal (#143's push-policy convention) rather
+  than inventing a new flag or config format, per the issue's own instruction.
+- New rubric_3 criterion (`autonomous-critic-fallback`) and eval scenario
+  (`3-autonomous-critic-fallback`), scoped via #148's per-scenario criteria mechanism, since
+  nothing previously exercised this behavior at all.
+- **An adversarial critic pass on the plan itself, before implementation, caught a real
+  architectural error**: the initial plan proposed extending `claude-addon` instead of
+  building a new addon, on the mistaken assumption it was already Claude-Code-gated the way
+  beads/ponytail/superpowers are. It isn't — `build.py` injects its content unconditionally
+  into every build. The critic also flagged that "the operator's declared config" had no
+  concrete storage location and that no test would catch mangled master-prompt content;
+  both were addressed before implementation.
+- **Validated** via a full `TestPrompt3Evals` run (6 scenarios x 3 shots, 18 samples, zero
+  harness errors): the new scenario passed consistently, correctly declaring the fallback
+  without pausing to ask and landing on `Status: Needs work` (not `Complete`, since the
+  critic pass it declares hasn't actually run yet — the scenario's own description
+  originally assumed the wrong verdict and was corrected to match). One caveat noted but not
+  acted on: 1 of 9 sampled completions phrased the fallback as an instruction to the operator
+  rather than owning it itself, scored as a disguised handoff — didn't sink the scenario and
+  matches this project's documented single-sample judge-noise pattern, so no prompt change
+  was made on the strength of it alone.
+
 ### ACT phase stays factual and completes all 5 stages instead of editorializing (#151)
 
 - `4-tdd-breakdown`'s original judge-reading-only-the-first-line bug (found in the first
