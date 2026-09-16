@@ -3,8 +3,9 @@
 Checks observable string-level behaviors in LLM output:
 - must_contain: required strings/phrases
 - must_not_contain: forbidden strings/phrases
-- called_shot_required: all four called-shot fields present
-  (Test name, Behavior under test, Expected failure, Why this test first)
+- called_shot_required: all six called-shot fields present
+  (Test name, Behavior under test, Expected failure, Why this test first,
+  Stub check, Oracle)
 """
 
 from dataclasses import dataclass
@@ -60,15 +61,17 @@ def check_mechanical(output: str, signals: dict) -> list[CheckResult]:
             "Behavior under test:",
             "Expected failure:",
             "Why this test first:",
+            "Stub check:",
+            "Oracle:",
         ]
         normalized_output = _normalize(output)
         missing = [f for f in required_fields if _normalize(f) not in normalized_output]
         passed = len(missing) == 0
         results.append(CheckResult(
-            field="called_shot: all four fields",
+            field="called_shot: all six fields",
             passed=passed,
             detail=(
-                "All four called-shot fields present"
+                "All six called-shot fields present"
                 if passed
                 else f"Missing: {missing}"
             ),

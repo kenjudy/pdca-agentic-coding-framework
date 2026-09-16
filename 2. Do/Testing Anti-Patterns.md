@@ -88,6 +88,8 @@ Testing the first edited instance of a repeated assumption -- one step of a mult
 
 *Origin:* Found via adversarial review after a fix shipped that added a mode-override flag but tested only the single-command cases (set mode, auto-detect mode, explicit-flag-overrides-detection) -- never the two-command sequence (detect, then re-run to override) the design actually specified. A sibling fix split a multi-step file's Step 1 for two modes, tested Step 1, and closed the task -- Steps 2-6 of the same file still assumed the removed constraint. Both were caught by a fresh critic reading the whole file/flow, not by the tests written during Do.
 
+*Set-shaped claims need both directions.* A test asserting only that one set contains another (e.g. "the manifest covers every installed file") checks superset, not equality -- it says nothing about extra entries the name doesn't claim to rule out, or about entries missing because they were never observed. If the acceptance criteria's name claims totality ("covers every X," "tracks all Y"), verify both directions, or rename the test to the narrower claim it actually checks.
+
 *This rule does not self-apply.* On the very next cycle after it was written, the identical pattern recurred twice more (a docs pass that fixed only the first mention of a stale claim, not the rest of the document; a stage file's own overview sentence left unconverted because it sat outside any labeled per-mode section) -- caught again only by a fresh adversarial pass, not by re-reading this list. Advisory text you wrote for yourself is not a gate; see the Check phase's Decision probe, which now requires an operator-chosen critic model rather than relying on the same session re-reading its own work.
 
 ---
@@ -104,6 +106,18 @@ The called shot's "Expected failure" names the assertion that best expresses the
 
 ---
 
+## 10. Self-Referential Oracle
+
+A test computes its expected value using the same logic as the code under test, rather than an independent, observable source. The assertion then holds regardless of what the shared logic does, because both sides move together. This is not a vacuous green (#7) -- it fails when stubbed and passes when implemented, so RED/GREEN looks clean. The hole only opens when the shared logic itself is wrong.
+
+*Diagnosis:* Ask where the expected value in an assertion comes from. If the answer is "the same function/expression as the code under test," the test cannot catch a defect in that logic -- both sides of the assertion inherit it identically.
+
+*Rule:* The called shot's Oracle item must name a source independent of the code under test -- a literal, observable state (a file on disk, an HTTP response, a database row) or an external tool. Re-deriving the expected value with the logic under test does not qualify.
+
+*Origin:* A manifest-building test walked the source directory with the same expression as the code under test to build its expected set -- both missed the same three install paths and the same Windows path-separator bug. A CLI test asserted `expect(cliOutput).toBe(applyBlock('', entries))`, verifying wiring to `applyBlock`, not its correctness. Both passed through three real defects; both were caught by the CHECK phase critic (#164), not by DO-phase tests. See #181.
+
+---
+
 ## Quick Check Before Committing
 
 - [ ] Every assertion is on real behavior, not mock call counts
@@ -113,3 +127,4 @@ The called shot's "Expected failure" names the assertion that best expresses the
 - [ ] Every test watched fail before watching it pass
 - [ ] If the acceptance criteria makes a whole-flow/whole-file claim, a test exercises the complete thing -- not just the edited piece (see #8)
 - [ ] The called shot's "Expected failure" names the assertion that will actually run first, not just the most meaningful one (see #9)
+- [ ] The called shot's Oracle is independent of the code under test, not re-derived with the same logic (see #10)

@@ -10,12 +10,15 @@ EMPTY_SIGNALS = {
     "called_shot_required": False,
 }
 
-# Called shot output with all four required fields
+# Called shot output with all six required fields
 CALLED_SHOT_FULL = """
 - **Test name:** test_rejects_empty_input
 - **Behavior under test:** validate_scenario({}) raises ScenarioValidationError
 - **Expected failure:** AssertionError: ScenarioValidationError not raised
 - **Why this test first:** degenerate case — establishes that the API rejects empty input before testing valid inputs
+- **Stub check:** A no-op stub returning None would satisfy this; the next test targeting a non-empty dict cannot
+- **Oracle:** ScenarioValidationError is raised directly by the code under test, observed via
+  pytest.raises — not re-derived from validate_scenario's own logic
 """
 
 # Called shot output missing the Expected failure field
@@ -24,12 +27,23 @@ CALLED_SHOT_MISSING_EXPECTED_FAILURE = """
 - **Behavior under test:** validate_scenario({}) raises ScenarioValidationError
 """
 
-# All four fields present, but bolded with the colon outside the emphasis
+# Called shot output with only the original four fields -- missing Stub check
+# and Oracle, added later (#181)
+CALLED_SHOT_MISSING_STUB_CHECK_AND_ORACLE = """
+- **Test name:** test_rejects_empty_input
+- **Behavior under test:** validate_scenario({}) raises ScenarioValidationError
+- **Expected failure:** AssertionError: ScenarioValidationError not raised
+- **Why this test first:** degenerate case — establishes that the API rejects empty input before testing valid inputs
+"""
+
+# All six fields present, but bolded with the colon outside the emphasis
 CALLED_SHOT_COLON_OUTSIDE_EMPHASIS = """
 - **Test name**: test_rejects_empty_input
 - **Behavior under test**: validate_scenario({}) raises ScenarioValidationError
 - **Expected failure**: AssertionError: ScenarioValidationError not raised
 - **Why this test first**: degenerate case — establishes the API contract
+- **Stub check**: A no-op stub returning None would satisfy this; the next test targeting a non-empty dict cannot
+- **Oracle**: ScenarioValidationError is raised directly by the code under test, observed via pytest.raises
 """
 
 
@@ -114,7 +128,7 @@ class TestMustNotContain(unittest.TestCase):
 
 
 class TestCalledShotRequired(unittest.TestCase):
-    """called_shot_required checks — all four fields must be present in output."""
+    """called_shot_required checks — all six fields must be present in output."""
 
     def test_called_shot_not_required_produces_no_result(self):
         signals = {**EMPTY_SIGNALS, "called_shot_required": False}
@@ -131,6 +145,15 @@ class TestCalledShotRequired(unittest.TestCase):
     def test_called_shot_missing_expected_failure_fails(self):
         signals = {**EMPTY_SIGNALS, "called_shot_required": True}
         results = check_mechanical(CALLED_SHOT_MISSING_EXPECTED_FAILURE, signals)
+        called_shot_results = [r for r in results if "called_shot" in r.field]
+        self.assertEqual(len(called_shot_results), 1)
+        self.assertFalse(called_shot_results[0].passed)
+
+    def test_called_shot_missing_stub_check_and_oracle_fails(self):
+        # #181 added Stub check and Oracle as mandatory called-shot fields.
+        # This output has only the original four -- must now fail.
+        signals = {**EMPTY_SIGNALS, "called_shot_required": True}
+        results = check_mechanical(CALLED_SHOT_MISSING_STUB_CHECK_AND_ORACLE, signals)
         called_shot_results = [r for r in results if "called_shot" in r.field]
         self.assertEqual(len(called_shot_results), 1)
         self.assertFalse(called_shot_results[0].passed)

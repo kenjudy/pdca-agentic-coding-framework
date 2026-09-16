@@ -292,17 +292,22 @@ class TestRubricForScenario(unittest.TestCase):
         in the scoring bands and Strengths/Weaknesses scaffold under different wording --
         "stub implementation contains conditional logic" in the 0.4 band, for example,
         with no "stub-discipline" criterion in scope to license it. A scenario scoped to
-        only "called-shot" must not be judged against "stub" or "happy path" anywhere in
-        the assembled prompt, not just absent from the numbered list. ("degenerate" is
+        only "called-shot" must not be judged against "happy path" anywhere in the
+        assembled prompt, not just absent from the numbered list. ("degenerate" is
         deliberately not checked here -- it legitimately appears inside the "called-shot"
-        item's own text, describing what "Why this test first" should cite.)"""
-        from eval.rubrics import rubric_for_scenario
+        item's own text, describing what "Why this test first" should cite. "stub" joined
+        it for the same reason (#181): the called-shot item's own "Stub check" field
+        legitimately names it, so the check below instead confirms the *separate*
+        stub-discipline criterion's text is absent, which is what would indicate a real
+        leak.)"""
+        from eval.rubrics import rubric_2, rubric_for_scenario
 
         criteria, _ = rubric_for_scenario("2", {"geval_criteria": ["called-shot"]})
         lowered = criteria.lower()
-        for leaked_concept in ("stub", "happy path"):
-            with self.subTest(concept=leaked_concept):
-                self.assertNotIn(leaked_concept, lowered)
+        with self.subTest(concept="happy path"):
+            self.assertNotIn("happy path", lowered)
+        with self.subTest(concept="stub-discipline criterion text"):
+            self.assertNotIn(rubric_2.CRITERIA_ITEMS["stub-discipline"].lower(), lowered)
 
 
 class TestEveryRubricUsesTheSharedGenericTail(unittest.TestCase):

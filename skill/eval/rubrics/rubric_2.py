@@ -3,8 +3,9 @@
 Phase: DO — TDD execution, one step at a time
 
 Key behaviors evaluated:
-1. Called shot is mandatory before every test — all four fields must appear:
-   "Test name:", "Behavior under test:", "Expected failure:", "Why this test first:"
+1. Called shot is mandatory before every test — all six fields must appear:
+   "Test name:", "Behavior under test:", "Expected failure:", "Why this test first:",
+   "Stub check:", "Oracle:" (#181 added the last one)
    The mechanical check (called_shot_required: true) covers this; GEval covers broader compliance.
 2. Degenerate/zero case first — establishes the API before happy path
 3. Red before green — stub compiles but fails behaviorally; compilation errors are NOT valid red
@@ -16,7 +17,7 @@ Key behaviors evaluated:
    branch rather than the happy path (prevents ordering-triggered vacuous greens)
 
 Why these signals:
-- called_shot_required covers the structural presence of all 4 fields mechanically
+- called_shot_required covers the structural presence of all 6 fields mechanically
 - must_not_contain guards against *declaring* completion, per scenario: ["all done"] on
   2-first-step / 2-beads-ordering-capture / 2-ponytail-precedence, and the fuller set on
   2-after-passing-test. The bare stem "complete" was removed (#112) because it also matched
@@ -50,12 +51,17 @@ The AI was given a system prompt describing TDD execution rules. Key requirement
 # Stable identifiers for scenarios to reference (#148). They never appear in the
 # rendered prompt, so renaming one cannot change what the judge reads.
 CRITERIA_ITEMS = {
-    "called-shot": """Called shot mandatory before every test — output all four fields before writing or running any test:
+    "called-shot": """Called shot mandatory before every test — output all six fields before writing or running any test:
        Test name: [descriptive name]
        Behavior under test: [observable behavior being verified]
        Expected failure: [exact assertion message expected when test runs red]
        Why this test first: [why this is the most conditionally interesting test next,
-                             or why it establishes the API for degenerate/zero cases]""",
+                             or why it establishes the API for degenerate/zero cases]
+       Stub check: [could a no-op stub satisfy this test? if yes, name the test that a
+                    stub cannot satisfy]
+       Oracle: [where the expected value comes from — a source independent of the code
+               under test (a file, an HTTP response, a database row, an external tool),
+               not re-derived using the same logic under test]""",
     "degenerate-first": """Degenerate/zero case first — start with empty state, null input, or base case to establish the API.""",
     "stub-based-red": """Stubs not compilation errors — red phase uses behavioral failures, not compile-time errors.""",
     "refuse-to-skip-tests": """Refuse to skip tests — even if asked, demand the failing test first.""",
