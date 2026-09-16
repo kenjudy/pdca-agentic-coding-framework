@@ -22,6 +22,7 @@ SKILL_SRC = CLAUDE_SKILL_DIR / "pdca-framework" / "SKILL.md"
 BEADS_ADDON_DIR = CLAUDE_SKILL_DIR / "pdca-framework" / "beads-addon" / "sources"
 PONYTAIL_ADDON_DIR = CLAUDE_SKILL_DIR / "pdca-framework" / "ponytail-addon" / "sources"
 SUPERPOWERS_ADDON_DIR = CLAUDE_SKILL_DIR / "pdca-framework" / "superpowers-addon" / "sources"
+AUTONOMOUS_CRITIC_ADDON_DIR = CLAUDE_SKILL_DIR / "pdca-framework" / "autonomous-critic-addon" / "sources"
 
 SKILL_NAME = "pdca-framework"
 
@@ -42,6 +43,8 @@ EXPECTED_FILES = [
     f"{SKILL_NAME}/references/ponytail-workflow.md",
     f"{SKILL_NAME}/references/superpowers-setup.md",
     f"{SKILL_NAME}/references/superpowers-workflow.md",
+    f"{SKILL_NAME}/references/check-autonomous-critic-addon.md",
+    f"{SKILL_NAME}/references/autonomous-critic-setup.md",
     f"{SKILL_NAME}/references/testing-anti-patterns.md",
     f"{SKILL_NAME}/references/scripts/export-requirements.sh",
 ]
@@ -75,15 +78,21 @@ SUPERPOWERS_SOURCE_FILES = [
     SUPERPOWERS_ADDON_DIR / "superpowers-workflow.md",
 ]
 
+AUTONOMOUS_CRITIC_SOURCE_FILES = [
+    AUTONOMOUS_CRITIC_ADDON_DIR / "check-autonomous-critic-addon.md",
+    AUTONOMOUS_CRITIC_ADDON_DIR / "autonomous-critic-setup.md",
+]
+
 # Optional third-party addons. Each slug's source files must exist, and every
 # SKILL.md reference to that slug must be marked Optional. Add a slug here
 # (plus an ADDON_SOURCE_FILES entry) when a new addon lands.
-ADDON_SLUGS = ["beads", "ponytail", "superpowers"]
+ADDON_SLUGS = ["beads", "ponytail", "superpowers", "autonomous-critic"]
 
 ADDON_SOURCE_FILES = {
     "beads": BEADS_SOURCE_FILES,
     "ponytail": PONYTAIL_SOURCE_FILES,
     "superpowers": SUPERPOWERS_SOURCE_FILES,
+    "autonomous-critic": AUTONOMOUS_CRITIC_SOURCE_FILES,
 }
 
 CLAUDE_ADDON_DIR = CLAUDE_SKILL_DIR / "pdca-framework" / "claude-addon" / "injections"
@@ -698,6 +707,16 @@ class TestSkillPackage(unittest.TestCase):
             "the assertion expected to fail first",
             packaged,
             "do-prompts.md does not contain the #155 called-shot wording",
+        )
+
+    def test_check_prompts_contains_autonomous_critic_fallback(self):
+        """#165's CHECK master edit must reach the packaged skill, not just the source.
+        Mirrors test_do_prompts_contains_the_first_executing_assertion_language's pattern."""
+        packaged = read_zip_file(SKILL_FILE, f"{SKILL_NAME}/references/check-prompts.md")
+        self.assertIn(
+            "references/autonomous-critic-setup.md",
+            packaged,
+            "check-prompts.md does not contain the #165 autonomous critic fallback wording",
         )
 
     def test_working_agreements_matches_master(self):

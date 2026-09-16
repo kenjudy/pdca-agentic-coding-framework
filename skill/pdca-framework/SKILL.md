@@ -68,6 +68,21 @@ which defer to the phase you are in, and why the list of conflicts is deliberate
 This addon is fully optional. The framework works with or without superpowers installed, and
 PDCA never installs, configures, or suppresses any part of it.
 
+## Autonomous CHECK Critic Fallback (Optional)
+
+When the CHECK phase's adversarial critic pass is needed (see `3. Check/3. Completeness Check.md`)
+but no operator is present to answer the decision probe, this fallback keeps the check
+disciplined instead of skipping it or defaulting to self-review.
+
+**First-time setup**: See `references/autonomous-critic-setup.md` to declare a preferred review
+skill or model
+**Active sessions**: See `references/check-autonomous-critic-addon.md` for Claude Code's concrete
+mechanics (model-tier table, subagent invocation)
+
+This addon is fully optional. Without it, autonomous sessions fall back to a fresh subagent with
+no third-party skill, on a different model than the one doing the work — never the same session
+reviewing itself.
+
 ## PDCA Cycle Overview
 
 Each step has distinct prompts and human commitments:
