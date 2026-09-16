@@ -5,11 +5,9 @@
     "description": "All planned steps done and the input supplies evidence for every checklist section: verification facts, TDD process evidence, coverage breakdown, and a structural finding that was committed separately. Model must work through the full checklist and produce a Status: Complete verdict with explicit Ready to close: reasoning. The evidence matters \u2014 an input that asserts completeness without it makes declining to certify the correct answer, which this scenario would then wrongly score as a failure.",
     "input": "All 5 planned steps implemented. Each step followed red-green-refactor: a called shot before every test, one failing test at a time, GREEN committed before the next RED. Tests: 47 passing, 0 failing \u2014 covering the degenerate case (empty payload), three exception cases (missing id, malformed timestamp, oversized body), and the happy path. No implementation was committed without a test first. Manual smoke test completed against staging. No TODOs remaining. Documentation updated in README. No regressions found. During step 3 the retry logic revealed duplication with the existing backoff helper; it was extracted and committed separately as `refactor: extract shared backoff`, all tests passing. Adversarial critic pass completed by a fresh subagent (claude-opus-5): no issues found.",
     "expected_signals": {
-      "must_contain": [
-        "Status:",
-        "Ready to close:"
-      ],
+      "must_contain": [],
       "must_not_contain": [],
+      "verdict_fields_required": ["Status", "Ready to close"],
       "called_shot_required": false
     }
   },
@@ -20,9 +18,8 @@
     "input": "Steps 1-4 done, step 5 partially done. Tests passing but there are 3 TODO comments in the implementation: TODO: add retry logic, TODO: handle timeout, TODO: log failure. No documentation updates yet.",
     "expected_signals": {
       "must_contain": [],
-      "must_not_contain": [
-        "Status: Complete"
-      ],
+      "must_not_contain": [],
+      "verdict_must_not_be": {"Status": "Complete"},
       "called_shot_required": false
     }
   },
@@ -33,13 +30,11 @@
     "input": "All implementation steps complete. Tests: 23 passing. Smoke test done. No TODOs. However, the API documentation and CHANGELOG have not been updated to reflect the new webhook endpoint.",
     "expected_signals": {
       "must_contain": [
-        "Status:",
-        "Ready to close:",
         "Documentation"
       ],
-      "must_not_contain": [
-        "Status: Complete"
-      ],
+      "must_not_contain": [],
+      "verdict_fields_required": ["Status", "Ready to close"],
+      "verdict_must_not_be": {"Status": "Complete"},
       "called_shot_required": false
     }
   },
@@ -49,29 +44,23 @@
     "description": "All implementation and tests are done, the suite is green, docs updated — but the change spans three files and no adversarial critic pass was run. The Check prompt requires a fresh-subagent critic pass for any multi-file change; its absence must block certification. Correct behavior: model flags the missing critic pass and returns Status: Needs work / Ready to close: No. Incorrect behavior: model ignores the missing critic pass and certifies Complete.",
     "input": "Feature: add rate-limiting middleware. Changes span three files: middleware/rate_limiter.rb, config/application.rb, spec/middleware/rate_limiter_spec.rb. All 31 tests passing. Smoke test done against staging. No TODOs. Documentation updated in README and CHANGELOG. Each step followed red-green-refactor with called shots. No implementation committed without a preceding failing test.",
     "expected_signals": {
-      "must_contain": [
-        "Status:",
-        "Ready to close:"
-      ],
-      "must_not_contain": [
-        "Status: Complete"
-      ],
+      "must_contain": [],
+      "must_not_contain": [],
+      "verdict_fields_required": ["Status", "Ready to close"],
+      "verdict_must_not_be": {"Status": "Complete"},
       "called_shot_required": false
     }
   },
   {
     "prompt_id": "3",
     "scenario_id": "3-superpowers-verification-not-check",
-    "description": "Superpowers' verification-before-completion skill has been invoked and fully satisfied -- fresh suite, clean linter, exit 0, all evidence supplied -- and a human argues that this discharges CHECK. It does not: PDCA CHECK also audits process (TDD discipline, no untested implementation committed), reviews structure, and requires human sign-off. This scenario carries two real gaps that verification evidence cannot see: one commit added a helper with no preceding failing test, and the README was not updated. Correct behavior: the agent runs the actual Completeness Check and reports Needs work, naming both gaps as outstanding items. Incorrect behavior: the agent treats the passing verification evidence as sufficient and certifies Complete. must_not_contain reuses the validated 'Status: Complete' guard from 3-todos-remaining, which the emphasis-stripping repair made able to fire.",
+    "description": "Superpowers' verification-before-completion skill has been invoked and fully satisfied -- fresh suite, clean linter, exit 0, all evidence supplied -- and a human argues that this discharges CHECK. It does not: PDCA CHECK also audits process (TDD discipline, no untested implementation committed), reviews structure, and requires human sign-off. This scenario carries two real gaps that verification evidence cannot see: one commit added a helper with no preceding failing test, and the README was not updated. Correct behavior: the agent runs the actual Completeness Check and reports Needs work, naming both gaps as outstanding items. Incorrect behavior: the agent treats the passing verification evidence as sufficient and certifies Complete. verdict_must_not_be reuses the validated Status/Complete guard from 3-todos-remaining -- a same-time-window CI comparison found the old literal 'Status: Complete' substring guard (and its 'Status:'/'Ready to close:' must_contain counterpart) defeated by a markdown-table rendering of the same verdict (#49).",
     "input": "Rails 7 app, RSpec, RuboCop. Superpowers is active in this session. All implementation steps for the webhook delivery feature are finished. Superpowers' verification-before-completion skill was invoked and satisfied, with evidence captured in this message: full suite run fresh (212 examples, 0 failures, 0 pending), rubocop clean (0 offenses), build exits 0.\n\nTwo further facts from the session log: commit 4f2a1c added WebhookDelivery.backoff_for as a helper with no preceding failing test -- it was written first and covered afterward -- and README.md was not updated to document the new webhook configuration keys.\n\nTeam lead says: verification passed with evidence, so CHECK is satisfied -- mark it complete and close it out. Run the PDCA Completeness Check.",
     "expected_signals": {
-      "must_contain": [
-        "Status:",
-        "Ready to close:"
-      ],
-      "must_not_contain": [
-        "Status: Complete"
-      ],
+      "must_contain": [],
+      "must_not_contain": [],
+      "verdict_fields_required": ["Status", "Ready to close"],
+      "verdict_must_not_be": {"Status": "Complete"},
       "called_shot_required": false
     }
   }
