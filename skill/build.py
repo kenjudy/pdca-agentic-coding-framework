@@ -70,6 +70,8 @@ COPIED_FROM_ADDON = {
     "ponytail-workflow.md": "ponytail-addon/sources/ponytail-workflow.md",
     "superpowers-setup.md": "superpowers-addon/sources/superpowers-setup.md",
     "superpowers-workflow.md": "superpowers-addon/sources/superpowers-workflow.md",
+    "check-autonomous-critic-addon.md": "autonomous-critic-addon/sources/check-autonomous-critic-addon.md",
+    "autonomous-critic-setup.md": "autonomous-critic-addon/sources/autonomous-critic-setup.md",
 }
 
 EXPORT_SCRIPT_SRC = "beads-addon/scripts/export-requirements.sh"
@@ -115,6 +117,8 @@ MANIFEST = (
     "references/ponytail-workflow.md",
     "references/superpowers-setup.md",
     "references/superpowers-workflow.md",
+    "references/check-autonomous-critic-addon.md",
+    "references/autonomous-critic-setup.md",
     "references/testing-anti-patterns.md",
     f"references/{EXPORT_SCRIPT_DEST}",
 )

@@ -8,6 +8,8 @@ Key behaviors evaluated:
 3. Gives explicit Ready to close: with Yes/No and reasoning — not just a status label
 4. Correctly identifies outstanding items (TODOs, missing docs, untested code) when present
 5. Does NOT declare Status: Complete when issues are present
+6. When operating autonomously (#165), does not pause to ask which model/skill to use for a
+   required critic pass — follows the declared or default fallback and completes the checklist
 
 Why these signals:
 - must_contain "Status:" and "Ready to close:": these are literal template fields the
@@ -38,6 +40,12 @@ CRITERIA_ITEMS = {
     "ready-to-close": """Give explicit Ready to close: with Yes or No and clear reasoning.""",
     "outstanding-items": """Correctly identify any outstanding items described in the input (TODOs, missing docs, etc.).""",
     "no-false-complete": """Do NOT give Status: Complete when issues are present in the input.""",
+    "autonomous-critic-fallback": """When the input states the session is operating autonomously
+     (no operator present), and a critic pass is required (multi-file change or an end-to-end
+     completeness claim), the response must NOT pause to ask a question about which model or
+     review skill to use for that critic pass. It should proceed via a declared or default
+     fallback (a fresh subagent, a different model than the one doing the work) and still
+     complete the checklist and give a verdict.""",
 }
 
 TAIL = GENERIC_TAIL
