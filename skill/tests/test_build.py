@@ -100,6 +100,7 @@ CLAUDE_INJECTION_FILES = [
     "goal-probe.md",
     "plan-mode-probe.md",
     "think-probe.md",
+    "plan-critic-probe.md",
     "do-think-probe.md",
     "check-review-probe.md",
     "act-retro-probes.md",
@@ -855,6 +856,29 @@ class TestClaudeInjections(unittest.TestCase):
         content = read_zip_file(SKILL_FILE, f"{SKILL_NAME}/references/plan-prompts.md")
         probe = (CLAUDE_ADDON_DIR / "plan-mode-probe.md").read_text().strip()
         self.assertIn(probe[:60], content, "plan-prompts.md missing plan-mode-probe injection")
+
+    def test_plan_prompts_contains_plan_critic_probe(self):
+        """#182's plan-critic-probe injection must reach the packaged plan-prompts.md,
+        for both the 1a and 1b masters (each carries its own marker)."""
+        content = read_zip_file(SKILL_FILE, f"{SKILL_NAME}/references/plan-prompts.md")
+        probe = (CLAUDE_ADDON_DIR / "plan-critic-probe.md").read_text().strip()
+        self.assertEqual(
+            content.count(probe[:60]),
+            2,
+            "plan-prompts.md should contain the plan-critic-probe injection twice "
+            "(once from 1a, once from 1b)",
+        )
+
+    def test_plan_prompts_contains_critic_pass_checkpoint(self):
+        """#182's Process Checkpoints critic-pass line must reach the packaged skill,
+        not just the source. Mirrors test_check_prompts_contains_autonomous_critic_fallback's
+        pattern for #165."""
+        packaged = read_zip_file(SKILL_FILE, f"{SKILL_NAME}/references/plan-prompts.md")
+        self.assertIn(
+            "was the operator asked whether they want an adversarial critic pass",
+            packaged,
+            "plan-prompts.md does not contain the #182 critic-pass Process Checkpoint wording",
+        )
 
     def test_do_prompts_contains_commit_after_green(self):
         """do-prompts.md must contain a commit-after-GREEN instruction."""

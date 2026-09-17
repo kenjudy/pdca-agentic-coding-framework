@@ -2,6 +2,51 @@
 
 ## Unreleased
 
+### Optional critic-pass probe for the PLAN phase, mirroring CHECK's design (#182)
+
+- CHECK phase already asks the operator whether they want an adversarial critic pass on
+  a multi-file or end-to-end change — a Decision probe (`check-review-probe.md`) plus a
+  model-facing checklist bullet in `3. Completeness Check.md` that records whether the
+  question was raised (added by #146, after a probe-only version proved insufficient).
+  #182 asks for the same pattern in the PLAN phase, on the analysis (1a) and detailed
+  plan (1b).
+- New `plan-critic-probe.md` Decision probe, injected into **both** 1a and 1b masters, so
+  a session that only runs 1a standalone still sees it — not just sessions that continue
+  into 1b.
+- A new Process Checkpoints bullet in `1b Create a detailed implementation plan.md`
+  mirrors CHECK's model-facing checklist line: when a plan spans 3+ files or introduces a
+  new architectural pattern, the plan's own output must record whether the operator was
+  asked about a critic pass, not just an ephemeral human-facing nudge that leaves no
+  trace if declined.
+- New `rubric_1b` criterion (`critic-pass-offered`) and scenario
+  (`1b-critic-pass-warranted`) to validate the checklist bullet — nothing previously
+  exercised this behavior. The Decision probe itself is untestable by eval design (all
+  six existing probes are stripped from the system prompt before evals run, per
+  `strip_decision_probes`, introduced by #71 specifically so probe additions don't
+  require eval scenarios).
+- **An adversarial critic pass on the plan itself caught a real gap**: the initial plan
+  proposed only the Decision probe (probe-only, no eval cost). A fresh subagent review
+  found this copied only half of CHECK's actual mechanism — CHECK's checklist line (not
+  just its probe) is what #146 added after finding probe-only insufficient — and flagged
+  that 1a-only sessions would never see the probe under a 1b-only placement. Both were
+  fixed before implementation: the checklist bullet was added (with the eval work it
+  requires), and the probe was placed in both 1a and 1b.
+- **Validated**: a full `TestPrompt1bEvals` run (4 scenarios × 3 shots) passed 11/12, with
+  the new scenario passing cleanly 3/3. The one failure was the *pre-existing*
+  `1b-multi-system` scenario, whose failing judge calls cited the new criterion by name —
+  but the same underlying behavior (not mentioning a critic pass) was scored a "minor
+  gap" (0.90, pass) in the other two shots, matching this project's documented
+  GEval-inconsistency pattern (#136/#149). Attributed via a targeted interleaved A/B (6
+  pairs, control = pre-#182 1b master, treatment = current) on exactly this scenario:
+  control 6/6 pass, treatment 5/6 pass, Fisher p = 1.0 — a clean null result. The single
+  failure is pre-existing `1b-multi-system` variance, not a regression caused by #182; no
+  further prompt tweaking was made on the strength of one data point, per CLAUDE.md's
+  explicit guidance that a null result is a result. Full-sweep report saved as
+  `skill/eval/baselines/report_20260917_001011.md`.
+- No `TestPrompt1aEvals` regression: 1-shot sanity check across all 3 scenarios passed
+  cleanly, confirming the new content shared via `plan-prompts.md` doesn't disturb 1a's
+  own scoring.
+
 ### Autonomous-mode fallback for the CHECK critic pass (#165)
 
 - `3. Check/3. Completeness Check.md`'s adversarial-critic-pass requirement had no answer for
