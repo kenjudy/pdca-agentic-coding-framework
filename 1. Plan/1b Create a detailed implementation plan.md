@@ -12,8 +12,6 @@ If available run this prompt in "Planning" mode.
 
 <!-- CLAUDE_INJECT: plan-mode-probe -->
 
-<!-- CLAUDE_INJECT: plan-critic-probe -->
-
 ---
 ``` markdown
 
@@ -62,7 +60,6 @@ Before behavioral steps begin, identify any structural cleanup required to make 
 
 - Complexity check: If a step feels too large to test atomically, split it
 - Model match verification: Is the tagged model appropriate for actual complexity encountered?
-- Critic pass: If this plan spans 3+ files or introduces a new architectural pattern, was the operator asked whether they want an adversarial critic pass on this analysis and plan, as a supplement to their own review, before implementation begins?
 
 **Full Cycle Scope:**
 
