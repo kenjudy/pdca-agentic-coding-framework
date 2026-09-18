@@ -2,6 +2,42 @@
 
 ## Unreleased
 
+### Per-phase slash commands: /pdca, /pdca-plan, /pdca-do, /pdca-check, /pdca-act (#188)
+
+- Lands work handed off from a separate session (`kenjudy/obsidian-kenjudy-llc`): five thin
+  router command files, one per PDCA phase plus a full-cycle alias, versioned at
+  `plugins/pdca-framework/commands/` — reusing the plugin scaffold added in `2cb3fa8`
+  ("add plugin manifests for Stride marketplace"), which had shipped as a bare manifest
+  with no actual content until now.
+- Each command names its phase's section in `SKILL.md` and points at that phase's
+  `references/*.md` rather than duplicating content; the four single-phase commands
+  explicitly refuse to proceed into the other phases in the same turn. `/pdca-plan`
+  sequences 1a Analysis before 1b Detailed Planning rather than collapsing them.
+- New `skill/tests/test_commands.py`: static content-shape pinning tests (existence,
+  frontmatter, phase-reference isolation, live cross-check of each command's quoted
+  SKILL.md section header against the current file — not a hardcoded parallel map, so a
+  future section rename fails the test rather than going stale silently).
+- Documented the install path in a new `plugins/pdca-framework/README.md`, linked from
+  the root README's new "Optional: Per-Phase Slash Commands" section: copy/symlink into
+  `~/.claude/commands/` or a project's `.claude/commands/`, mirroring `skill/README.md`'s
+  existing Manual Prompts pattern — verified this is the only currently-working
+  distribution path, since `claude plugin marketplace add` requires a root-level
+  `.claude-plugin/marketplace.json` this repo doesn't have (confirmed by testing it
+  directly, not assumed).
+- Added `"plugins/"` to `skill/check_changelog.py`'s `REQUIRES_ENTRY` so a future PR
+  touching only this directory doesn't silently skip the CI changelog gate.
+- **An adversarial critic pass on the plan caught the plugin-vs-marketplace gap above**
+  before it shipped as an untested claim: the plan originally left "does `commands/`
+  need a `plugin.json` declaration" as an open unknown to resolve during implementation.
+  The critic instead tested it directly with the installed `claude` CLI
+  (`claude --plugin-dir plugins/pdca-framework plugin details pdca-framework`), confirming
+  auto-discovery with zero manifest changes needed, and flagged that this repo's
+  `check_changelog.py` didn't yet account for `plugins/` as release-note material.
+- **Still open, not closeable from this session**: a genuinely fresh Claude Code session
+  loading an edited command file correctly — the other session's own unresolved
+  verification item. Command-cache-on-edit behavior is outside what a sandboxed session
+  can test; needs a human check in a real environment.
+
 ### Optional critic-pass probe for the PLAN phase, mirroring CHECK's design (#182)
 
 - CHECK phase already asks the operator whether they want an adversarial critic pass on

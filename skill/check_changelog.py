@@ -35,6 +35,7 @@ REQUIRES_ENTRY = (
     "4. Act/",
     "Human Working Agreements.md",
     ".github/workflows/",
+    "plugins/",
 )
 
 # Generated run artifacts, gitignored. Their presence in a diff is not a change.
