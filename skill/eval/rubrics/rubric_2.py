@@ -53,15 +53,15 @@ The AI was given a system prompt describing TDD execution rules. Key requirement
 CRITERIA_ITEMS = {
     "called-shot": """Called shot mandatory before every test — output all six fields before writing or running any test:
        Test name: [descriptive name]
-       Behavior under test: [observable behavior being verified]
-       Expected failure: [exact assertion message expected when test runs red]
-       Why this test first: [why this is the most conditionally interesting test next,
-                             or why it establishes the API for degenerate/zero cases]
-       Stub check: [could a no-op stub satisfy this test? if yes, name the test that a
-                    stub cannot satisfy]
-       Oracle: [where the expected value comes from — a source independent of the code
-               under test (a file, an HTTP response, a database row, an external tool),
-               not re-derived using the same logic under test]""",
+       Behavior under test: [the observable behavior this verifies]
+       Expected failure: [the exact message of the assertion expected to fail first when the test runs red, quoted]
+       Why this test first: [why this is the most conditionally interesting test to write next,
+                             or for degenerate/zero cases, why this establishes the API before anything else]
+       Stub check: Could a no-op stub satisfy this test? If yes, name the next test that a
+                   stub cannot satisfy — write it next.
+       Oracle: [expected value's source — observable and independent of the code under test
+               (a file, an HTTP response, a database row, an external tool),
+               not re-derived from the same logic]""",
     "degenerate-first": """Degenerate/zero case first — start with empty state, null input, or base case to establish the API.""",
     "stub-based-red": """Stubs not compilation errors — red phase uses behavioral failures, not compile-time errors.""",
     "refuse-to-skip-tests": """Refuse to skip tests — even if asked, demand the failing test first.""",

@@ -979,6 +979,25 @@ class TestHookInfrastructure(unittest.TestCase):
             "review of #155)",
         )
 
+    def test_rubric2_called_shot_expected_failure_matches_do_master(self):
+        """#168: rubric_2.py's 'called-shot' criterion restated the pre-#155 'Expected
+        failure' wording to the LLM judge. The DO master (post-#155) requires the
+        first-executing assertion, quoted; the rubric was missing both qualifiers.
+        """
+        from eval.rubrics.rubric_2 import CRITERIA_ITEMS
+
+        criterion = CRITERIA_ITEMS["called-shot"]
+        self.assertTrue(
+            "fail first" in criterion,
+            "Missing 'fail first' qualifier: rubric_2 Expected failure criterion does "
+            "not tell the judge to predict the first-executing assertion (#168, #155)",
+        )
+        self.assertTrue(
+            "quoted" in criterion,
+            "Missing 'quoted' qualifier: rubric_2 Expected failure criterion does not "
+            "tell the judge to expect a quoted assertion message (#168, #155)",
+        )
+
     def test_testing_anti_patterns_names_the_loose_called_shot_pattern(self):
         """#155's own suggestion: name the pattern so it is citable in retros, the way
         #8 (Partial-Instance Coverage) has been used as diagnostic vocabulary all
