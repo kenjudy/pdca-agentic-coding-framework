@@ -42,6 +42,20 @@ set +e
 if [ $# -gt 0 ]; then
   (cd "$SCRIPT_DIR" && uv run python -m pytest -m eval -v "$@")
 else
+  echo ""
+  echo "WARNING: No test class specified — this runs the full eval suite including"
+  echo "  TestBaselineComparison, which runs every scenario twice (~2x cost, $4-10)."
+  echo ""
+  echo "  To target only scenarios affected by your change, pass a class explicitly:"
+  echo "    bash run-evals.sh tests/test_evals.py::TestPrompt2Evals"
+  echo ""
+  if [ -t 0 ]; then
+    read -r -p "Continue with full sweep? [y/N] " CONFIRM
+    case "$CONFIRM" in
+      [yY]) ;;
+      *) echo "Aborted."; exit 1 ;;
+    esac
+  fi
   (cd "$SCRIPT_DIR" && uv run python -m pytest tests/test_evals.py -m eval -v)
 fi
 PYTEST_EXIT=$?

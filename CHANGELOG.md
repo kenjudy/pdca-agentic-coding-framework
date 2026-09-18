@@ -4,6 +4,12 @@
 
 ### Eval Quality
 
+- `run-evals.sh`: no-arg invocation now prints a cost warning and requires explicit `y/N`
+  confirmation before running the full sweep (including `TestBaselineComparison`, which
+  doubles API cost). Non-interactive callers (CI, piped stdin) skip the prompt and proceed.
+  Targeted invocations (`bash run-evals.sh tests/test_evals.py::ClassName`) are unaffected.
+  Unit test added (`pdca-ayj`).
+
 - `rubric_2.py` called-shot criterion now matches the post-#155 DO master wording across
   all five fields (`Behavior under test`, `Expected failure`, `Why this test first`,
   `Stub check`, `Oracle`). Previously the rubric showed stale placeholder text to the
