@@ -26,7 +26,7 @@ from eval.mechanical import check_mechanical
 from eval.reporter import EvalReporter, compute_shot_stats
 from eval.rubrics import rubric_for_scenario
 
-JUDGE_MODEL_NAME = "claude-haiku-4-5-20251001"
+JUDGE_MODEL_NAME = "claude-opus-4-6"
 
 _judge_model: AnthropicModel | None = None
 
