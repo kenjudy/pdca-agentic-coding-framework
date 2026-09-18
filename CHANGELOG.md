@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+### Eval Quality
+
+- `rubric_2.py` called-shot criterion now matches the post-#155 DO master wording across
+  all five fields (`Behavior under test`, `Expected failure`, `Why this test first`,
+  `Stub check`, `Oracle`). Previously the rubric showed stale placeholder text to the
+  LLM judge, most notably `Expected failure` was missing the "fail first" and "quoted"
+  qualifiers added by #155. Unit test added pinning those two qualifiers (#168).
+
 ### Per-phase slash commands: /pdca, /pdca-plan, /pdca-do, /pdca-check, /pdca-act (#188)
 
 - Lands work handed off from a separate session (`kenjudy/obsidian-kenjudy-llc`): five thin
