@@ -95,7 +95,8 @@ class TestSectionHeadersMatchCurrentSkillMd(unittest.TestCase):
         for name in SINGLE_PHASE_FILES:
             content = (COMMANDS_DIR / name).read_text()
             match = SECTION_HEADER_RE.search(content)
-            self.assertIsNotNone(match, f"{name} does not quote a SKILL.md section header in the expected form")
+            if match is None:
+                self.fail(f"{name} does not quote a SKILL.md section header in the expected form")
             header = match.group(1)
             self.assertIn(
                 header, skill_md, f"{name} quotes SKILL.md section {header!r}, which is not currently present"
