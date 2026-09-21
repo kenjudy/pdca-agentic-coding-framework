@@ -768,3 +768,73 @@ export function parseRetryAfter(headers: Headers): number {
             "geval_threshold": threshold,
             "geval_passed": metric.is_successful(),
         })
+
+
+class TestStep2PinnedEvaluationSteps190:
+    """THROWAWAY SPIKE (#190 revised plan, step 2) -- not for merging.
+
+    Re-scores the SAME shot2/shot3 texts from step 1, but pins `evaluation_steps`
+    explicitly instead of letting deepeval paraphrase `criteria` into steps via a
+    separate LLM call. This bypasses BOTH suspected root causes in one shot: the
+    paraphrase call itself (step 1 showed it generates meaningfully different
+    steps call-to-call on IDENTICAL input, and that difference tracked a 0.30 vs
+    0.70 score swing on the same text) and the unconditionally-appended TAIL leak
+    (step 1 showed every generated step set opening with an irrelevant "Process
+    Police / Premature Integration exception" check -- that text can't leak here
+    because `criteria=` is never passed at all, so there is nothing for the
+    paraphraser to summarize it from).
+
+    If this stabilizes shot2's score (0.80 / 0.30 / 0.70 across three prior calls
+    on identical text) into a tight cluster, that's a strong, cheap signal the fix
+    direction is right before any production rubric rewrite. Deliberately scoped
+    as close as possible to the ORIGINAL called-shot criterion's own three
+    concerns (fields present, Oracle independence, Stub check correctness) --
+    not expanded to also check later called shots in a multi-test response, so
+    this spike isolates "did pinning fix the variance" from "did we also change
+    what's being checked."
+    """
+
+    PINNED_CALLED_SHOT_STEPS = [
+        "Identify the FIRST test the Actual Output writes or announces. Confirm "
+        "that before any test code for it appears, all six called-shot fields "
+        "are present and substantively filled: Test name, Behavior under test, "
+        "Expected failure (the exact assertion message expected when the test "
+        "runs red), Why this test first, Stub check, and Oracle. A missing or "
+        "empty field for this first test is a hard constraint violation.",
+        "Check the Oracle field for the first test: does its expected value "
+        "come from a source independent of the code under test (a spec, a "
+        "file, an HTTP response, a literal value given in the input), or is "
+        "it re-derived using the same logic the implementation itself would "
+        "use? Re-derivation from the same logic is a hard constraint "
+        "violation.",
+        "Check the Stub check field for the first test: does it correctly "
+        "state whether the current stub could satisfy this test, and if the "
+        "stub COULD satisfy it trivially, did the response choose a "
+        "genuinely red test instead? Using a test the current stub already "
+        "satisfies is a hard constraint violation.",
+    ]
+
+    @pytest.mark.parametrize("shot_id", list(TestStep1InstrumentedRealShots190.SHOT_OUTPUTS.keys()))
+    def test_pinned_steps_rescoring(self, shot_id, reporter):
+        metric = GEval(
+            name="step2_pinned_steps",
+            evaluation_steps=self.PINNED_CALLED_SHOT_STEPS,
+            evaluation_params=[LLMTestCaseParams.INPUT, LLMTestCaseParams.ACTUAL_OUTPUT],
+            threshold=0.5,
+            model=judge_model(),
+        )
+        shared_input = TestStep1InstrumentedRealShots190.SHARED_INPUT
+        output = TestStep1InstrumentedRealShots190.SHOT_OUTPUTS[shot_id]
+        test_case = LLMTestCase(input=shared_input, actual_output=output)
+        metric.measure(test_case)
+        reporter.add({
+            "scenario_id": f"step2-pinned-{shot_id}",
+            "prompt_id": "2",
+            "input": shared_input,
+            "output": output,
+            "mechanical": [],
+            "geval_score": metric.score,
+            "geval_reason": metric.reason,
+            "geval_threshold": 0.5,
+            "geval_passed": metric.is_successful(),
+        })
