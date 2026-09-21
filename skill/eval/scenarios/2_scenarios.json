@@ -2,13 +2,14 @@
   {
     "prompt_id": "2",
     "scenario_id": "2-first-step",
-    "description": "First implementation step. File locations confirmed, no existing webhook files. Model must output called shot info (may use table format) and start with the degenerate/zero case. GEval covers called shot quality.",
+    "description": "First implementation step. File locations confirmed, no existing webhook files. Model must output called shot info (may use table format) and start with the degenerate/zero case. WebhookDelivery needs multiple tests (nil event_type, nil payload, persistence, JSON storage) per the Test Sequencing rules, so this single first step cannot be the end of the DO phase (#190).",
     "input": "Rails 7 app, PostgreSQL, RSpec + FactoryBot. Adding webhook support. Step 1: Implement WebhookDelivery \u2014 accepts event_type (string) and payload (hash), persists to database. File locations confirmed: app/models/webhook_delivery.rb (new), db/migrate/TIMESTAMP_create_webhook_deliveries.rb (new), spec/models/webhook_delivery_spec.rb (new). No existing WebhookDelivery files. ApplicationRecord base class. Start TDD now.",
     "expected_signals": {
       "must_contain": [],
       "must_not_contain": [
         "all done",
-        "All done"
+        "All done",
+        "Implementation finished, moving to CHECK phase"
       ],
       "called_shot_required": false
     }
