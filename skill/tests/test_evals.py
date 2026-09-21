@@ -298,3 +298,70 @@ class TestPrompt4Evals:
     @pytest.mark.parametrize("scenario", load_scenarios("4"), ids=lambda s: s["scenario_id"])
     def test_4_scenario(self, scenario, reporter):
         _assert_and_store(scenario, reporter)
+
+
+class TestScopeLeakCanary190:
+    """THROWAWAY SPIKE (#190 step 1) -- not for merging.
+
+    Fixed input/output pair, never touching the executor -- isolates the judge/rubric
+    from executor variance entirely. The output is airtight on `called-shot` (all six
+    fields, correct order, a genuinely independent oracle) and flagrantly bad on two
+    criteria NOT in the selected list: it picks a happy-path test first (violates
+    degenerate-first) and declares "Implementation finished, moving to CHECK phase"
+    with zero implementation written (violates no-completion-claim). Neither of those
+    criteria is named in `geval_criteria`, so if the scoped judge still penalizes this
+    response, that is a clean, repeatable demonstration that `geval_criteria` scoping
+    leaks on ANY input -- not an artifact of this one scenario's wording.
+    """
+
+    CANARY_INPUT = (
+        "Python service, pytest. DO phase step: implement clamp(value, lo, hi) "
+        "returning value clamped to the inclusive range [lo, hi]. Test sequencing "
+        "rules require starting with the degenerate/zero case (e.g. value already "
+        "in range) before the general case. Current stub: "
+        "def clamp(value, lo, hi): return value. Begin this step."
+    )
+
+    CANARY_OUTPUT = (
+        "**Test name:** returns hi when value exceeds the range\n"
+        "**Behavior under test:** clamp(15, 0, 10) returns 10\n"
+        "**Expected failure:** AssertionError: expected 10, got 15\n"
+        "**Why this test first:** this is the general in-range-violation case, "
+        "the one that exercises the clamp logic most directly.\n"
+        "**Stub check:** the stub returns value unmodified, so it cannot satisfy "
+        "this test -- a genuine RED.\n"
+        "**Oracle:** 10 is the hi bound as literally given in the step spec, "
+        "not derived from any clamp implementation.\n\n"
+        "```python\n"
+        "def test_clamps_value_above_hi():\n"
+        "    assert clamp(15, 0, 10) == 10\n"
+        "```\n\n"
+        "Implementation finished, moving to CHECK phase."
+    )
+
+    def test_scoped_called_shot_still_penalizes_unselected_criteria(self, reporter):
+        criteria, threshold = rubric_for_scenario("2", {"geval_criteria": ["called-shot"]})
+        metric = GEval(
+            name="canary_called_shot_scoping",
+            criteria=criteria,
+            evaluation_params=[LLMTestCaseParams.INPUT, LLMTestCaseParams.ACTUAL_OUTPUT],
+            threshold=threshold,
+            model=judge_model(),
+        )
+        test_case = LLMTestCase(input=self.CANARY_INPUT, actual_output=self.CANARY_OUTPUT)
+        metric.measure(test_case)
+        reporter.add({
+            "scenario_id": "canary-scope-leak-190",
+            "prompt_id": "2",
+            "input": self.CANARY_INPUT,
+            "output": self.CANARY_OUTPUT,
+            "mechanical": [],
+            "geval_score": metric.score,
+            "geval_reason": getattr(metric, "reason", None),
+            "geval_threshold": threshold,
+            "geval_passed": metric.is_successful(),
+        })
+        assert metric.is_successful(), (
+            f"CANARY: scoped judge (called-shot only) still failed a called-shot-"
+            f"perfect response. score={metric.score} reason={metric.reason}"
+        )
