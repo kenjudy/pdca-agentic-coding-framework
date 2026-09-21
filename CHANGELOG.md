@@ -2,6 +2,40 @@
 
 ## Unreleased
 
+### Fixed: scoped scenarios leaked whole-response TAIL exceptions into their score (#190)
+
+- **A scenario that selects a subset of `rubric_2`'s criteria via `geval_criteria` still got
+  the full unscoped TAIL appended.** `rubric_2.TAIL` baked `EXCEPTION` (Process Police
+  Refusal) and `INTEGRATION_EXCEPTION` (Premature Integration Refusal) in unconditionally, so
+  `assemble()`'s `selected=` scoping — added by #148 to omit out-of-scope criteria entirely —
+  never reached them. A scoped scenario like `2-superpowers-tdd-precedence` (which selects
+  only `["called-shot"]`) was still shown both whole-response override blocks verbatim,
+  telling the judge it could award 1.0 immediately on refusal/integration conditions the
+  scenario never claims to be testing.
+- `assemble()` gained an `exceptions: Mapping[str, str] | None` parameter: exception text
+  renders only when `selected is None` (whole-rubric scoring); a scoped selection omits it,
+  matching how `CRITERIA_ITEMS` are already scoped. `rubric_2.py` now declares
+  `EXCEPTION_ITEMS = {"process-police-refusal": EXCEPTION, "premature-integration-refusal":
+  INTEGRATION_EXCEPTION}` and passes it through; `rubric_for_scenario` forwards
+  `getattr(module, "EXCEPTION_ITEMS", None)` so rubrics without exceptions are unaffected.
+- **Verified behavior-neutral for unscoped rendering:** the existing snapshot test pinning
+  `rubric_2.CRITERIA` byte-for-byte against the pre-decomposition string still passes
+  unmodified — whole-rubric scoring (every scenario before #148 opted in, and every scenario
+  today that doesn't set `geval_criteria`) renders identically.
+- **Blast radius confirmed by direct inspection, not assumption:** only
+  `rubric_2` / `2-superpowers-tdd-precedence` is affected. `rubric_1a` also builds a `TAIL`
+  with a whole-response `EXCEPTION`, but no scenario in `1a_scenarios.json` sets
+  `geval_criteria`, so it was never reachable — latent, not fixed here.
+  `rubric_1b`/`rubric_3`/`rubric_4` have no exception text in their `TAIL` at all.
+- **Paid interleaved canary re-check (6 runs, 3/arm) was inconclusive by design, not by
+  outcome.** The canary reused for this check was built for an earlier investigation to
+  trigger via degenerate-first sequencing, not via TAIL-exception leakage — both control
+  (pre-fix: 0.10/0.20/0.10) and treatment (post-fix: 0.20/0.20/0.20) scored low because the
+  judge penalized the same input-sequencing violation in every shot, not because of
+  `EXCEPTION`/`INTEGRATION_EXCEPTION` text. This run does not validate or invalidate the fix
+  either way; the fix's evidence is the RED→GREEN unit tests and the untouched snapshot
+  above. A canary isolating only the TAIL-exception leak channel remains undone.
+
 ### Fixed: judge misread `2-superpowers-branch-finish` as a TDD execution step (#190)
 
 - **The judge scored a correct refusal at 0.00.** `generic_tail.py`'s own history shows this
