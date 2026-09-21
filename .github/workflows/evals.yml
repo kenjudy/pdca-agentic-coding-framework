@@ -49,8 +49,15 @@ jobs:
       - name: Run evals
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         working-directory: skill
         run: |
+          if [ -z "${OPENAI_API_KEY}" ]; then
+            echo "::error::OPENAI_API_KEY secret is not set for this repository." \
+                 "THROWAWAY SPIKE (#190 step 3) needs it to test an OpenAI GEval judge." \
+                 "Add it under Settings > Secrets and variables > Actions."
+            exit 1
+          fi
           if [ -z "${ANTHROPIC_API_KEY}" ]; then
             echo "::error::ANTHROPIC_API_KEY secret is not set for this repository." \
                  "Add it under Settings > Secrets and variables > Actions."

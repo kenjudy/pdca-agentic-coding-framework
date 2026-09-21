@@ -18,7 +18,7 @@ from pathlib import Path
 
 import pytest
 from deepeval.metrics import GEval
-from deepeval.models import AnthropicModel
+from deepeval.models import AnthropicModel, OpenAIModel
 from deepeval.test_case import LLMTestCase, LLMTestCaseParams
 
 from eval.executor import run_phase
@@ -836,5 +836,66 @@ class TestStep2PinnedEvaluationSteps190:
             "geval_score": metric.score,
             "geval_reason": metric.reason,
             "geval_threshold": 0.5,
+            "geval_passed": metric.is_successful(),
+        })
+
+
+_openai_judge_model: OpenAIModel | None = None
+
+
+def openai_judge_model() -> OpenAIModel:
+    """THROWAWAY (#190 step 3): deepeval's own default GEval judge, gpt-5.4 --
+    logprob-capable, unlike AnthropicModel (see step 1/2 findings and
+    https://deepeval.com/integrations/models/openai). Built lazily for the same
+    reason judge_model() is (#156): importable without a credential.
+    """
+    global _openai_judge_model
+    if _openai_judge_model is None:
+        _openai_judge_model = OpenAIModel(model="gpt-5.4")
+    return _openai_judge_model
+
+
+class TestStep3OpenAIJudge190:
+    """THROWAWAY SPIKE (#190 step 3) -- not for merging.
+
+    Re-scores the SAME shot2/shot3 texts from steps 1-2, this time swapping ONLY
+    the judge model -- AnthropicModel -> OpenAIModel(gpt-5.4) -- while keeping the
+    SAME `criteria=` (geval_criteria=["called-shot"]) used in step 1, unchanged.
+    deepeval's own docs say GEval's scoring is built on logprob-weighted
+    summation, and explicitly that AnthropicModel cannot use it (confirmed in
+    step 1/2 by reading deepeval's source: AnthropicModel has no
+    a_generate_raw_response, so it silently falls back to one unweighted integer
+    sample). gpt-5.4 supports log probs (OPENAI_MODELS_DATA, max_log_probs=5).
+
+    If the weighted-summation mechanism is the real fix, this should tighten
+    shot2's score cluster (0.80 / 0.30 / 0.70 / 0.20 / 0.90 / 0.90 across six
+    prior calls on identical text) even though the paraphrase call and the TAIL
+    leak are both still present here (deliberately -- isolating the model-
+    provider variable alone, not combining it with step 2's other changes).
+    """
+
+    @pytest.mark.parametrize("shot_id", list(TestStep1InstrumentedRealShots190.SHOT_OUTPUTS.keys()))
+    def test_openai_judge_rescoring(self, shot_id, reporter):
+        criteria, threshold = rubric_for_scenario("2", {"geval_criteria": ["called-shot"]})
+        metric = GEval(
+            name="step3_openai_judge",
+            criteria=criteria,
+            evaluation_params=[LLMTestCaseParams.INPUT, LLMTestCaseParams.ACTUAL_OUTPUT],
+            threshold=threshold,
+            model=openai_judge_model(),
+        )
+        shared_input = TestStep1InstrumentedRealShots190.SHARED_INPUT
+        output = TestStep1InstrumentedRealShots190.SHOT_OUTPUTS[shot_id]
+        test_case = LLMTestCase(input=shared_input, actual_output=output)
+        metric.measure(test_case)
+        reporter.add({
+            "scenario_id": f"step3-openai-{shot_id}",
+            "prompt_id": "2",
+            "input": shared_input,
+            "output": output,
+            "mechanical": [],
+            "geval_score": metric.score,
+            "geval_reason": metric.reason,
+            "geval_threshold": threshold,
             "geval_passed": metric.is_successful(),
         })
