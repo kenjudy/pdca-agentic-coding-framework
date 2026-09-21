@@ -47,6 +47,11 @@ EXPECTED_FILES = [
     f"{SKILL_NAME}/references/autonomous-critic-setup.md",
     f"{SKILL_NAME}/references/testing-anti-patterns.md",
     f"{SKILL_NAME}/references/scripts/export-requirements.sh",
+    f"{SKILL_NAME}/commands/pdca.md",
+    f"{SKILL_NAME}/commands/pdca-plan.md",
+    f"{SKILL_NAME}/commands/pdca-do.md",
+    f"{SKILL_NAME}/commands/pdca-check.md",
+    f"{SKILL_NAME}/commands/pdca-act.md",
 ]
 
 MASTER_FILES = [
