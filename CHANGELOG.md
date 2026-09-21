@@ -2,6 +2,38 @@
 
 ## Unreleased
 
+### Fixed: judge misread `2-superpowers-branch-finish` as a TDD execution step (#190)
+
+- **The judge scored a correct refusal at 0.00.** `generic_tail.py`'s own history shows this
+  exact scenario was the validation case for the prior "every criterion met" → "no criterion
+  violated" GENERIC_TAIL rewording — but #190 found it still scoring 0.00 across 3 shots.
+  Nothing told the judge that TDD-execution criteria (called shot, stub discipline,
+  degenerate-first) don't apply at all when the correct response is a refusal to merge,
+  containing no test code.
+- Added a second whole-response EXCEPTION to `rubric_2.py` (`INTEGRATION_EXCEPTION`),
+  structured like the existing Process Police Refusal exception: assigns 1.0 immediately
+  when the input presents a branch-finish/merge menu **and the input itself states** the
+  CHECK phase, ACT phase, or human sign-off is missing. Scoped to the input's own stated
+  facts rather than the response's claim, so a false refusal can't game it.
+- **Validated (CI run 35616990991):** `2-superpowers-branch-finish` went from 0.00×3
+  (baseline) to a clean 1.00.
+- **A companion fix for the same issue was tried and reverted.** #190 also flagged the judge
+  penalizing the required handoff phrase ("Implementation finished, moving to CHECK phase")
+  on `2-first-step`. A mechanical `must_not_contain` guard mirroring `2-after-passing-test`'s
+  was added, on the assumption that declaring the step "finished" after only the first test
+  was premature. The same CI run falsified this: this harness is single-turn, so the
+  executor legitimately completes the *entire* WebhookDelivery step — all validation and
+  persistence tests — in one response, correctly ending with the handoff phrase (GEval
+  scored all 3 shots ~0.9). Reverted; the false hypothesis and the CI run number are
+  recorded in the scenario's own `description` field so it isn't retried blind.
+- **Not yet done:** `2-superpowers-tdd-precedence`'s GEval variance (#190's "Problem 1")
+  remains open. The only cheap fix (`skip_geval: true`) was flagged as unsafe —
+  `called_shot_required` only confirms the six field *labels* are present, not whether they
+  were stated predictively or backfilled after the test, which is this scenario's whole
+  point. An interleaved A/B swapping the GEval judge model (Haiku 4.5 → Opus 4.6, matching
+  the executor's tier) showed both target scenarios moving the same direction but was
+  underpowered at n=6/arm (Fisher p = 1.0 and p = 0.455) — inconclusive, not adopted.
+
 ### Per-phase slash commands: /pdca, /pdca-plan, /pdca-do, /pdca-check, /pdca-act (#188)
 
 - Lands work handed off from a separate session (`kenjudy/obsidian-kenjudy-llc`): five thin
