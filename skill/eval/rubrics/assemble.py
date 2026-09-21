@@ -42,8 +42,9 @@ def assemble(
     items: Mapping[str, str],
     tail: str,
     selected: Iterable[str] | None = None,
+    exceptions: Mapping[str, str] | None = None,
 ) -> str:
-    """Render preamble + the numbered criteria + tail.
+    """Render preamble + the numbered criteria + exceptions + tail.
 
     `selected` narrows to a subset by key; None means every criterion. Selection follows
     the rubric's own declared order, NOT the caller's -- otherwise the same subset would
@@ -53,6 +54,16 @@ def assemble(
     Numbering is positional over whatever survives selection, so it stays contiguous and
     the judge never sees a gap implying something was withheld. Item keys never appear in
     the rendered text, so renaming one cannot change what the judge reads.
+
+    `exceptions` are whole-response overrides (e.g. "refuses to skip tests -> 1.0") that
+    describe compliance in a way the numbered criteria don't -- a correct response to one
+    of them looks nothing like what the criteria list expects (#190). Scoring the whole
+    rubric (`selected` is None) is a claim to cover those cases too, so they render, exactly
+    as they always have. Scoping to a subset of criteria is a narrower claim -- only THESE
+    criteria are what this scenario tests -- and an exception describing a different kind
+    of response entirely no longer applies once that narrower claim is made, so it is
+    omitted rather than left to render unclaimed (same #149 principle as criteria: omit
+    entirely, never mention as excluded).
     """
     chosen = items
     if selected is not None:
@@ -73,4 +84,5 @@ def assemble(
     numbered = "\n".join(
         ITEM_PREFIX.format(number=n) + text for n, text in enumerate(chosen.values(), 1)
     )
-    return preamble + numbered + "\n" + tail
+    exception_text = "".join(exceptions.values()) if exceptions and selected is None else ""
+    return preamble + numbered + "\n" + exception_text + tail

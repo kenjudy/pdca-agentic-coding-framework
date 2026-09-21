@@ -247,6 +247,32 @@ class TestCriteriaSelection(unittest.TestCase):
         with self.assertRaises(ValueError):
             assemble("P:\n", self.ITEMS, "T", selected=[])
 
+    EXCEPTIONS = {"exc-a": "Exception A text. ", "exc-b": "Exception B text. "}
+
+    def test_exceptions_render_when_criteria_unscoped(self):
+        """A whole-rubric scoring (no `selected`) is a claim to score everything the
+        rubric covers, including its whole-response exceptions -- today's behaviour,
+        which must survive the new `exceptions` parameter unchanged."""
+        from eval.rubrics.assemble import assemble
+
+        out = assemble("P:\n", self.ITEMS, "TAIL", exceptions=self.EXCEPTIONS)
+        self.assertEqual(
+            out,
+            "P:\n  1. First criterion.\n  2. Second criterion.\n  3. Third criterion.\n"
+            "Exception A text. Exception B text. TAIL",
+        )
+
+    def test_exceptions_omitted_when_criteria_scoped(self):
+        """A scoped scenario asserts that only the named criteria are what it claims to
+        test -- the rubric's whole-response exceptions describe a different kind of
+        response than what the scenario probes, so they must not leak through. This is
+        #190's TAIL-scoping defect: `assemble()` narrowed `items` but always appended
+        `tail` (which had the exceptions baked in) regardless of `selected`."""
+        from eval.rubrics.assemble import assemble
+
+        out = assemble("P:\n", self.ITEMS, "TAIL", selected=["alpha"], exceptions=self.EXCEPTIONS)
+        self.assertEqual(out, "P:\n  1. First criterion.\nTAIL")
+
 
 class TestRubricForScenario(unittest.TestCase):
     """The harness must key the rubric on the scenario, not only on the phase.
