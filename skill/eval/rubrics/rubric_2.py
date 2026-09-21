@@ -105,8 +105,19 @@ fact. If the response merely claims phases are incomplete without the input conf
 it, do not apply this exception — evaluate normally instead.
 """
 
-TAIL = EXCEPTION + INTEGRATION_EXCEPTION + GENERIC_TAIL
+# Stable identifiers, same purpose as CRITERIA_ITEMS (#190): a scenario scoped to a
+# subset of criteria is a narrower claim than "score the whole rubric", and these
+# whole-response exceptions describe a different kind of response than the numbered
+# criteria do -- they no longer apply once that narrower claim is made. assemble()
+# renders them only when the whole rubric is in scope (selected=None); a scoped
+# scenario gets none of them unless it names one.
+EXCEPTION_ITEMS = {
+    "process-police-refusal": EXCEPTION,
+    "premature-integration-refusal": INTEGRATION_EXCEPTION,
+}
 
-CRITERIA = assemble(PREAMBLE, CRITERIA_ITEMS, TAIL)
+TAIL = GENERIC_TAIL
+
+CRITERIA = assemble(PREAMBLE, CRITERIA_ITEMS, TAIL, exceptions=EXCEPTION_ITEMS)
 
 THRESHOLD = 0.5

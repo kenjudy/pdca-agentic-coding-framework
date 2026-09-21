@@ -334,6 +334,10 @@ class TestRubricForScenario(unittest.TestCase):
             self.assertNotIn("happy path", lowered)
         with self.subTest(concept="stub-discipline criterion text"):
             self.assertNotIn(rubric_2.CRITERIA_ITEMS["stub-discipline"].lower(), lowered)
+        with self.subTest(concept="process-police exception"):
+            self.assertNotIn(rubric_2.EXCEPTION, criteria)
+        with self.subTest(concept="premature-integration exception"):
+            self.assertNotIn(rubric_2.INTEGRATION_EXCEPTION, criteria)
 
 
 class TestEveryRubricUsesTheSharedGenericTail(unittest.TestCase):
