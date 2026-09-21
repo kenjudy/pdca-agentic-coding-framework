@@ -2,6 +2,30 @@
 
 ## Unreleased
 
+### install-skill.sh / install-skill.ps1 now install the per-phase slash commands (#194)
+
+- `install-skill.sh`/`.ps1` extracted the skill zip but never placed the five per-phase
+  command files (`pdca.md`, `pdca-plan.md`, `pdca-do.md`, `pdca-check.md`, `pdca-act.md`,
+  added in #189) anywhere Claude Code or Codex auto-discovers commands from — a normal
+  install left `/pdca-plan` unresolved, with the copy/symlink step documented as a manual
+  follow-up nobody actually did.
+- `build.py` now packages `plugins/pdca-framework/commands/*.md` into the skill zip at
+  `commands/*.md` (new gitignored build artifact `skill/pdca-framework/commands/`,
+  mirroring `references/`), so the zip carries everything an installer needs in one
+  artifact (option 1 from #194, not a second manual install step).
+- `install-skill.sh`/`.ps1` copy those packaged commands into the scope-appropriate
+  directory after extracting the skill: `~/.claude/commands/` for `personal`, the current
+  project's `.claude/commands/` for `project`, `~/.codex/prompts/` for `codex` (Codex's
+  custom-prompt directory).
+- New tests in `skill/tests/test_commands.py` run `install-skill.sh` end-to-end against a
+  fake `HOME` for all three scopes and assert the commands land where each platform
+  reads them from, plus zip-content pinning tests; `EXPECTED_FILES` in `test_build.py`
+  extended to cover the five new manifest entries.
+- Updated `plugins/pdca-framework/README.md` and `skill/README.md` so the documented
+  install path requires no manual command-copying step; the manual copy/symlink
+  instructions remain as an alternative for contributors iterating on a command file
+  directly.
+
 ### Eval Quality
 
 - `run-evals.sh`: no-arg invocation now prints a cost warning and requires explicit `y/N`

@@ -37,14 +37,17 @@ if (-not (Test-Path $SkillFile)) {
 # Determine installation directory
 if ($InstallType -in "personal", "p", "claude") {
     $InstallDir = Join-Path $env:USERPROFILE ".claude\skills\pdca-framework"
+    $CommandsDir = Join-Path $env:USERPROFILE ".claude\commands"
     $Platform = "Claude Code"
     $Scope = "Personal (available across all projects)"
 } elseif ($InstallType -in "codex", "c") {
     $InstallDir = Join-Path $env:USERPROFILE ".agents\skills\pdca-framework"
+    $CommandsDir = Join-Path $env:USERPROFILE ".codex\prompts"
     $Platform = "Codex"
     $Scope = "Personal (available across all Codex projects)"
 } elseif ($InstallType -in "project", "proj") {
     $InstallDir = Join-Path (Get-Location) ".claude\skills\pdca-framework"
+    $CommandsDir = Join-Path (Get-Location) ".claude\commands"
     $Platform = "Claude Code"
     $Scope = "Project (available in current project only)"
 } else {
@@ -101,6 +104,19 @@ Get-ChildItem -Path $InstallDir -Recurse -File | ForEach-Object {
 }
 
 Write-Host ""
+
+# Install the per-phase slash commands (#194) -- the skill zip is extracted
+# above, but /pdca-plan et al. only resolve once these land in a directory
+# Claude Code or Codex actually discovers commands/prompts from.
+$PackagedCommandsDir = Join-Path $InstallDir "commands"
+if (Test-Path $PackagedCommandsDir) {
+    Write-Host "Installing slash commands to: $CommandsDir" -ForegroundColor Cyan
+    New-Item -ItemType Directory -Path $CommandsDir -Force | Out-Null
+    Copy-Item (Join-Path $PackagedCommandsDir "*.md") $CommandsDir -Force
+    Write-Host "Commands installed:" -ForegroundColor Green
+    Get-ChildItem -Path $PackagedCommandsDir -Filter "*.md" | ForEach-Object { Write-Host "  $($_.Name)" }
+    Write-Host ""
+}
 Write-Host "Success! The PDCA framework skill is now available in $Platform." -ForegroundColor Green
 Write-Host ""
 

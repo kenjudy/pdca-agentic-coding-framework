@@ -23,8 +23,25 @@ without the skill installed will say so rather than silently failing.
 
 ## Install
 
-The files in [`commands/`](commands/) here are the versioned source of truth. Copy or
-symlink them into a directory Claude Code already auto-discovers:
+**Recommended:** `skill/install-skill.sh` (or `install-skill.ps1` on Windows) installs
+these commands automatically alongside the `pdca-framework` skill — no manual copy step
+required:
+
+```bash
+cd skill
+./build-skill.sh
+./install-skill.sh personal   # or: project, codex
+```
+
+This places the five command files in `~/.claude/commands/` (personal), the current
+project's `.claude/commands/` (project), or `~/.codex/prompts/` (codex) — whichever the
+chosen scope's platform auto-discovers.
+
+### Manual install
+
+The files in [`commands/`](commands/) here are the versioned source of truth. If you're
+not running the installer (e.g. iterating on a command file directly), copy or symlink
+them yourself into a directory Claude Code already auto-discovers:
 
 **Personal (all projects) — macOS/Linux:**
 ```bash
