@@ -22,17 +22,23 @@ guarded by a skip: a skipped smoke test is indistinguishable from a passing one.
 """
 
 import unittest
+from unittest import mock
 
 from deepeval.metrics import GEval
-from deepeval.models import AnthropicModel
+from deepeval.metrics.g_eval.utils import no_log_prob_support
+from deepeval.models import AnthropicModel, OpenAIModel
 from deepeval.test_case import LLMTestCase, LLMTestCaseParams
+
+from eval.judges import anthropic_judge_model, openai_judge_model
 
 # Matches tests/test_evals.py's JUDGE_MODEL. Kept in sync deliberately: the point is to
 # exercise the same construction the real harness performs.
 JUDGE_MODEL_NAME = "claude-haiku-4-5-20251001"
+OPENAI_JUDGE_MODEL_NAME = "gpt-4o-mini"
 
 # Obviously fake, and never used against the network -- construction only.
 DUMMY_API_KEY = "sk-ant-dummy-key-for-construction-only"
+DUMMY_OPENAI_API_KEY = "sk-dummy-key-for-construction-only"
 
 
 class TestEvalHarnessImports(unittest.TestCase):
@@ -77,6 +83,62 @@ class TestEvalHarnessImports(unittest.TestCase):
         from eval.rubrics import rubric_1a  # noqa: F401
 
         self.assertTrue(True)
+
+    def test_openai_client_class_is_importable(self):
+        """eval/judges.py does `from deepeval.models import OpenAIModel`."""
+        self.assertTrue(hasattr(OpenAIModel, "__init__"))
+
+    def test_openai_judge_model_constructs(self):
+        """eval.judges.openai_judge_model(), built lazily the same way
+        anthropic_judge_model() is. Needs a key at construction time in this deepeval
+        version -- confirmed directly, contrary to an earlier assumption that
+        construction was keyless; OpenAIModel's __init__ calls load_model()
+        immediately, same as AnthropicModel."""
+        with mock.patch.dict("os.environ", {"OPENAI_API_KEY": DUMMY_OPENAI_API_KEY}):
+            model = openai_judge_model()
+        self.assertIsNotNone(model)
+
+    def test_anthropic_judge_model_constructs_via_eval_judges(self):
+        """The extracted builder (#190 Plan B step 1) must still construct the same
+        client tests/test_evals.py's judge_model() used to build directly."""
+        with mock.patch.dict("os.environ", {"ANTHROPIC_API_KEY": DUMMY_API_KEY}):
+            model = anthropic_judge_model()
+        self.assertIsNotNone(model)
+
+    def test_openai_judge_supports_log_probs(self):
+        """Guards the mechanism #190 Plan B exists to test (#190 Plan B step 4).
+
+        deepeval's GEval is logprob-weighted-sum scoring for models it recognizes as
+        capable; AnthropicModel falls back to a single unweighted sample because it
+        lacks generate_raw_response entirely. Swapping OPENAI_JUDGE_MODEL_NAME to a
+        model without logprob support -- confirmed here to be the common case, not the
+        exception: every GPT-5.x mini/nano variant in deepeval's own registry has
+        supports_log_probs=False -- would silently revert to the same unweighted path
+        while still producing a normal-looking report. Two checks, because
+        no_log_prob_support() alone does not discriminate this: it returns False for
+        ANY model type it does not specifically recognize (confirmed by reading its
+        source -- it only inspects str/OpenAIModel/AzureOpenAIModel), so it returns
+        False for AnthropicModel too, despite Anthropic not actually supporting the
+        weighted path. The second check (generate_raw_response) is what actually
+        distinguishes the two providers.
+
+        Deliberately does NOT assert `model_data.max_log_probs is not None` -- verified
+        directly that gpt-4o-mini's max_log_probs is None despite supports_log_probs
+        being True, so that assertion would fail on the very model this guards.
+        """
+        model = OpenAIModel(model=OPENAI_JUDGE_MODEL_NAME, api_key=DUMMY_OPENAI_API_KEY)
+        self.assertFalse(
+            no_log_prob_support(model),
+            f"{OPENAI_JUDGE_MODEL_NAME} no longer supports logprob-weighted scoring "
+            "per deepeval's model registry -- the judge swap would silently revert to "
+            "unweighted single-sample scoring, the exact defect this test exists to catch",
+        )
+        self.assertTrue(
+            hasattr(model, "generate_raw_response"),
+            "OpenAIModel lost generate_raw_response -- GEval's weighted-scoring path "
+            "calls this method; its absence is what makes AnthropicModel fall back to "
+            "unweighted scoring, and losing it here would do the same silently",
+        )
 
 
 if __name__ == "__main__":

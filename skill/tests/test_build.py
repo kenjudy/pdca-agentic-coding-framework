@@ -1375,6 +1375,37 @@ class TestHookInfrastructure(unittest.TestCase):
             f"{offenders}), so importing the module requires an API key",
         )
 
+    def test_eval_judges_module_does_not_construct_at_module_scope(self):
+        """eval/judges.py must be importable without a credential (#190 Plan B).
+
+        #156's fix moved judge construction out of tests/test_evals.py's module scope;
+        #190 Plan B moved the construction itself into eval/judges.py, a module the
+        default suite (and eval/rubrics, eval/reporter, etc.) can import freely. That
+        invariant now lives here, not in tests/test_evals.py -- the guard above no
+        longer sees it. Checks for both AnthropicModel and OpenAIModel, since this
+        module builds both providers.
+        """
+        import ast
+
+        source = (CLAUDE_SKILL_DIR / "eval" / "judges.py").read_text()
+        offenders = []
+        for node in ast.parse(source).body:
+            if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                continue
+            for call in ast.walk(node):
+                if not isinstance(call, ast.Call):
+                    continue
+                func = call.func
+                name = getattr(func, "id", None) or getattr(func, "attr", None)
+                if name in ("AnthropicModel", "OpenAIModel"):
+                    offenders.append((name, getattr(node, "lineno", "?")))
+        self.assertEqual(
+            offenders,
+            [],
+            f"eval/judges.py constructs a judge model at module scope {offenders}, so "
+            f"importing the module requires an API key",
+        )
+
     def test_eval_collection_needs_no_api_key(self):
         """The observable consequence of the fix, and the reason to make it.
 

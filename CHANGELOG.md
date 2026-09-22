@@ -2,6 +2,67 @@
 
 ## Unreleased
 
+### Added: OpenAI judge-model support for the eval harness, gated behind an opt-in env var (#190 Plan B, steps 0-5)
+
+- **Two independent Opus critic passes on this plan** (documented in the session, not
+  a file) found the original design would have spent real money on an uninterpretable
+  result: no instrument existed to compare judge models at all; the proposed statistic
+  (raw score stddev) is confounded by construction, since deepeval's OpenAI-judge path
+  returns a continuous logprob-weighted score while the Anthropic-judge path returns one
+  of the rubric's four discrete bands — a continuous distribution has lower stddev than
+  a quantized one drawn from identical underlying uncertainty, so "OpenAI arm has lower
+  stddev" was the predicted outcome under both the hypothesis and the null; and the core
+  premise (that `deepeval`'s `GEval` silently falls back to unweighted single-sample
+  scoring for `AnthropicModel`, whose fallback the whole investigation is chasing) was
+  asserted but never verified against the installed package, despite being free to check.
+- **New `eval/judges.py`** consolidates judge-model selection: `judge_provider_from_env()`
+  (defaults to `"anthropic"`; explicit `PDCA_EVAL_JUDGE=openai` opts in; anything else
+  raises `UnknownJudgeProvider` rather than silently falling back), `anthropic_judge_model()`
+  (extracted, zero behavior change, from `tests/test_evals.py`'s prior `judge_model()`),
+  `openai_judge_model()`, and `resolve_judge_model_name()` (a pure name resolver so
+  `EvalReporter`'s provenance field, added in step 0, can record which judge produced a
+  report without constructing a client). Cached per provider, not a single module global,
+  so `PDCA_EVAL_JUDGE` changing mid-session cannot silently return a stale client.
+- **`tests/test_evals.py`'s real harness now honors `PDCA_EVAL_JUDGE`** — both the judge
+  actually used to score and the reporter's provenance line resolve from the same call,
+  so a report can no longer claim a different judge than the one that scored it.
+- **Judge model: `gpt-4o-mini`, not the newer/cheaper `gpt-5.4-mini` or `gpt-4.1-mini`.**
+  Checked directly against `deepeval`'s installed model registry: every GPT-5.x mini/nano
+  variant has `supports_log_probs=False` (only full-size `gpt-5.4` keeps it in that
+  generation, at $2.50/$15.00 per M tokens), and `gpt-4.1-mini` already has an announced
+  OpenAI API cutoff (2026-10-14). `gpt-4o-mini` ($0.15/$0.60 per M) is the cheapest
+  currently-available model that still exercises the logprob-weighted path this
+  investigation is testing, with no announced API-level retirement as of writing — but no
+  committed lifespan either. If it is deprecated, `test_eval_imports.py`'s guard test
+  below is the tripwire: swapping to whatever replaces it without re-checking
+  `supports_log_probs` will very likely fail that test outright, since every other
+  newer/smaller OpenAI model observed here has dropped the capability.
+- **Free guard test** (`tests/test_eval_imports.py::test_openai_judge_supports_log_probs`):
+  asserts the OpenAI judge is not flagged by `no_log_prob_support()` *and* still has
+  `generate_raw_response` — two checks, not one, because `no_log_prob_support()` alone
+  does not discriminate what this needs: reading its source directly shows it returns
+  `False` for any model type it does not specifically recognize (only `str`/`OpenAIModel`/
+  `AzureOpenAIModel` are inspected), so it returns `False` for `AnthropicModel` too, despite
+  Anthropic not supporting the weighted path — confirmed directly (`no_log_prob_support`
+  on a constructed `AnthropicModel` returns `False`; `hasattr(model, "generate_raw_response")`
+  is `False`, which is the actual reason GEval falls back to unweighted scoring for it).
+  This test exists specifically so a future model-name edit fails loudly instead of
+  silently reverting to the same fallback Anthropic already has.
+- **Paid validation harness written, not yet dispatched** (`tests/test_judge_variance_190.py`,
+  excluded from the default suite and from `run-evals.sh`'s sweep): a pinned, genuinely
+  called-shot-compliant canary — reusing `2-superpowers-tdd-precedence`'s real input, scored
+  against `rubric_2`'s full *unscoped* rubric to sidestep Plan A's TAIL-scoping fix entirely
+  (that scenario's current config is scoped, which Plan A changed; scoring unscoped instead
+  reproduces the exact condition under which this behavior was originally measured scoring
+  0.00–0.90 across three 10-shot runs, per #136) — interleaved 10 shots per judge, with a
+  pre-registered N and go/no-go rule (Anthropic arm ≥1/10 false-fail AND OpenAI arm ≤1/10 on
+  the same known-compliant response) stated before any dispatch, and pass-rate at threshold
+  as the primary statistic rather than raw stddev, for the reason above. Requires explicit
+  human go-ahead before running — not yet given.
+- **Not yet done:** the paid local validation itself; the CI workflow/docs plumbing that
+  depends on its result; and updating/filing the GH issue capturing this investigation's
+  residual open concerns, deferred until both Plan A and Plan B are complete.
+
 ### Fixed: scoped scenarios leaked whole-response TAIL exceptions into their score (#190)
 
 - **A scenario that selects a subset of `rubric_2`'s criteria via `geval_criteria` still got
