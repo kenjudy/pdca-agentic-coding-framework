@@ -49,12 +49,26 @@ jobs:
       - name: Run evals
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         working-directory: skill
         run: |
           if [ -z "${ANTHROPIC_API_KEY}" ]; then
             echo "::error::ANTHROPIC_API_KEY secret is not set for this repository." \
                  "Add it under Settings > Secrets and variables > Actions."
             exit 1
+          fi
+          # THROWAWAY: one-off dispatch path for #190 Plan B's judge-variance probe,
+          # which loops its own shots internally and writes its own report format --
+          # bypassing run-evals.sh's baseline-promotion assumptions, which don't apply
+          # to it. This branch and this modification are not merged back.
+          if [ "${{ inputs.test_id }}" = "tests/test_judge_variance_190.py" ]; then
+            if [ -z "${OPENAI_API_KEY}" ]; then
+              echo "::error::OPENAI_API_KEY secret is not set for this repository."
+              exit 1
+            fi
+            bash build-skill.sh
+            uv run python -m pytest tests/test_judge_variance_190.py -v -s
+            exit $?
           fi
           shots="${{ inputs.shots }}"
           case "$shots" in
