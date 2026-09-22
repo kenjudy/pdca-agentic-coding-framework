@@ -1,8 +1,9 @@
 """Paid interleaved judge-variance probe (#190 Plan B step 5/6).
 
-WHAT THIS MEASURES, AND WHY THIS DESIGN (see two Opus plan-review passes and two Opus
-CHECK-phase passes on Plan B for the full trail this responds to -- this file has
-already been wrong three times, each caught before any dispatch, not after):
+WHAT THIS MEASURES, AND WHY THIS DESIGN (see two Opus plan-review passes and four Opus
+CHECK-phase passes on Plan B for the full trail this responds to -- earlier versions of
+this file were wrong repeatedly, each caught before any dispatch, not after; see
+tests/test_judge_variance_logic.py's own docstring for decide_go()'s specific history):
 
 A single fixed (input, output) pair -- the CANARY below -- scored N times per arm,
 interleaved across THREE arms, not two:
@@ -79,6 +80,17 @@ any real dispatch happened):
 - A GO result is DIRECTIONAL, warranting a larger-N confirmation -- not a signal to
   proceed straight to the CI/docs steps it's nominally gated on. Read alongside the
   anthropic_t0 control before drawing any conclusion.
+- READ THE FAILURE REASONS before treating any result as meaningful either way. A
+  fourth critic pass, after running this exact canary's TypeScript for real, confirmed
+  it still has a genuine, likely-unresolvable tension with the full rubric on THIS
+  input: #136's own historical finding was Haiku docking this same input for test
+  ordering and non-execution, and the canary's own "Why this test first" field concedes
+  the degenerate case can't be tested first without violating stub discipline. If
+  Anthropic's failure reasons cite ordering, degenerate-first, or non-execution
+  specifically, read the result as "disagreement on an ambiguous criterion for this
+  input," not instability -- rewriting the canary a fifth time will not remove this
+  tension, since no called-shot response to this exact input can satisfy
+  degenerate-first and stub-discipline simultaneously.
 - Fisher exact (eval.abstats.fisher_exact_two_tailed) on the anthropic_prod/openai
   pass-fail counts is reported as supporting evidence only, not the sole criterion: an
   earlier interleaved A/B in this same investigation (Haiku -> Opus as judge) was
@@ -151,7 +163,8 @@ CANARY_OUTPUT = (
     "**Test name:** parses a numeric Retry-After header value\n"
     "**Behavior under test:** parseRetryAfter(headers) returns 120 when headers "
     "contains a Retry-After header set to \"120\"\n"
-    "**Expected failure:** AssertionError: expected 0 to be 120 // Object.is equality\n"
+    "**Expected failure:** AssertionError: expected +0 to be 120 // Object.is "
+    "equality\n"
     "**Why this test first:** the degenerate/zero case (no Retry-After header) already "
     "returns 0 from the current stub, so a test for it would pass vacuously against a "
     "non-implementation and cannot serve as this step's RED; the present-header case is "
@@ -206,8 +219,15 @@ def _format_score(score: Any) -> str:
     return f"{score:.2f}" if score is not None else "n/a"
 
 
-def _run_one_shot(judge, shot_log) -> dict:
-    """Score the fixed canary pair once against one judge, unscoped rubric_2."""
+def _run_one_shot(judge, arm_name: str, shot_log) -> dict:
+    """Score the fixed canary pair once against one judge, unscoped rubric_2.
+
+    `arm_name` is written into the JSONL record itself, not added by the caller after
+    the fact -- a fourth CHECK-phase critic pass found an earlier version logged the
+    shot before the caller attached which arm it belonged to, so the durability log
+    (the whole point of S4's checkpointing) couldn't identify its own rows without
+    relying on an undocumented, crash-fragile "position mod 3" convention.
+    """
     metric = GEval(
         name="judge_variance_190",
         criteria=rubric_2.CRITERIA,
@@ -218,6 +238,7 @@ def _run_one_shot(judge, shot_log) -> dict:
     test_case = LLMTestCase(input=CANARY_INPUT, actual_output=CANARY_OUTPUT)
     metric.measure(test_case)
     shot = {
+        "arm": arm_name,
         "geval_score": metric.score,
         "geval_reason": getattr(metric, "reason", None),
         "geval_passed": metric.is_successful(),
@@ -227,12 +248,19 @@ def _run_one_shot(judge, shot_log) -> dict:
     return shot
 
 
-def _write_report(report_path: Path, shots_by_arm: dict[str, list[dict]]) -> None:
+def _write_report(report_path: Path, shots_by_arm: dict[str, list[dict]], arm_provenance: dict[str, str]) -> None:
     """Best-effort report from whatever shots exist -- called from `finally`, so this
-    must not crash on partial or empty data."""
+    must not crash on partial or empty data.
+
+    `arm_provenance` carries each arm's actual model name and temperature, read off
+    the constructed client -- a fourth CHECK-phase critic pass found the report had
+    dropped this after the rewrite that added the third arm, a regression in exactly
+    the provenance step 0 of this plan was built to provide.
+    """
     lines = [f"# Judge Variance Canary (#190 Plan B) — {datetime.now().isoformat()}", ""]
-    lines.append(f"N per arm (target): {N_SHOTS_PER_ARM}, temperature: {PROBE_TEMPERATURE} "
-                 f"(anthropic_t0, openai only -- anthropic_prod uses its production default)")
+    lines.append(f"N per arm (target): {N_SHOTS_PER_ARM}")
+    for arm, provenance in arm_provenance.items():
+        lines.append(f"- {arm}: {provenance}")
     lines.append("")
 
     stats_by_arm = {}
@@ -251,7 +279,7 @@ def _write_report(report_path: Path, shots_by_arm: dict[str, list[dict]]) -> Non
         o = stats_by_arm[ARM_OPENAI]
         if a["shots"] == N_SHOTS_PER_ARM and o["shots"] == N_SHOTS_PER_ARM:
             p_value = fisher_exact_two_tailed(a["passed"], a["fail"], o["passed"], o["fail"])
-            go = decide_go(anthropic_fail=a["fail"], openai_fail=o["fail"])
+            go = decide_go(anthropic_fail=a["fail"], openai_fail=o["fail"], n_shots=N_SHOTS_PER_ARM)
             lines.append(f"Fisher exact (anthropic_prod vs openai, supporting evidence only): p={p_value:.4f}")
             go_label = "GO (directional -- see module docstring)" if go else "NO-GO / inconclusive"
             lines.append(f"Pre-registered go/no-go: {go_label}")
@@ -282,6 +310,14 @@ class TestJudgeVarianceCanary190:
         openai = OpenAIModel(model=OPENAI_JUDGE_MODEL_NAME, temperature=PROBE_TEMPERATURE)
         arms = {ARM_ANTHROPIC_PROD: anthropic_prod, ARM_ANTHROPIC_T0: anthropic_t0, ARM_OPENAI: openai}
 
+        # Read the actual temperature off each constructed client, not assumed --
+        # anthropic_prod's is whatever eval.judges.anthropic_judge_model() leaves it as
+        # (production default), which this report must state rather than imply.
+        arm_provenance = {
+            name: f"{judge.get_model_name()}, temperature={judge.temperature}"
+            for name, judge in arms.items()
+        }
+
         RESULTS_DIR.mkdir(parents=True, exist_ok=True)
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         shots_path = RESULTS_DIR / f"judge_variance_190_shots_{timestamp}.jsonl"
@@ -295,11 +331,10 @@ class TestJudgeVarianceCanary190:
                 # run-ab-eval.sh uses.
                 for _ in range(N_SHOTS_PER_ARM):
                     for arm_name, judge in arms.items():
-                        shot = _run_one_shot(judge, shot_log)
-                        shot["arm"] = arm_name
+                        shot = _run_one_shot(judge, arm_name, shot_log)
                         shots_by_arm[arm_name].append(shot)
         finally:
-            _write_report(report_path, shots_by_arm)
+            _write_report(report_path, shots_by_arm, arm_provenance)
             print(f"\nJudge variance report: {report_path}")
             print(f"Judge variance shot log: {shots_path}")
             print(report_path.read_text())

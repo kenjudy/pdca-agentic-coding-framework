@@ -26,8 +26,13 @@ MAX_OPENAI_FAILURES_FOR_SIGNAL = 1
 def decide_go(anthropic_fail: int, openai_fail: int, n_shots: int = 10) -> bool:
     """Whether the probe's result supports proceeding to the CI/docs steps gated on it.
 
-    Three requirements, all independent of each other by design (a mutation removing
-    any one of them should fail a test in tests/test_judge_variance_logic.py):
+    Three requirements, stated for what each one means, not because all three are
+    independently load-bearing -- a fourth critic pass found requirement 3 is currently
+    implied by 1 and 2 together (the floor guarantees anthropic_fail >= 2, the cap
+    guarantees openai_fail <= 1, and 1 < 2 always), so a mutation deleting requirement 3
+    alone will NOT be caught by the current tests. Kept explicit anyway because it names
+    the actual intent (a real improvement, not a tie) independently of the current
+    floor/cap values, which could change without it:
 
     1. The Anthropic arm's failure count is MIXED -- between the floor and a symmetric
        ceiling (n_shots - floor) -- not near either extreme. Unanimous or

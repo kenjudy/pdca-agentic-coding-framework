@@ -4,8 +4,8 @@
 
 ### Added: OpenAI judge-model support for the eval harness, gated behind an opt-in env var (#190 Plan B, steps 0-5)
 
-- **Five review passes before any paid dispatch** (documented in the session, not a
-  file): two Opus plan-review passes, then three Opus CHECK-phase passes, each
+- **Six review passes before any paid dispatch** (documented in the session, not a
+  file): two Opus plan-review passes, then four Opus CHECK-phase passes, each
   mutation-testing the real code rather than reading it. Plan review found: no
   instrument existed to compare judge models at all; the proposed statistic (raw score
   stddev) is confounded by construction, since deepeval's OpenAI-judge path returns a
@@ -25,9 +25,18 @@
   production variance, so neither arm any longer corresponded to the judge actually in
   production use; and the "fixed" decision rule had dropped an upper bound, so it
   returned GO even at 10-vs-9 failures — unanimous or near-unanimous Anthropic failure,
-  which is uniform disagreement with the judge, not instability. All fixed below,
-  before any dispatch — see `tests/test_judge_variance_logic.py`'s own docstring, which
-  records this rule's history as a caution against tuning it after seeing a result.
+  which is uniform disagreement with the judge, not instability. Both fixed. A fourth
+  CHECK pass then verified those fixes by execution — running the canary's actual
+  TypeScript against a real Vitest install rather than reasoning about it — and
+  confirmed all three were genuine this time, while finding three cheap should-fix
+  items (the JSONL log didn't record which arm each line belonged to; the report had
+  dropped model-name/temperature provenance after the arm rewrite; `decide_go()` wasn't
+  passed the probe's actual shot count, relying on a default that happened to match)
+  and one factual error carried over from the third pass's own suggested fix text (a
+  Vitest assertion message rendering `0` as `+0`, verified directly against real Vitest
+  output across four major versions). All four fixed. See
+  `tests/test_judge_variance_logic.py`'s own docstring, which records `decide_go()`'s
+  history as a caution against tuning a decision rule after seeing a result.
 - **New `eval/judges.py`** consolidates judge-model selection: `judge_provider_from_env()`
   (defaults to `"anthropic"`; explicit `PDCA_EVAL_JUDGE=openai` opts in; anything else
   raises `UnknownJudgeProvider` rather than silently falling back), `anthropic_judge_model()`
@@ -85,24 +94,40 @@
   unit-tested in `tests/test_judge_variance_logic.py`, 10 tests) requires the Anthropic arm's
   failures to be MIXED (2–8 of 10, not near either extreme — unanimous or near-unanimous
   failure is uniform disagreement with the judge, not instability), the OpenAI arm to fail
-  at most 1 of 10 times, and OpenAI to fail strictly fewer times than Anthropic. A GO result
-  is reported as directional, warranting a larger-N confirmation, not a signal to proceed
-  straight to the CI/docs steps nominally gated on it. Each shot is now appended to a JSONL
-  log as it completes and the report is written from a `finally` block with None-safe score
-  formatting, so an exception on a late shot (of ~30 real API calls) doesn't lose every
-  earlier shot's data. The documented dispatch command now includes `--extra eval` — the
-  bare form fails after `run-tests.sh`'s own sync strips that extra, reproduced directly
-  before fixing it. Requires explicit human go-ahead before running — not yet given.
+  at most 1 of 10 times, and OpenAI to fail strictly fewer times than Anthropic — now
+  called with the probe's actual shot count rather than relying on a matching default. A
+  GO result is reported as directional, warranting a larger-N confirmation, not a signal
+  to proceed straight to the CI/docs steps nominally gated on it, and the module docstring
+  now says explicitly to read Anthropic's failure reasons before treating any result as
+  meaningful: the canary still has a real, likely-unresolvable tension with the full
+  rubric's degenerate-first criterion on this specific input (confirmed by running its
+  TypeScript for real), so an Anthropic failure citing ordering or non-execution should
+  read as disagreement on an ambiguous criterion, not instability. Each shot is now
+  appended to a JSONL log — carrying which arm it belongs to, not just recoverable by
+  position — as it completes, and the report is written from a `finally` block with
+  None-safe score formatting and each arm's actual model name and temperature (read off
+  the constructed client, not assumed), so an exception on a late shot (of ~30 real API
+  calls) doesn't lose every earlier shot's data or its provenance. The documented dispatch
+  command includes `--extra eval` — the bare form fails after `run-tests.sh`'s own sync
+  strips that extra, reproduced directly before fixing it. Requires explicit human
+  go-ahead before running — not yet given.
 - **Not yet done:** the paid local validation itself; the CI workflow/docs plumbing that
   depends on its result; and updating/filing the GH issue capturing this investigation's
   residual open concerns, deferred until both Plan A and Plan B are complete. Also open,
-  deliberately not fixed (the probe bypasses the reporter fixture, `judge_model()`, the
-  provider cache, and `run_phase` entirely, so none of these affect the next planned
-  step — a local dispatch of the probe itself — though each must close before the
-  CI-based step that follows it): the judge/provenance-identity gap noted above; the
-  provider-keyed cache is never tested for the specific hazard it exists to prevent; and
-  `PDCA_EVAL_JUDGE=openai` with no `OPENAI_API_KEY` would fail only after a paid
-  generation call already ran, in the real per-scenario harness (not in this probe).
+  deliberately not fixed: the judge/provenance-identity gap noted above (the probe
+  bypasses `judge_model()` and the reporter fixture, but its `anthropic_prod` arm DOES
+  use the shared provider cache via `anthropic_judge_model()` — a fourth CHECK pass
+  found this matters in one specific way: if another test in the same pytest process
+  calls `anthropic_judge_model()` first with a dummy key, e.g.
+  `test_eval_imports.py::test_anthropic_judge_model_constructs_via_eval_judges`, the
+  cached client keeps that dummy key and the probe's own `anthropic_prod` shots fail
+  loudly with an auth error — not silent, and not a risk when the probe is dispatched
+  alone as documented, but worth closing before any co-dispatch); the provider-keyed
+  cache is still never tested for its own general hazard (two providers built in one
+  process not overwriting each other); and `PDCA_EVAL_JUDGE=openai` with no
+  `OPENAI_API_KEY` would fail only after a paid generation call already ran, in the
+  real per-scenario harness (not in this probe, which builds all three judges before
+  any shot).
 
 ### Fixed: scoped scenarios leaked whole-response TAIL exceptions into their score (#190)
 
