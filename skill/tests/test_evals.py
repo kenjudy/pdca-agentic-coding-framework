@@ -122,7 +122,7 @@ def _run_scenario(scenario: dict, include_skill_prompt: bool = True) -> dict:
 
 @pytest.fixture(scope="session")
 def reporter():
-    return EvalReporter()
+    return EvalReporter(judge_model=JUDGE_MODEL_NAME)
 
 
 @pytest.fixture(autouse=True, scope="session")

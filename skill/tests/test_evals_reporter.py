@@ -329,6 +329,29 @@ class TestReportProvenance:
         assert "deepeval" in content
 
 
+class TestReportRecordsJudgeModel:
+    """A report must record which model judged it (#190 Plan B step 0).
+
+    Comparing an Anthropic-judged run against an OpenAI-judged run only means anything if
+    each report says which judge produced it. Without this, two reports differ only in
+    their scores, and a reader can't tell whether that's the prompt or the judge that
+    changed -- the same gap #122 hit for `deepeval`/`anthropic` versions, now for the
+    judge model itself.
+    """
+
+    def test_report_records_judge_model_when_provided(self, tmp_path):
+        reporter = EvalReporter(judge_model="claude-haiku-4-5-20251001")
+        reporter.add(_make_result())
+        content = reporter.write_report(tmp_path / "report.md").read_text()
+        assert "**Judge model:** claude-haiku-4-5-20251001" in content
+
+    def test_report_records_not_recorded_when_judge_model_omitted(self, tmp_path):
+        reporter = EvalReporter()
+        reporter.add(_make_result())
+        content = reporter.write_report(tmp_path / "report.md").read_text()
+        assert "**Judge model:** not recorded" in content
+
+
 class TestRubricLadderFingerprint:
     """A report must record which rubric-ladder version produced it (#172).
 
