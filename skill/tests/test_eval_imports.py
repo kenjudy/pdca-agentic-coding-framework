@@ -26,15 +26,14 @@ from unittest import mock
 
 from deepeval.metrics import GEval
 from deepeval.metrics.g_eval.utils import no_log_prob_support
-from deepeval.models import AnthropicModel, OpenAIModel
+from deepeval.models import AnthropicModel
 from deepeval.test_case import LLMTestCase, LLMTestCaseParams
 
-from eval.judges import anthropic_judge_model, openai_judge_model
+from eval.judges import OPENAI_JUDGE_MODEL_NAME, anthropic_judge_model, openai_judge_model
 
-# Matches tests/test_evals.py's JUDGE_MODEL. Kept in sync deliberately: the point is to
-# exercise the same construction the real harness performs.
+# tests/test_evals.py resolves its judge through eval.judges too (#190 Plan B), so this
+# mirrors the same construction the real harness performs via the same source of truth.
 JUDGE_MODEL_NAME = "claude-haiku-4-5-20251001"
-OPENAI_JUDGE_MODEL_NAME = "gpt-4o-mini"
 
 # Obviously fake, and never used against the network -- construction only.
 DUMMY_API_KEY = "sk-ant-dummy-key-for-construction-only"
@@ -54,8 +53,10 @@ class TestEvalHarnessImports(unittest.TestCase):
         )
 
     def test_judge_model_constructs(self):
-        """tests/test_evals.py builds this at module import time, so a signature change
-        there breaks collection of the entire eval suite, not just one test."""
+        """tests/test_evals.py's judge_model() builds this lazily on first use (#156);
+        a signature change here breaks the whole eval suite's judging, not just one
+        test, so it is checked keylessly rather than only discovered by paying for a
+        run."""
         model = AnthropicModel(model=JUDGE_MODEL_NAME, api_key=DUMMY_API_KEY)
         self.assertIsNotNone(model)
 
@@ -83,10 +84,6 @@ class TestEvalHarnessImports(unittest.TestCase):
         from eval.rubrics import rubric_1a  # noqa: F401
 
         self.assertTrue(True)
-
-    def test_openai_client_class_is_importable(self):
-        """eval/judges.py does `from deepeval.models import OpenAIModel`."""
-        self.assertTrue(hasattr(OpenAIModel, "__init__"))
 
     def test_openai_judge_model_constructs(self):
         """eval.judges.openai_judge_model(), built lazily the same way
@@ -125,8 +122,18 @@ class TestEvalHarnessImports(unittest.TestCase):
         Deliberately does NOT assert `model_data.max_log_probs is not None` -- verified
         directly that gpt-4o-mini's max_log_probs is None despite supports_log_probs
         being True, so that assertion would fail on the very model this guards.
+
+        Built via `openai_judge_model()` -- the real production builder, using the real
+        `OPENAI_JUDGE_MODEL_NAME` constant -- not a hand-rolled `OpenAIModel(...)` call
+        with a locally duplicated model-name literal. A CHECK-phase critic pass found
+        the earlier version of this test built its own `OpenAIModel` from a copy of the
+        constant declared in this file, so swapping the real `eval.judges.
+        OPENAI_JUDGE_MODEL_NAME` to a model without logprob support (verified: this
+        test still passed with it set to "gpt-5.4-mini") went completely undetected --
+        the opposite of what this test claims to guard.
         """
-        model = OpenAIModel(model=OPENAI_JUDGE_MODEL_NAME, api_key=DUMMY_OPENAI_API_KEY)
+        with mock.patch.dict("os.environ", {"OPENAI_API_KEY": DUMMY_OPENAI_API_KEY}):
+            model = openai_judge_model()
         self.assertFalse(
             no_log_prob_support(model),
             f"{OPENAI_JUDGE_MODEL_NAME} no longer supports logprob-weighted scoring "

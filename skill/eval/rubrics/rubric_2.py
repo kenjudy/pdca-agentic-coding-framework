@@ -110,7 +110,8 @@ it, do not apply this exception — evaluate normally instead.
 # whole-response exceptions describe a different kind of response than the numbered
 # criteria do -- they no longer apply once that narrower claim is made. assemble()
 # renders them only when the whole rubric is in scope (selected=None); a scoped
-# scenario gets none of them unless it names one.
+# scenario always gets none of them -- there is no mechanism for a scenario to name one
+# and opt back in (geval_criteria only ever selects from CRITERIA_ITEMS).
 EXCEPTION_ITEMS = {
     "process-police-refusal": EXCEPTION,
     "premature-integration-refusal": INTEGRATION_EXCEPTION,

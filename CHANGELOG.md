@@ -4,17 +4,27 @@
 
 ### Added: OpenAI judge-model support for the eval harness, gated behind an opt-in env var (#190 Plan B, steps 0-5)
 
-- **Two independent Opus critic passes on this plan** (documented in the session, not
-  a file) found the original design would have spent real money on an uninterpretable
-  result: no instrument existed to compare judge models at all; the proposed statistic
-  (raw score stddev) is confounded by construction, since deepeval's OpenAI-judge path
-  returns a continuous logprob-weighted score while the Anthropic-judge path returns one
-  of the rubric's four discrete bands — a continuous distribution has lower stddev than
-  a quantized one drawn from identical underlying uncertainty, so "OpenAI arm has lower
-  stddev" was the predicted outcome under both the hypothesis and the null; and the core
-  premise (that `deepeval`'s `GEval` silently falls back to unweighted single-sample
-  scoring for `AnthropicModel`, whose fallback the whole investigation is chasing) was
-  asserted but never verified against the installed package, despite being free to check.
+- **Two independent Opus plan-review critic passes, then a third Opus CHECK-phase pass
+  on the resulting code** (documented in the session, not a file) found real defects at
+  each stage. Plan review: no instrument existed to compare judge models at all; the
+  proposed statistic (raw score stddev) is confounded by construction, since deepeval's
+  OpenAI-judge path returns a continuous logprob-weighted score while the Anthropic-judge
+  path returns an unweighted integer score /10 — a less-constrained distribution reads as
+  lower-variance than a more-constrained one drawn from identical underlying uncertainty
+  either way, so "OpenAI arm has lower stddev" was the predicted outcome under both the
+  hypothesis and the null; and the core premise (that `deepeval`'s `GEval` silently falls
+  back to unweighted single-sample scoring for `AnthropicModel`) was asserted but never
+  verified against the installed package, despite being free to check. CHECK-phase pass
+  (mutation-tested against the real code, not just read): the logprob guard test built
+  its own model from a locally duplicated constant rather than the real production one,
+  so mutating the real constant to a non-logprob-capable model left the guard passing;
+  the probe's canary was not actually compliant against the full rubric it was scored
+  on (deliberately skipped justifying degenerate-first, falsely claimed to have executed
+  a test, declared completion with no implementation written); the go/no-go rule's own
+  code returned GO at 1-vs-1 failures (no reduction at all); and OpenAI's judge defaults
+  to `temperature=0.0` while Anthropic's default is unset (API default `1.0`), an
+  unmatched-temperature confound distinct from the scoring-mechanism one. All four fixed
+  below.
 - **New `eval/judges.py`** consolidates judge-model selection: `judge_provider_from_env()`
   (defaults to `"anthropic"`; explicit `PDCA_EVAL_JUDGE=openai` opts in; anything else
   raises `UnknownJudgeProvider` rather than silently falling back), `anthropic_judge_model()`
@@ -23,9 +33,14 @@
   `EvalReporter`'s provenance field, added in step 0, can record which judge produced a
   report without constructing a client). Cached per provider, not a single module global,
   so `PDCA_EVAL_JUDGE` changing mid-session cannot silently return a stale client.
-- **`tests/test_evals.py`'s real harness now honors `PDCA_EVAL_JUDGE`** — both the judge
-  actually used to score and the reporter's provenance line resolve from the same call,
-  so a report can no longer claim a different judge than the one that scored it.
+- **`tests/test_evals.py`'s real harness now honors `PDCA_EVAL_JUDGE`** for scoring.
+  **Known gap, not yet closed:** the reporter's provenance line and `judge_model()`
+  resolve the provider through separate calls (the fixture once at session start,
+  `judge_model()` per call), so nothing currently guarantees they agree if the env var
+  changed between them, and no test asserts the provenance name matches the class of
+  judge actually constructed. A CHECK-phase critic pass flagged this by mutation-testing
+  it (swapping providers/model names in the dispatch logic left the full suite green);
+  left open for a follow-up pass rather than fixed here.
 - **Judge model: `gpt-4o-mini`, not the newer/cheaper `gpt-5.4-mini` or `gpt-4.1-mini`.**
   Checked directly against `deepeval`'s installed model registry: every GPT-5.x mini/nano
   variant has `supports_log_probs=False` (only full-size `gpt-5.4` keeps it in that
@@ -49,19 +64,36 @@
   This test exists specifically so a future model-name edit fails loudly instead of
   silently reverting to the same fallback Anthropic already has.
 - **Paid validation harness written, not yet dispatched** (`tests/test_judge_variance_190.py`,
-  excluded from the default suite and from `run-evals.sh`'s sweep): a pinned, genuinely
-  called-shot-compliant canary — reusing `2-superpowers-tdd-precedence`'s real input, scored
-  against `rubric_2`'s full *unscoped* rubric to sidestep Plan A's TAIL-scoping fix entirely
-  (that scenario's current config is scoped, which Plan A changed; scoring unscoped instead
-  reproduces the exact condition under which this behavior was originally measured scoring
-  0.00–0.90 across three 10-shot runs, per #136) — interleaved 10 shots per judge, with a
-  pre-registered N and go/no-go rule (Anthropic arm ≥1/10 false-fail AND OpenAI arm ≤1/10 on
-  the same known-compliant response) stated before any dispatch, and pass-rate at threshold
-  as the primary statistic rather than raw stddev, for the reason above. Requires explicit
-  human go-ahead before running — not yet given.
+  excluded from the default suite and from `run-evals.sh`'s sweep): a pinned canary —
+  reusing `2-superpowers-tdd-precedence`'s real input verbatim, scored against `rubric_2`'s
+  full *unscoped* rubric to sidestep Plan A's TAIL-scoping fix entirely (that scenario's
+  current config is scoped, which Plan A changed). This isolates judge variance alone on a
+  fixed response; it does not reproduce #136's original 0.00–0.90 finding exactly, since
+  those runs generated a fresh executor response each shot and so mixed output variance
+  with judge variance — a narrower, cheaper first question, stated as such rather than
+  overclaimed. The canary response is now genuinely compliant against every criterion in
+  the full rubric (called shot, degenerate-first justified in its own text, a real
+  implementation, an earned completion claim — see the module docstring for the three
+  violations a pre-CHECK version had). Both judges are constructed with an explicit,
+  matched `temperature=0.0` directly in this file, not via the shared cached builders,
+  so the comparison isn't also confounded by Anthropic's unset-temperature API default.
+  10 shots per arm, interleaved. The go/no-go rule now lives in `eval/judge_variance.py`
+  (`decide_go`), unit-tested in `tests/test_judge_variance_logic.py`: Anthropic arm
+  ≥2/10 failing (a single failure could be noise) AND OpenAI arm failing strictly fewer
+  times — not the original inline rule, which a CHECK-phase critic pass found returned
+  GO at 1-vs-1 (no reduction at all). Pass-rate at threshold remains the primary
+  statistic rather than raw stddev, for the reason above. Requires explicit human
+  go-ahead before running — not yet given.
 - **Not yet done:** the paid local validation itself; the CI workflow/docs plumbing that
   depends on its result; and updating/filing the GH issue capturing this investigation's
-  residual open concerns, deferred until both Plan A and Plan B are complete.
+  residual open concerns, deferred until both Plan A and Plan B are complete. Also open,
+  from the CHECK-phase critic pass, deliberately not fixed in this round (scoped to
+  blocking + minor findings only): the judge/provenance-identity gap noted above; the
+  provider-keyed cache is never tested for the specific hazard it exists to prevent;
+  `PDCA_EVAL_JUDGE=openai` with no `OPENAI_API_KEY` fails only after the paid generation
+  call already ran, wasting spend on every scenario before erroring; and the probe writes
+  its report only at the end, so an exception on a late shot loses every paid shot before
+  it.
 
 ### Fixed: scoped scenarios leaked whole-response TAIL exceptions into their score (#190)
 

@@ -43,11 +43,15 @@ def rubric_for_scenario(prompt_id: str, expected_signals: Mapping[str, object]) 
             f"geval_criteria must be a list of strings, got {selected!r}"
         )
 
+    # No `exceptions=` here: assemble() only ever renders exceptions when selected is
+    # None, and this branch is reached only when `selected` is a real, non-empty list
+    # (the early return above handles the unscoped case). Passing exceptions on this
+    # path was dead -- confirmed by a CHECK-phase critic pass, verified here by removal:
+    # every test_rubrics.py test still passes.
     criteria = assemble(
         module.PREAMBLE,
         module.CRITERIA_ITEMS,
         module.TAIL,
         selected=selected,
-        exceptions=getattr(module, "EXCEPTION_ITEMS", None),
     )
     return criteria, module.THRESHOLD
