@@ -75,9 +75,9 @@
   constant — an earlier version did the latter, and a mutation swapping the real constant
   to a non-logprob-capable model left it passing undetected.
 - **Paid validation harness (`tests/test_judge_variance_190.py`, excluded from the
-  default suite and from `run-evals.sh`'s sweep): one real dispatch attempted, one
-  design change made after it, not yet re-dispatched.** A pinned canary, a genuine
-  two-cycle response (present-header test+implementation, then absent-header
+  default suite and from `run-evals.sh`'s sweep): dispatched, real result obtained; a
+  second, generalization-check case added and not yet dispatched.** A pinned canary, a
+  genuine two-cycle response (present-header test+implementation, then absent-header
   test+implementation — matching how this repo's real scenarios legitimately earn
   "Implementation finished, moving to CHECK phase" by completing every test the step
   specifies in one turn), reusing `2-superpowers-tdd-precedence`'s real input verbatim,
@@ -93,17 +93,12 @@
   arm's failures to be MIXED (2–8 of 10, not near either extreme — unanimous or
   near-unanimous failure is uniform disagreement with the judge, not instability), the
   OpenAI arm to fail at most 1 of 10 times, and OpenAI to fail strictly fewer times than
-  Anthropic. A GO result is directional, warranting a larger-N confirmation, not a signal
-  to proceed straight to the CI/docs steps nominally gated on it; the module docstring
-  says explicitly to read Anthropic's failure reasons before treating any result as
-  meaningful, since the canary has a real, likely-unresolvable tension with the full
-  rubric's degenerate-first criterion on this specific input (confirmed by running its
-  TypeScript for real). Each shot is appended to a JSONL log — carrying which arm it
-  belongs to — as it completes, and the report is written from a `finally` block with
-  None-safe score formatting and each arm's actual model name and temperature (read off
-  the constructed client), so an exception on a late shot doesn't lose earlier data.
-  The dispatch command includes `--extra eval` (the bare form fails after
-  `run-tests.sh`'s own sync strips that extra, reproduced before fixing it).
+  Anthropic. Each shot is appended to a JSONL log — carrying which arm it belongs to —
+  as it completes, and the report is written from a `finally` block with None-safe
+  score formatting and each arm's actual model name and temperature (read off the
+  constructed client), so an exception on a late shot doesn't lose earlier data. The
+  dispatch command includes `--extra eval` (the bare form fails after `run-tests.sh`'s
+  own sync strips that extra, reproduced before fixing it).
   - **A third arm (`anthropic_t0`, Haiku pinned to `temperature=0.0`, an attribution
     control) was built, dispatched once, and then dropped.** The dispatch (via a
     throwaway CI branch and workflow, since no local API keys are available in this
@@ -124,7 +119,31 @@
     (separating "OpenAI looks more stable because of the mechanism" from "OpenAI looks
     more stable because of its lower default temperature"), and that narrower value
     wasn't judged worth the SDK-bug investigation. Dropped; not re-fixed.
-  - Not yet re-dispatched with the 2-arm design — requires separate explicit go-ahead.
+  - **Re-dispatched with the 2-arm design (via the same throwaway CI branch/workflow):
+    real result obtained.** `anthropic_prod` 5/10 passed (mean=0.53, stddev=0.34);
+    `openai` 10/10 passed (mean=0.92, stddev=0.10); Fisher exact p=0.0325. Pre-registered
+    go/no-go: **GO**. Reading the failure reasons, per the probe's own rule: of
+    Anthropic's 5 failures, 2 cited the known degenerate-first ambiguity (discount per
+    the rule) and 3 cited the response's exact required handoff phrase as a premature-
+    completion violation — a distinct, unambiguous criterion Anthropic's own *passing*
+    shots correctly credit the identical text for, and one OpenAI's lowest-scoring shot
+    raised without crossing threshold. The signal survives discounting the known
+    confound; still a directional result from n=10/arm on one fixed input, not a
+    confirmed finding — see the generalization check below.
+  - **Generalization check added, not yet dispatched:** a second fixed pair
+    (`CASE2_INPUT`/`CASE2_OUTPUT`, a new `test_interleaved_pass_rate_by_provider_
+    case2_first_step` method reusing the same `_run_one_shot`/`_write_report`/
+    `decide_go` machinery) asks whether the canary's GO result is specific to that one
+    hand-written input or holds on a different one. Reuses a real, previously-scored
+    response verbatim from a saved baseline (`eval/baselines/report_20260909_174245.md`,
+    scenario `2-first-step`, unscoped — unaffected by Plan A, confirmed byte-identical
+    to `eval/scenarios/2_scenarios.json`'s real input) rather than a hand-written second
+    canary, deliberately avoiding the exact mistake that took four CHECK-phase passes to
+    fix for the first one. The reused response has a real, judge-acknowledged defect
+    (Haiku scored it 0.70, noting it truncates mid-implementation before the handoff
+    phrase) — used as-is, imperfections included, since the question is judge
+    consistency on real text, not whether this specific response is exemplary. Requires
+    separate explicit go-ahead before dispatch.
 - **Not yet done:** the paid local validation itself; the CI workflow/docs plumbing that
   depends on its result; and updating/filing the GH issue capturing this investigation's
   residual open concerns, deferred until both Plan A and Plan B are complete. Also open,

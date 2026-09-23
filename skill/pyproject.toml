@@ -38,6 +38,12 @@ select = ["E", "F", "I"]
 # that happening silently. Long lines here are content, not style.
 "eval/rubrics/rubric_*.py" = ["E501"]
 
+# CASE2_INPUT/CASE2_OUTPUT hold a real judge-scored response reused verbatim from a
+# saved baseline report (see the constant's own comment) -- rewrapping it would mean
+# retyping a 7000-character string by hand, the exact transcription risk this file
+# reuses a real response specifically to avoid.
+"tests/test_judge_variance_190.py" = ["E501"]
+
 [tool.mypy]
 python_version = "3.11"
 check_untyped_defs = true

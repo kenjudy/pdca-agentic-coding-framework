@@ -5,8 +5,9 @@ CHECK-phase passes on Plan B for the full trail this responds to -- earlier vers
 this file were wrong repeatedly, each caught before any dispatch, not after; see
 tests/test_judge_variance_logic.py's own docstring for decide_go()'s specific history):
 
-A single fixed (input, output) pair -- the CANARY below -- scored N times per arm,
-interleaved across TWO arms:
+Each test method fixes one (input, output) pair -- CANARY, then CASE2 as a
+generalization check (see GENERALIZATION CHECK below) -- and scores it N times per
+arm, interleaved across TWO arms:
 
 - "anthropic_prod": Haiku via eval.judges.anthropic_judge_model(), the SAME cached
   builder the real production harness uses -- unset temperature, so Anthropic's own API
@@ -112,8 +113,18 @@ every earlier shot's data. Score formatting is None-safe, since a judge call can
 legitimately return no score. This is what caught the anthropic_t0 SDK failure above
 without losing the one real anthropic_prod shot that ran before it.
 
+GENERALIZATION CHECK: after the CANARY dispatch returned a directional GO (5/10
+anthropic_prod failures vs. 0/10 openai, Fisher p=0.0325 -- see CHANGELOG.md), the
+question was whether the pattern holds on a genuinely different, non-hand-crafted
+input, or is specific to this one hand-written canary. `test_interleaved_pass_rate_
+by_provider_case2_first_step` reuses CASE2_INPUT/CASE2_OUTPUT (see above) -- a real,
+previously-scored response to a different real scenario -- rather than writing a
+second canary by hand, deliberately avoiding the mistake that took four CHECK-phase
+passes to fix for the first one. Same rubric, same statistic, same decide_go rule,
+separate report and shot log (suffixed `_case2_`).
+
 COST: gpt-4o-mini and Haiku calls on this short canary are a small fraction of a cent
-each; 20 shots total is well under the run-evals.sh full-sweep budget. Still gated on
+each; 20 shots per case is well under the run-evals.sh full-sweep budget. Still gated on
 explicit human go-ahead before dispatch, same as every other paid step in this
 investigation -- this file must not be added to any CI job or default-suite path.
 
@@ -222,13 +233,31 @@ CANARY_OUTPUT = (
 )
 
 
+# A second, real fixed (input, output) pair for a generalization check (#190 Plan B):
+# does the anthropic_prod-vs-openai pattern on the hand-written CANARY above hold on a
+# genuinely different, non-hand-crafted input too? Reused verbatim from a saved baseline
+# report (eval/baselines/report_20260909_174245.md, scenario "2-first-step", unscoped --
+# unaffected by Plan A's TAIL-scoping fix, same as CANARY_INPUT/OUTPUT above) rather than
+# hand-written, deliberately avoiding the exact mistake that took four CHECK-phase passes
+# to fix for the canary above: a hand-crafted "should be compliant" response is easy to
+# get subtly wrong. This real response was previously scored 0.70 by Haiku, with the
+# judge's own reasoning noting a real, genuine defect (it truncates mid-implementation,
+# before Test 4's GREEN phase and before the required handoff phrase) -- used here as-is,
+# imperfections included, rather than cleaned up, since the actual question is whether
+# both judges score the SAME real (if imperfect) text consistently, not whether this
+# specific response is exemplary.
+CASE2_INPUT = 'Rails 7 app, PostgreSQL, RSpec + FactoryBot. Adding webhook support. Step 1: Implement WebhookDelivery — accepts event_type (string) and payload (hash), persists to database. File locations confirmed: app/models/webhook_delivery.rb (new), db/migrate/TIMESTAMP_create_webhook_deliveries.rb (new), spec/models/webhook_delivery_spec.rb (new). No existing WebhookDelivery files. ApplicationRecord base class. Start TDD now.'
+
+CASE2_OUTPUT = 'I\'ll check the baseline before writing any code.\n\n```bash\n# Confirm no existing WebhookDelivery files\nfind . -name "*webhook*" -o -name "*Webhook*" 2>/dev/null | grep -v ".git"\n```\n\nAssuming clean baseline (no existing webhook files). Let me begin.\n\n---\n\n## Architectural Safety Check\n\n- **New files:** `app/models/webhook_delivery.rb`, `spec/models/webhook_delivery_spec.rb`, migration — all fit Rails conventions ✅\n- **ApplicationRecord** already exists, we inherit from it ✅\n- **No existing usages** to break ✅\n\nFile locations confirmed:\n- `app/models/webhook_delivery.rb` (new)\n- `db/migrate/TIMESTAMP_create_webhook_deliveries.rb` (new)\n- `spec/models/webhook_delivery_spec.rb` (new)\n\n---\n\n## Full Test List (before writing any code)\n\nWorking out all cases upfront:\n\n1. **Degenerate:** invalid without `event_type` (nil)\n2. **Exception:** invalid without `payload` (nil)\n3. **Exception:** invalid when `event_type` is blank string\n4. **Exception:** `payload` must be a hash (rejects non-hash)\n5. **Happy path:** valid record with `event_type` string + `payload` hash persists\n6. **Happy path:** persisted record round-trips `payload` hash correctly from DB\n\n---\n\n## 🚨 CALLED SHOT — Test 1\n\n- **Test name:** `is invalid without event_type`\n- **Behavior under test:** `WebhookDelivery` with `event_type: nil` fails validation\n- **Expected failure:** `undefined method \'valid?\' for nil` OR more precisely — `NameError: uninitialized constant WebhookDelivery` because the class doesn\'t exist yet\n- **Why this test first:** Degenerate/zero case establishes the API (class exists, has `event_type` attribute, validates presence) before any logic\n- **Stub check:** A no-op stub (`class WebhookDelivery < ApplicationRecord; end`) would *not* satisfy this test — Rails default behavior without `validates :event_type, presence: true` would make the record *valid* with nil (no validation fires), so this test stays genuinely RED until the validation is added. ✅\n\n---\n\n### RED Phase — Test 1\n\n**`spec/models/webhook_delivery_spec.rb`**\n\n```ruby\nrequire \'rails_helper\'\n\nRSpec.describe WebhookDelivery, type: :model do\n  describe \'validations\' do\n    it \'is invalid without event_type\' do\n      delivery = WebhookDelivery.new(payload: { "foo" => "bar" })\n      expect(delivery).not_to be_valid\n      expect(delivery.errors[:event_type]).to include("can\'t be blank")\n    end\n  end\nend\n```\n\nRun it — expected failure:\n\n```\nNameError: uninitialized constant WebhookDelivery\n```\n\n---\n\n### Stub (compile-but-fail stub) — Migration first\n\n**`db/migrate/TIMESTAMP_create_webhook_deliveries.rb`**\n\n```ruby\nclass CreateWebhookDeliveries < ActiveRecord::Migration[7.0]\n  def change\n    create_table :webhook_deliveries do |t|\n      t.string  :event_type, null: false\n      t.jsonb   :payload,    null: false, default: {}\n\n      t.timestamps\n    end\n  end\nend\n```\n\n```bash\nrails db:migrate\nrails db:migrate RAILS_ENV=test\n```\n\n**`app/models/webhook_delivery.rb`** — stub, compiles, no validations yet:\n\n```ruby\nclass WebhookDelivery < ApplicationRecord\nend\n```\n\nRun test now — expected behavioral failure:\n\n```\nexpected #<WebhookDelivery id: nil, event_type: nil, payload: {}> not to be valid\n```\n\nThat\'s our genuine RED (record is valid when it shouldn\'t be). ✅\n\n---\n\n### GREEN Phase — Test 1\n\nAdd the presence validation:\n\n```ruby\nclass WebhookDelivery < ApplicationRecord\n  validates :event_type, presence: true\nend\n```\n\nRun — GREEN ✅\n\n---\n\n## 🚨 CALLED SHOT — Test 2\n\n- **Test name:** `is invalid without payload`\n- **Behavior under test:** `WebhookDelivery` with `payload: nil` fails validation\n- **Expected failure:** `expected #<WebhookDelivery ...> not to be valid` (record is currently valid with nil payload — no validation exists yet)\n- **Why this test first:** Closes the second required field before moving to happy path\n- **Stub check:** Current model has no payload validation, so this will be RED ✅\n\n---\n\n### RED Phase — Test 2\n\nAdd to the `\'validations\'` describe block:\n\n```ruby\nit \'is invalid without payload\' do\n  delivery = WebhookDelivery.new(event_type: \'order.created\', payload: nil)\n  expect(delivery).not_to be_valid\n  expect(delivery.errors[:payload]).to include("can\'t be blank")\nend\n```\n\nRun — RED (nil payload passes with current stub) ✅\n\n---\n\n### GREEN Phase — Test 2\n\n```ruby\nclass WebhookDelivery < ApplicationRecord\n  validates :event_type, presence: true\n  validates :payload,    presence: true\nend\n```\n\nRun both tests — GREEN ✅\n\n---\n\n## 🚨 CALLED SHOT — Test 3\n\n- **Test name:** `is invalid when event_type is blank`\n- **Behavior under test:** Empty string `""` for `event_type` fails validation (presence: true covers this, but we verify explicitly)\n- **Expected failure:** This will actually be **GREEN immediately** — `presence: true` already rejects blank strings\n- **Decision:** Skip — vacuously green against current implementation. Rails `presence: true` handles blank. Move to next non-trivial test.\n\n---\n\n## 🚨 CALLED SHOT — Test 4 (promoted to Test 3)\n\n- **Test name:** `is invalid when payload is not a hash`\n- **Behavior under test:** `payload: "a string"` or `payload: [1,2,3]` fails validation — payload must be a Hash\n- **Expected failure:** `expected #<WebhookDelivery ...> not to be valid` — current model accepts any value for payload as long as it\'s present\n- **Why this test first:** Defines the type contract. A record with `payload: "oops"` currently passes, which is wrong.\n- **Stub check:** Current validation only checks presence, not type — genuinely RED ✅\n\n---\n\n### RED Phase — Test 3 (payload type)\n\n```ruby\nit \'is invalid when payload is not a hash\' do\n  delivery = WebhookDelivery.new(event_type: \'order.created\', payload: "not a hash")\n  expect(delivery).not_to be_valid\n  expect(delivery.errors[:payload]).to include("must be a Hash")\nend\n```\n\nRun — RED (string payload currently passes presence check) ✅\n\n---\n\n### GREEN Phase — Test 3\n\n```ruby\nclass WebhookDelivery < ApplicationRecord\n  validates :event_type, presence: true\n  validates :payload,    presence: true\n  validate  :payload_must_be_hash\n\n  private\n\n  def payload_must_be_hash\n    return if payload.nil? # presence validator handles nil\n    errors.add(:payload, \'must be a Hash\') unless payload.is_a?(Hash)\n  end\nend\n```\n\nRun all three tests — GREEN ✅\n\n---\n\n## 🚨 CALLED SHOT — Test 4 (happy path — persists)\n\n- **Test name:** `is valid with event_type and a payload hash`\n- **Behavior under test:** A record with valid attributes saves to the database\n- **Expected failure:** Should be GREEN immediately — but this is the first test that calls `save` and exercises the actual DB round-trip, making it integration-meaningful\n- **Why this test:** Confirms the migration and model wire up correctly end-to-end. Can\'t be skipped.\n- **Stub check:** All three validations exist — this *should* pass. We run it to confirm the migration worked.\n\n```ruby\nit \'is valid with event_type and a payload hash\' do\n  delivery = WebhookDelivery.new(\n    event_type:'
+
+
 def _format_score(score: Any) -> str:
     """None-safe score formatting -- a judge call can legitimately return no score."""
     return f"{score:.2f}" if score is not None else "n/a"
 
 
-def _run_one_shot(judge, arm_name: str, shot_log) -> dict:
-    """Score the fixed canary pair once against one judge, unscoped rubric_2.
+def _run_one_shot(judge, arm_name: str, shot_log, input_text: str, output_text: str) -> dict:
+    """Score one fixed (input, output) pair once against one judge, unscoped rubric_2.
 
     `arm_name` is written into the JSONL record itself, not added by the caller after
     the fact -- a fourth CHECK-phase critic pass found an earlier version logged the
@@ -243,7 +272,7 @@ def _run_one_shot(judge, arm_name: str, shot_log) -> dict:
         threshold=rubric_2.THRESHOLD,
         model=judge,
     )
-    test_case = LLMTestCase(input=CANARY_INPUT, actual_output=CANARY_OUTPUT)
+    test_case = LLMTestCase(input=input_text, actual_output=output_text)
     metric.measure(test_case)
     shot = {
         "arm": arm_name,
@@ -256,7 +285,12 @@ def _run_one_shot(judge, arm_name: str, shot_log) -> dict:
     return shot
 
 
-def _write_report(report_path: Path, shots_by_arm: dict[str, list[dict]], arm_provenance: dict[str, str]) -> None:
+def _write_report(
+    report_path: Path,
+    shots_by_arm: dict[str, list[dict]],
+    arm_provenance: dict[str, str],
+    case_name: str = "Canary",
+) -> None:
     """Best-effort report from whatever shots exist -- called from `finally`, so this
     must not crash on partial or empty data.
 
@@ -265,7 +299,7 @@ def _write_report(report_path: Path, shots_by_arm: dict[str, list[dict]], arm_pr
     dropped this after the rewrite that added the third arm, a regression in exactly
     the provenance step 0 of this plan was built to provide.
     """
-    lines = [f"# Judge Variance Canary (#190 Plan B) — {datetime.now().isoformat()}", ""]
+    lines = [f"# Judge Variance {case_name} (#190 Plan B) — {datetime.now().isoformat()}", ""]
     lines.append(f"N per arm (target): {N_SHOTS_PER_ARM}")
     for arm, provenance in arm_provenance.items():
         lines.append(f"- {arm}: {provenance}")
@@ -338,10 +372,40 @@ class TestJudgeVarianceCanary190:
                 # run-ab-eval.sh uses.
                 for _ in range(N_SHOTS_PER_ARM):
                     for arm_name, judge in arms.items():
-                        shot = _run_one_shot(judge, arm_name, shot_log)
+                        shot = _run_one_shot(judge, arm_name, shot_log, CANARY_INPUT, CANARY_OUTPUT)
                         shots_by_arm[arm_name].append(shot)
         finally:
-            _write_report(report_path, shots_by_arm, arm_provenance)
+            _write_report(report_path, shots_by_arm, arm_provenance, case_name="Canary")
+            print(f"\nJudge variance report: {report_path}")
+            print(f"Judge variance shot log: {shots_path}")
+            print(report_path.read_text())
+
+    def test_interleaved_pass_rate_by_provider_case2_first_step(self):
+        """Generalization check: does the pattern on the hand-written CANARY hold on a
+        real, non-hand-crafted response too? See CASE2_INPUT/CASE2_OUTPUT above."""
+        anthropic_prod = anthropic_judge_model()
+        openai = OpenAIModel(model=OPENAI_JUDGE_MODEL_NAME, temperature=PROBE_TEMPERATURE)
+        arms = {ARM_ANTHROPIC_PROD: anthropic_prod, ARM_OPENAI: openai}
+
+        arm_provenance = {
+            name: f"{judge.get_model_name()}, temperature={judge.temperature}"
+            for name, judge in arms.items()
+        }
+
+        RESULTS_DIR.mkdir(parents=True, exist_ok=True)
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        shots_path = RESULTS_DIR / f"judge_variance_190_case2_shots_{timestamp}.jsonl"
+        report_path = RESULTS_DIR / f"judge_variance_190_case2_{timestamp}.md"
+
+        shots_by_arm: dict[str, list[dict]] = {name: [] for name in arms}
+        try:
+            with open(shots_path, "a") as shot_log:
+                for _ in range(N_SHOTS_PER_ARM):
+                    for arm_name, judge in arms.items():
+                        shot = _run_one_shot(judge, arm_name, shot_log, CASE2_INPUT, CASE2_OUTPUT)
+                        shots_by_arm[arm_name].append(shot)
+        finally:
+            _write_report(report_path, shots_by_arm, arm_provenance, case_name="Case2 (2-first-step)")
             print(f"\nJudge variance report: {report_path}")
             print(f"Judge variance shot log: {shots_path}")
             print(report_path.read_text())
