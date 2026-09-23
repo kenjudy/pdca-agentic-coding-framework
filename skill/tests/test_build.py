@@ -47,6 +47,11 @@ EXPECTED_FILES = [
     f"{SKILL_NAME}/references/autonomous-critic-setup.md",
     f"{SKILL_NAME}/references/testing-anti-patterns.md",
     f"{SKILL_NAME}/references/scripts/export-requirements.sh",
+    f"{SKILL_NAME}/commands/pdca.md",
+    f"{SKILL_NAME}/commands/pdca-plan.md",
+    f"{SKILL_NAME}/commands/pdca-do.md",
+    f"{SKILL_NAME}/commands/pdca-check.md",
+    f"{SKILL_NAME}/commands/pdca-act.md",
 ]
 
 MASTER_FILES = [
@@ -979,6 +984,25 @@ class TestHookInfrastructure(unittest.TestCase):
             "review of #155)",
         )
 
+    def test_rubric2_called_shot_expected_failure_matches_do_master(self):
+        """#168: rubric_2.py's 'called-shot' criterion restated the pre-#155 'Expected
+        failure' wording to the LLM judge. The DO master (post-#155) requires the
+        first-executing assertion, quoted; the rubric was missing both qualifiers.
+        """
+        from eval.rubrics.rubric_2 import CRITERIA_ITEMS
+
+        criterion = CRITERIA_ITEMS["called-shot"]
+        self.assertTrue(
+            "fail first" in criterion,
+            "Missing 'fail first' qualifier: rubric_2 Expected failure criterion does "
+            "not tell the judge to predict the first-executing assertion (#168, #155)",
+        )
+        self.assertTrue(
+            "quoted" in criterion,
+            "Missing 'quoted' qualifier: rubric_2 Expected failure criterion does not "
+            "tell the judge to expect a quoted assertion message (#168, #155)",
+        )
+
     def test_testing_anti_patterns_names_the_loose_called_shot_pattern(self):
         """#155's own suggestion: name the pattern so it is citable in retros, the way
         #8 (Partial-Instance Coverage) has been used as diagnostic vocabulary all
@@ -1283,6 +1307,35 @@ class TestHookInfrastructure(unittest.TestCase):
             self.skipTest("run-evals.sh not found")
         content = script.read_text()
         self.assertIn("-m eval", content, "run-evals.sh must filter tests with -m eval marker")
+
+    def test_run_evals_warns_and_blocks_when_no_class_specified(self):
+        """run-evals.sh must require explicit confirmation when invoked with no test class.
+
+        No-arg invocation silently includes TestBaselineComparison, which runs all
+        scenarios twice and doubles API cost (~$4-10). This was discovered when a
+        25-minute run had to be killed with no usable output (pdca-ayj). A blocking
+        prompt makes the cost visible before the spend happens.
+        """
+        script = CLAUDE_SKILL_DIR / "run-evals.sh"
+        if not script.exists():
+            self.skipTest("run-evals.sh not found")
+        content = script.read_text()
+        self.assertIn(
+            "$#",
+            content,
+            "run-evals.sh does not warn when invoked with no test class — the full "
+            "sweep (including TestBaselineComparison) runs silently (pdca-ayj)",
+        )
+        self.assertTrue(
+            "WARNING" in content or "warning" in content or "WARN" in content,
+            "run-evals.sh does not emit a warning when no test class is given — "
+            "callers cannot distinguish a targeted run from the full 2x-cost sweep",
+        )
+        self.assertTrue(
+            "read" in content or "confirm" in content or "[y/N]" in content,
+            "run-evals.sh does not require confirmation before the full sweep — "
+            "the 2x cost can be incurred without any human acknowledgement",
+        )
 
     def test_pre_commit_hook_template_exists(self):
         self.assertTrue(

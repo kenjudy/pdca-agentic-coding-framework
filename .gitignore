@@ -29,6 +29,7 @@ skill/eval/results/
 
 # Build artifacts (generated files - not committed)
 skill/pdca-framework/references/
+skill/pdca-framework/commands/
 skill/pdca-framework.skill
 skill/pdca-framework-beads.skill
 skill/temp_package/

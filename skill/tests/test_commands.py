@@ -7,15 +7,28 @@ eval harness involved. They validate the *structure* of the command files
 live Claude Code session actually discovers or resolves them correctly -- that
 requires a fresh interactive session and is out of reach of this test suite
 (see #188's own open verification item).
+
+TestInstallScriptInstallsCommands (#194) is the exception: it runs the real
+install-skill.sh end-to-end against a fake HOME, because the bug it guards
+against -- the installer extracting the skill but never placing the commands
+anywhere Claude Code or Codex discovers them -- is exactly the kind of thing a
+static content check cannot catch.
 """
 
+import os
 import re
+import subprocess
+import tempfile
 import unittest
+import zipfile
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).parent.parent.parent
 COMMANDS_DIR = REPO_ROOT / "plugins" / "pdca-framework" / "commands"
 SKILL_MD = REPO_ROOT / "skill" / "pdca-framework" / "SKILL.md"
+SKILL_DIR = REPO_ROOT / "skill"
+SKILL_ZIP = SKILL_DIR / "pdca-framework.skill"
+INSTALL_SCRIPT = SKILL_DIR / "install-skill.sh"
 
 EXPECTED_COMMAND_FILES = [
     "pdca.md",
@@ -109,6 +122,77 @@ class TestPlanCommandSequencing(unittest.TestCase):
         self.assertIn("1a", content)
         self.assertIn("1b", content)
         self.assertLess(content.index("1a"), content.index("1b"), "pdca-plan.md must sequence 1a before 1b")
+
+
+class TestSkillZipPackagesCommands(unittest.TestCase):
+    """The commands must ride inside pdca-framework.skill, not just live in
+    plugins/ -- install-skill.sh only has the zip to work from (#194)."""
+
+    def setUp(self):
+        if not SKILL_ZIP.exists():
+            self.skipTest(f"{SKILL_ZIP.name} not found -- run build-skill.sh first")
+
+    def test_zip_contains_every_command_file(self):
+        with zipfile.ZipFile(SKILL_ZIP) as archive:
+            names = archive.namelist()
+        for name in EXPECTED_COMMAND_FILES:
+            with self.subTest(file=name):
+                self.assertIn(f"pdca-framework/commands/{name}", names)
+
+    def test_packaged_commands_match_source(self):
+        with zipfile.ZipFile(SKILL_ZIP) as archive:
+            for name in EXPECTED_COMMAND_FILES:
+                packaged = archive.read(f"pdca-framework/commands/{name}").decode()
+                source = (COMMANDS_DIR / name).read_text()
+                self.assertEqual(packaged, source, f"packaged {name} doesn't match plugins/ source")
+
+
+class TestInstallScriptInstallsCommands(unittest.TestCase):
+    """install-skill.sh must place the packaged commands somewhere Claude Code
+    or Codex actually discovers them, per scope (#194). Runs the real script
+    end-to-end against a fake HOME so a regression fails loudly instead of
+    silently leaving /pdca-plan unresolved after a normal install."""
+
+    @classmethod
+    def setUpClass(cls):
+        if not SKILL_ZIP.exists():
+            raise unittest.SkipTest(f"{SKILL_ZIP.name} not found -- run build-skill.sh first")
+
+    def _run_install(self, scope, home, cwd=None):
+        env = dict(os.environ, HOME=str(home))
+        result = subprocess.run(
+            ["bash", str(INSTALL_SCRIPT), scope],
+            cwd=str(cwd or home),
+            env=env,
+            capture_output=True,
+            text=True,
+        )
+        self.assertEqual(
+            result.returncode,
+            0,
+            f"install-skill.sh {scope} failed:\nSTDOUT:\n{result.stdout}\nSTDERR:\n{result.stderr}",
+        )
+        return result
+
+    def test_personal_scope_installs_commands_to_claude_commands(self):
+        with tempfile.TemporaryDirectory() as home:
+            self._run_install("personal", Path(home))
+            installed = sorted(p.name for p in (Path(home) / ".claude" / "commands").glob("*.md"))
+            self.assertEqual(installed, sorted(EXPECTED_COMMAND_FILES))
+
+    def test_codex_scope_installs_commands_to_codex_prompts(self):
+        with tempfile.TemporaryDirectory() as home:
+            self._run_install("codex", Path(home))
+            installed = sorted(p.name for p in (Path(home) / ".codex" / "prompts").glob("*.md"))
+            self.assertEqual(installed, sorted(EXPECTED_COMMAND_FILES))
+
+    def test_project_scope_installs_commands_to_project_claude_commands(self):
+        with tempfile.TemporaryDirectory() as home:
+            project_dir = Path(home) / "project"
+            project_dir.mkdir()
+            self._run_install("project", Path(home), cwd=project_dir)
+            installed = sorted(p.name for p in (project_dir / ".claude" / "commands").glob("*.md"))
+            self.assertEqual(installed, sorted(EXPECTED_COMMAND_FILES))
 
 
 if __name__ == "__main__":
