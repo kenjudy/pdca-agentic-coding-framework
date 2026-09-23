@@ -61,15 +61,17 @@ jobs:
           # which loops its own shots internally and writes its own report format --
           # bypassing run-evals.sh's baseline-promotion assumptions, which don't apply
           # to it. This branch and this modification are not merged back.
-          if [ "${{ inputs.test_id }}" = "tests/test_judge_variance_190.py" ]; then
-            if [ -z "${OPENAI_API_KEY}" ]; then
-              echo "::error::OPENAI_API_KEY secret is not set for this repository."
-              exit 1
-            fi
-            bash build-skill.sh
-            uv run python -m pytest tests/test_judge_variance_190.py -v -s
-            exit $?
-          fi
+          case "${{ inputs.test_id }}" in
+            tests/test_judge_variance_190.py*)
+              if [ -z "${OPENAI_API_KEY}" ]; then
+                echo "::error::OPENAI_API_KEY secret is not set for this repository."
+                exit 1
+              fi
+              bash build-skill.sh
+              uv run python -m pytest "${{ inputs.test_id }}" -v -s
+              exit $?
+              ;;
+          esac
           shots="${{ inputs.shots }}"
           case "$shots" in
             ''|*[!0-9]*) echo "::error::shots must be a positive integer, got '$shots'"; exit 1 ;;
