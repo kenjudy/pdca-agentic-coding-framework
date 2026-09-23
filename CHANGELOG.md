@@ -74,43 +74,57 @@
   production builder, not a hand-rolled construction from a locally duplicated model-name
   constant — an earlier version did the latter, and a mutation swapping the real constant
   to a non-logprob-capable model left it passing undetected.
-- **Paid validation harness written, not yet dispatched** (`tests/test_judge_variance_190.py`,
-  excluded from the default suite and from `run-evals.sh`'s sweep): a pinned canary,
-  now a genuine two-cycle response (present-header test+implementation, then
-  absent-header test+implementation — matching how this repo's real scenarios legitimately
-  earn "Implementation finished, moving to CHECK phase" by completing every test the step
+- **Paid validation harness (`tests/test_judge_variance_190.py`, excluded from the
+  default suite and from `run-evals.sh`'s sweep): one real dispatch attempted, one
+  design change made after it, not yet re-dispatched.** A pinned canary, a genuine
+  two-cycle response (present-header test+implementation, then absent-header
+  test+implementation — matching how this repo's real scenarios legitimately earn
+  "Implementation finished, moving to CHECK phase" by completing every test the step
   specifies in one turn), reusing `2-superpowers-tdd-precedence`'s real input verbatim,
   scored against `rubric_2`'s full *unscoped* rubric to sidestep Plan A's TAIL-scoping fix
   entirely. Isolates judge variance alone on a fixed response; does not reproduce #136's
   original 0.00–0.90 finding exactly, since those runs generated a fresh executor response
   each shot and so mixed output variance with judge variance — a narrower, cheaper first
-  question, stated as such. **Three interleaved arms, not two:** `anthropic_prod` (Haiku
-  via the same cached production builder the real harness uses, unset temperature — the
-  judge actually in use today), `anthropic_t0` (Haiku pinned to `temperature=0.0`, an
-  attribution control), and `openai` (gpt-4o-mini, `temperature=0.0`, matching its own
-  default). Only `anthropic_prod` vs `openai` feeds the go/no-go decision; the `t0` control
-  lets a result be attributed to temperature vs. the scoring mechanism rather than
-  conflating them. 10 shots per arm. The go/no-go rule (`eval/judge_variance.py::decide_go`,
-  unit-tested in `tests/test_judge_variance_logic.py`, 10 tests) requires the Anthropic arm's
-  failures to be MIXED (2–8 of 10, not near either extreme — unanimous or near-unanimous
-  failure is uniform disagreement with the judge, not instability), the OpenAI arm to fail
-  at most 1 of 10 times, and OpenAI to fail strictly fewer times than Anthropic — now
-  called with the probe's actual shot count rather than relying on a matching default. A
-  GO result is reported as directional, warranting a larger-N confirmation, not a signal
-  to proceed straight to the CI/docs steps nominally gated on it, and the module docstring
-  now says explicitly to read Anthropic's failure reasons before treating any result as
-  meaningful: the canary still has a real, likely-unresolvable tension with the full
+  question, stated as such. **Two interleaved arms:** `anthropic_prod` (Haiku via the
+  same cached production builder the real harness uses, unset temperature — the judge
+  actually in use today) and `openai` (gpt-4o-mini, `temperature=0.0`, matching its own
+  default). 10 shots per arm. The go/no-go rule (`eval/judge_variance.py::decide_go`,
+  unit-tested in `tests/test_judge_variance_logic.py`, 10 tests) requires the Anthropic
+  arm's failures to be MIXED (2–8 of 10, not near either extreme — unanimous or
+  near-unanimous failure is uniform disagreement with the judge, not instability), the
+  OpenAI arm to fail at most 1 of 10 times, and OpenAI to fail strictly fewer times than
+  Anthropic. A GO result is directional, warranting a larger-N confirmation, not a signal
+  to proceed straight to the CI/docs steps nominally gated on it; the module docstring
+  says explicitly to read Anthropic's failure reasons before treating any result as
+  meaningful, since the canary has a real, likely-unresolvable tension with the full
   rubric's degenerate-first criterion on this specific input (confirmed by running its
-  TypeScript for real), so an Anthropic failure citing ordering or non-execution should
-  read as disagreement on an ambiguous criterion, not instability. Each shot is now
-  appended to a JSONL log — carrying which arm it belongs to, not just recoverable by
-  position — as it completes, and the report is written from a `finally` block with
+  TypeScript for real). Each shot is appended to a JSONL log — carrying which arm it
+  belongs to — as it completes, and the report is written from a `finally` block with
   None-safe score formatting and each arm's actual model name and temperature (read off
-  the constructed client, not assumed), so an exception on a late shot (of ~30 real API
-  calls) doesn't lose every earlier shot's data or its provenance. The documented dispatch
-  command includes `--extra eval` — the bare form fails after `run-tests.sh`'s own sync
-  strips that extra, reproduced directly before fixing it. Requires explicit human
-  go-ahead before running — not yet given.
+  the constructed client), so an exception on a late shot doesn't lose earlier data.
+  The dispatch command includes `--extra eval` (the bare form fails after
+  `run-tests.sh`'s own sync strips that extra, reproduced before fixing it).
+  - **A third arm (`anthropic_t0`, Haiku pinned to `temperature=0.0`, an attribution
+    control) was built, dispatched once, and then dropped.** The dispatch (via a
+    throwaway CI branch and workflow, since no local API keys are available in this
+    session and the real workflow doesn't run this probe) got exactly one real shot —
+    `anthropic_prod`, scoring 0.10/FAIL, docked for declaring "Implementation finished"
+    as premature despite that being the rubric's own required exact handoff phrase —
+    before crashing on the first `anthropic_t0` shot with a genuine `deepeval`/`anthropic`
+    SDK incompatibility (explicit `temperature` combined with `thinking={'type':
+    'disabled'}` raises `TypeError: AsyncMessages.create() got an unexpected keyword
+    argument 'temperature'` against installed `anthropic==1.4.0`) — caught cleanly by
+    the checkpointing above rather than losing the one real shot. Investigating that bug
+    was set aside after reconsidering the arm's actual value: `AnthropicModel` has no
+    `generate_raw_response` at any temperature, so it can never provide the
+    weighted-averaging mechanism this whole investigation is about, regardless of
+    configuration — a low-variance result on this one canary at T=0 would only have
+    shown that temperature reduces noise on this input, not that the underlying
+    mechanism gap closes. The arm's only honest value was as an attribution control
+    (separating "OpenAI looks more stable because of the mechanism" from "OpenAI looks
+    more stable because of its lower default temperature"), and that narrower value
+    wasn't judged worth the SDK-bug investigation. Dropped; not re-fixed.
+  - Not yet re-dispatched with the 2-arm design — requires separate explicit go-ahead.
 - **Not yet done:** the paid local validation itself; the CI workflow/docs plumbing that
   depends on its result; and updating/filing the GH issue capturing this investigation's
   residual open concerns, deferred until both Plan A and Plan B are complete. Also open,

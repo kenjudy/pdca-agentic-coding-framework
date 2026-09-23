@@ -6,21 +6,28 @@ this file were wrong repeatedly, each caught before any dispatch, not after; see
 tests/test_judge_variance_logic.py's own docstring for decide_go()'s specific history):
 
 A single fixed (input, output) pair -- the CANARY below -- scored N times per arm,
-interleaved across THREE arms, not two:
+interleaved across TWO arms:
 
 - "anthropic_prod": Haiku via eval.judges.anthropic_judge_model(), the SAME cached
   builder the real production harness uses -- unset temperature, so Anthropic's own API
   default (1.0) applies, exactly as it does for every real Haiku-judged eval run today.
-- "anthropic_t0": Haiku built directly here with an explicit temperature=0.0 --
-  an attribution control, not part of the decision (see TEMPERATURE below).
 - "openai": gpt-4o-mini built directly here with temperature=0.0 (already its default).
 
-Only anthropic_prod vs openai feeds the go/no-go decision. anthropic_t0 exists so a
-result can be attributed correctly: if anthropic_prod is unstable but anthropic_t0 is
-not, temperature explains the difference and the cheap fix is pinning Haiku's own
-temperature, with no OpenAI dependency at all; if both Anthropic arms are equally
-unstable, temperature is not the explanation and the OpenAI comparison means what it
-claims to.
+A third arm ("anthropic_t0": Haiku pinned to temperature=0.0) was considered and
+dropped. It would only ever have served as an attribution control -- separating "OpenAI
+looks more stable because of the logprob mechanism" from "OpenAI looks more stable
+because it happens to run at lower temperature" -- not a standalone fix, and this was a
+real correction made mid-investigation: AnthropicModel has no generate_raw_response at
+any temperature, so it can never provide deepeval's weighted-averaging mechanism
+regardless of how it's configured; a low-variance result on this one canary at T=0
+would not have generalized into "pin Haiku's temperature and the problem is solved."
+Given that, the narrower attribution value wasn't judged worth the added complexity --
+and, as it happened, the arm was also blocked by a real deepeval/anthropic SDK
+incompatibility (explicit `temperature` combined with `thinking={'type': 'disabled'}`
+raised `TypeError: AsyncMessages.create() got an unexpected keyword argument
+'temperature'` against the installed anthropic==1.4.0, confirmed by an actual dispatch
+that got one real anthropic_prod shot before hitting this on the first anthropic_t0
+shot). Left as a known trail rather than fixed, since the arm no longer earns its cost.
 
 The canary's input is verbatim from the real `2-superpowers-tdd-precedence` scenario
 (eval/scenarios/2_scenarios.json), scored against rubric_2's FULL, unscoped rubric --
@@ -57,29 +64,30 @@ everywhere else to talk about judge instability (#136's own framing,
 eval/aggregate.py's verdict_unstable, run-ab-eval.sh's Fisher exact). Raw scores are
 still recorded and reported for descriptive context, not as the decision driver.
 
-TEMPERATURE: see the arms described above. A THIRD critic pass found that pinning both
+TEMPERATURE: see the arms described above. A third critic pass found that pinning both
 original two arms to temperature=0.0 removed Anthropic's own production variance
 entirely (Haiku runs at the API default, 1.0, in every real eval), so the comparison no
 longer measured the judge the operator is actually deciding whether to replace. The
-anthropic_prod arm fixes this; anthropic_t0 is kept as the attribution control that
-finding recommended.
+anthropic_prod arm fixes this by leaving temperature unset; openai still pins to 0.0,
+matching its own real default rather than something imposed for this probe.
 
 PRE-REGISTERED N AND DECISION RULE (fixed before any dispatch -- logic lives in
 eval.judge_variance.decide_go, unit-tested in tests/test_judge_variance_logic.py, whose
 own docstring records this rule's history: wrong twice, for opposite reasons, before
 any real dispatch happened):
 
-- N = 10 shots per arm, interleaved across all three arms.
-- "Go": decide_go(anthropic_fail, openai_fail) using the anthropic_prod and openai
-  arms only. Requires: (1) the Anthropic arm's failures are MIXED -- between 2 and 8 of
-  10, not near either extreme (unanimous or near-unanimous failure is uniform
-  disagreement with the judge, not instability -- a third critic pass found the
-  floor-only version of this rule returned GO at 10-vs-9, which really means the
-  canary is bad); (2) the OpenAI arm fails at most 1 of 10 times; (3) OpenAI fails
-  strictly fewer times than Anthropic.
+- N = 10 shots per arm, interleaved across both arms.
+- "Go": decide_go(anthropic_fail, openai_fail). Requires: (1) the Anthropic arm's
+  failures are MIXED -- between 2 and 8 of 10, not near either extreme (unanimous or
+  near-unanimous failure is uniform disagreement with the judge, not instability -- a
+  third critic pass found the floor-only version of this rule returned GO at 10-vs-9,
+  which really means the canary is bad); (2) the OpenAI arm fails at most 1 of 10
+  times; (3) OpenAI fails strictly fewer times than Anthropic.
 - A GO result is DIRECTIONAL, warranting a larger-N confirmation -- not a signal to
-  proceed straight to the CI/docs steps it's nominally gated on. Read alongside the
-  anthropic_t0 control before drawing any conclusion.
+  proceed straight to the CI/docs steps it's nominally gated on. It says OpenAI scored
+  more consistently than Anthropic on this one input; it does not, on its own, say why
+  (the logprob mechanism vs. OpenAI's lower default temperature are both still live
+  explanations -- see the dropped anthropic_t0 arm, above).
 - READ THE FAILURE REASONS before treating any result as meaningful either way. A
   fourth critic pass, after running this exact canary's TypeScript for real, confirmed
   it still has a genuine, likely-unresolvable tension with the full rubric on THIS
@@ -99,12 +107,13 @@ any real dispatch happened):
 
 OBSERVABILITY (S4, added after a third critic pass): each shot is appended to a JSONL
 file in eval/results/ as it completes, and the markdown report is written in a
-`finally` block from whatever shots exist -- 30 real API calls across three arms means
-an exception on a late shot must not lose every earlier shot's data. Score formatting
-is None-safe, since a judge call can legitimately return no score.
+`finally` block from whatever shots exist -- an exception on a late shot must not lose
+every earlier shot's data. Score formatting is None-safe, since a judge call can
+legitimately return no score. This is what caught the anthropic_t0 SDK failure above
+without losing the one real anthropic_prod shot that ran before it.
 
 COST: gpt-4o-mini and Haiku calls on this short canary are a small fraction of a cent
-each; 30 shots total is well under the run-evals.sh full-sweep budget. Still gated on
+each; 20 shots total is well under the run-evals.sh full-sweep budget. Still gated on
 explicit human go-ahead before dispatch, same as every other paid step in this
 investigation -- this file must not be added to any CI job or default-suite path.
 
@@ -125,12 +134,12 @@ from typing import Any
 
 import pytest
 from deepeval.metrics import GEval
-from deepeval.models import AnthropicModel, OpenAIModel
+from deepeval.models import OpenAIModel
 from deepeval.test_case import LLMTestCase, LLMTestCaseParams
 
 from eval.abstats import fisher_exact_two_tailed
 from eval.judge_variance import decide_go
-from eval.judges import ANTHROPIC_JUDGE_MODEL_NAME, OPENAI_JUDGE_MODEL_NAME, anthropic_judge_model
+from eval.judges import OPENAI_JUDGE_MODEL_NAME, anthropic_judge_model
 from eval.reporter import compute_shot_stats
 from eval.rubrics import rubric_2
 
@@ -142,7 +151,6 @@ N_SHOTS_PER_ARM = 10
 PROBE_TEMPERATURE = 0.0
 
 ARM_ANTHROPIC_PROD = "anthropic_prod"
-ARM_ANTHROPIC_T0 = "anthropic_t0"
 ARM_OPENAI = "openai"
 
 # Verbatim from eval/scenarios/2_scenarios.json's "2-superpowers-tdd-precedence" input.
@@ -306,9 +314,8 @@ class TestJudgeVarianceCanary190:
 
     def test_interleaved_pass_rate_by_provider(self):
         anthropic_prod = anthropic_judge_model()
-        anthropic_t0 = AnthropicModel(model=ANTHROPIC_JUDGE_MODEL_NAME, temperature=PROBE_TEMPERATURE)
         openai = OpenAIModel(model=OPENAI_JUDGE_MODEL_NAME, temperature=PROBE_TEMPERATURE)
-        arms = {ARM_ANTHROPIC_PROD: anthropic_prod, ARM_ANTHROPIC_T0: anthropic_t0, ARM_OPENAI: openai}
+        arms = {ARM_ANTHROPIC_PROD: anthropic_prod, ARM_OPENAI: openai}
 
         # Read the actual temperature off each constructed client, not assumed --
         # anthropic_prod's is whatever eval.judges.anthropic_judge_model() leaves it as
@@ -326,7 +333,7 @@ class TestJudgeVarianceCanary190:
         shots_by_arm: dict[str, list[dict]] = {name: [] for name in arms}
         try:
             with open(shots_path, "a") as shot_log:
-                # Interleaved across all three arms, not sequential per arm: controls
+                # Interleaved across both arms, not sequential per arm: controls
                 # for API-side drift over the run's duration, same discipline
                 # run-ab-eval.sh uses.
                 for _ in range(N_SHOTS_PER_ARM):
