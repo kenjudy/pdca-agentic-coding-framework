@@ -88,3 +88,17 @@ scoring only the first line of a 1553-character response and reporting that the 
 absent. Treat it as a known red, not as a regression you introduced.
 
 `4-short-session` carries high variance (mean 0.5667, stddev 0.3215) and passes on the mean.
+
+## Judge-variance probe artifacts (#190 Plan B)
+
+`judge-variance-190/` holds dispatched results from `tests/test_judge_variance_190.py`, the
+Anthropic-vs-OpenAI judge-model probe. These are **not** scenario baselines: they score one
+fixed (input, output) pair against two judge arms, not a full sweep, so they are outside the
+`report_*.md` naming convention above and outside `test_baseline_exists_for_every_scenario`'s
+coverage requirement — saved here only because `eval/baselines/` is this repo's one tracked,
+non-gitignored home for a paid run's output (`eval/results/` is not tracked; see above). Do not
+read them as baselines to compare a future prompt change against.
+
+- `judge_variance_190_case2_20260923_154200.md` — CI run
+  [`35883439394`](https://github.com/kenjudy/pdca-agentic-coding-framework/actions/runs/35883439394),
+  the `2-first-step` generalization check referenced in `CHANGELOG.md`'s Plan B entry.

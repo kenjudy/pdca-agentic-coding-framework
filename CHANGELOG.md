@@ -130,23 +130,30 @@
     raised without crossing threshold. The signal survives discounting the known
     confound; still a directional result from n=10/arm on one fixed input, not a
     confirmed finding — see the generalization check below.
-  - **Generalization check added, not yet dispatched:** a second fixed pair
-    (`CASE2_INPUT`/`CASE2_OUTPUT`, a new `test_interleaved_pass_rate_by_provider_
-    case2_first_step` method reusing the same `_run_one_shot`/`_write_report`/
-    `decide_go` machinery) asks whether the canary's GO result is specific to that one
-    hand-written input or holds on a different one. Reuses a real, previously-scored
-    response verbatim from a saved baseline (`eval/baselines/report_20260909_174245.md`,
-    scenario `2-first-step`, unscoped — unaffected by Plan A, confirmed byte-identical
-    to `eval/scenarios/2_scenarios.json`'s real input) rather than a hand-written second
-    canary, deliberately avoiding the exact mistake that took four CHECK-phase passes to
-    fix for the first one. The reused response has a real, judge-acknowledged defect
-    (Haiku scored it 0.70, noting it truncates mid-implementation before the handoff
-    phrase) — used as-is, imperfections included, since the question is judge
-    consistency on real text, not whether this specific response is exemplary. Requires
-    separate explicit go-ahead before dispatch.
-- **Not yet done:** the paid local validation itself; the CI workflow/docs plumbing that
-  depends on its result; and updating/filing the GH issue capturing this investigation's
-  residual open concerns, deferred until both Plan A and Plan B are complete. Also open,
+  - **Generalization check dispatched (CI run
+    [`35883439394`](https://github.com/kenjudy/pdca-agentic-coding-framework/actions/runs/35883439394)):
+    real result obtained, null.** A second fixed pair (`CASE2_INPUT`/`CASE2_OUTPUT`, a
+    `test_interleaved_pass_rate_by_provider_case2_first_step` method reusing the same
+    `_run_one_shot`/`_write_report`/`decide_go` machinery) asks whether the canary's GO
+    result is specific to that one hand-written input or holds on a different one.
+    Reuses a real, previously-scored response verbatim from a saved baseline
+    (`eval/baselines/report_20260909_174245.md`, scenario `2-first-step`, unscoped —
+    unaffected by Plan A, confirmed byte-identical to `eval/scenarios/2_scenarios.json`'s
+    real input) rather than a hand-written second canary, deliberately avoiding the exact
+    mistake that took four CHECK-phase passes to fix for the first one. The reused
+    response has a real, judge-acknowledged defect (truncates mid-Test-4, before the
+    handoff phrase). **Result:** `anthropic_prod` 8/10 passed (mean=0.60, stddev=0.22) —
+    all 10 shots' reasoning explicitly cites the truncation; `openai` 10/10 passed
+    (mean=0.69, stddev=0.09) — none of the 10 shots' reasoning mentions it. Fisher exact
+    p=0.4737 — not significant. Read plainly, OpenAI missed a real defect every single
+    Anthropic shot caught; its higher pass rate here reflects being less discriminating
+    on this input, not more reliable. Full report saved at
+    `eval/baselines/judge-variance-190/judge_variance_190_case2_20260923_154200.md`
+    (`eval/baselines/README.md`'s new "Judge-variance probe artifacts" section explains
+    why it lives there and not as a `report_*.md` baseline).
+- **Not yet done:** the CI workflow/docs plumbing that depends on a routing or adoption
+  decision; and updating/filing the GH issue capturing this investigation's residual open
+  concerns, deferred until both Plan A and Plan B are complete. Also open,
   deliberately not fixed: the judge/provenance-identity gap noted above (the probe
   bypasses `judge_model()` and the reporter fixture, but its `anthropic_prod` arm DOES
   use the shared provider cache via `anthropic_judge_model()` — a fourth CHECK pass
