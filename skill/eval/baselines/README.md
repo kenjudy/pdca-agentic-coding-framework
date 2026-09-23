@@ -102,3 +102,7 @@ read them as baselines to compare a future prompt change against.
 - `judge_variance_190_case2_20260923_154200.md` — CI run
   [`35883439394`](https://github.com/kenjudy/pdca-agentic-coding-framework/actions/runs/35883439394),
   the `2-first-step` generalization check referenced in `CHANGELOG.md`'s Plan B entry.
+- `judge_variance_190_negctrl_20260923_185712.md` — CI run
+  [`35905751337`](https://github.com/kenjudy/pdca-agentic-coding-framework/actions/runs/35905751337),
+  the #199 negative-control spike (an unambiguously non-compliant response, both arms scored
+  against `rubric_2`'s full unscoped rubric).

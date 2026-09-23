@@ -151,9 +151,45 @@
     `eval/baselines/judge-variance-190/judge_variance_190_case2_20260923_154200.md`
     (`eval/baselines/README.md`'s new "Judge-variance probe artifacts" section explains
     why it lives there and not as a `report_*.md` baseline).
+  - **Follow-up filed as #199, negative-control spike dispatched (CI run
+    [`35905751337`](https://github.com/kenjudy/pdca-agentic-coding-framework/actions/runs/35905751337)):
+    real result obtained, refutes the strong-leniency hypothesis, surfaces a different
+    one.** Neither prior run had ever shown either judge a response any evaluator with
+    the rubric in hand would call an obvious FAIL — both were either a genuinely good
+    response or a genuinely flawed-but-plausible one, so "OpenAI is more reliable" and
+    "OpenAI just passes things" looked identical on the evidence so far.
+    `NEGATIVE_CANARY_OUTPUT` (`test_interleaved_pass_rate_by_provider_negative_control`)
+    reuses `CANARY_INPUT` with a response that skips the DO phase's methodology outright
+    — no called-shot fields, no test, no RED phase, a completion claim with zero
+    verification — an unambiguous violation of every criterion at once. **Result:**
+    `anthropic_prod` 0/10 passed (mean=0.02, stddev=0.04, every shot scoring 0.00–0.10);
+    `openai` 2/10 passed (mean=0.29, stddev=0.12, 8 of 10 shots correctly scoring well
+    below threshold). Fisher p=0.4737 — not significant. **This refutes the strong
+    reading of the leniency hypothesis:** OpenAI does not pass an obviously bad response
+    at a high rate — its mean score here (0.29) is far below its mean on the genuinely
+    flawed case2 response (0.69) and the genuinely good canary (0.92), so it clearly
+    discriminates. What survives is a narrower, mechanistic difference: across all three
+    runs, OpenAI's scores are consistently less extreme than Anthropic's in both
+    directions — never as low as Anthropic's most damning scores (0.00–0.20 here;
+    Anthropic never once penalized the canary's required handoff phrase below 0.20
+    either, it just did so inconsistently) and never as low as warranted on case2's real
+    defect. This is consistent with the structural difference plan review flagged before
+    any dispatch (continuous logprob-weighted scoring vs. unweighted integer /10):
+    a smoother distribution avoids some of Anthropic's flip-flopping on unambiguous
+    criteria (the canary's win) at the cost of under-penalizing real defects near the
+    threshold (case2 and, partially, here). Full report saved at
+    `eval/baselines/judge-variance-190/judge_variance_190_negctrl_20260923_185712.md`.
+  - **Overall verdict across all three real dispatches: do not adopt `PDCA_EVAL_JUDGE=
+    openai` anywhere off this evidence.** No dispatch shows OpenAI unconditionally more
+    reliable; the pattern is context-dependent in a way that isn't yet actionable as a
+    routing rule (#199's own interpretation table anticipated exactly this ambiguous
+    outcome and named it as "worth a second, differently-shaped negative control before
+    drawing a general conclusion" rather than a stopping point). `2-superpowers-tdd-
+    precedence`'s original flakiness (#190's Problem 1) remains unresolved; a judge swap
+    is not shown to fix it without introducing a new failure mode (under-detecting real
+    defects near the pass threshold).
 - **Not yet done:** the CI workflow/docs plumbing that depends on a routing or adoption
-  decision; and updating/filing the GH issue capturing this investigation's residual open
-  concerns, deferred until both Plan A and Plan B are complete. Also open,
+  decision (none currently justified). Also open,
   deliberately not fixed: the judge/provenance-identity gap noted above (the probe
   bypasses `judge_model()` and the reporter fixture, but its `anthropic_prod` arm DOES
   use the shared provider cache via `anthropic_judge_model()` — a fourth CHECK pass
