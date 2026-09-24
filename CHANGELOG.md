@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+### Dependency updates
+
+- `ruff` floor bumped to `>=0.16.8` (Dependabot). `uv.lock` regenerated to match — the
+  bare bound bump alone left the lockfile stale and failing `uv sync --locked` in CI.
+
 ### install-skill.sh / install-skill.ps1 now install the per-phase slash commands (#194)
 
 - `install-skill.sh`/`.ps1` extracted the skill zip but never placed the five per-phase
