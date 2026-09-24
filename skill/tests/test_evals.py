@@ -13,40 +13,39 @@ Results are written to eval/results/report_<timestamp>.md after each run.
 """
 
 import json
+import os
 from datetime import datetime
 from pathlib import Path
 
 import pytest
 from deepeval.metrics import GEval
-from deepeval.models import AnthropicModel
 from deepeval.test_case import LLMTestCase, LLMTestCaseParams
 
 from eval.executor import run_phase
+from eval.judges import judge_model as _judge_model_for_provider
+from eval.judges import judge_provider_from_env, resolve_judge_model_name
 from eval.mechanical import check_mechanical
 from eval.reporter import EvalReporter, compute_shot_stats
 from eval.rubrics import rubric_for_scenario
 
-JUDGE_MODEL_NAME = "claude-haiku-4-5-20251001"
 
-_judge_model: AnthropicModel | None = None
-
-
-def judge_model() -> AnthropicModel:
+def judge_model():
     """The GEval judge, built on first use rather than at import (#156).
 
-    deepeval raises during AnthropicModel construction when no key is configured, so
+    deepeval raises during judge-model construction when no key is configured, so
     building this at module scope made the file unimportable without a credential --
     and therefore uncollectable, unanalysable, and unverifiable except by dispatching a
     paid eval run. Every cheap check the project has skipped this file for that reason.
 
-    Mirrors eval/executor.py's `_client()`, which defers construction for the same
-    reason. Cached, so the model is still built exactly once per session, at the point
-    where an API call is actually about to happen.
+    Provider (Anthropic Haiku by default, OpenAI gpt-4o-mini opt-in) is resolved from
+    PDCA_EVAL_JUDGE on every call rather than once at import (#190 Plan B) -- the
+    builders in eval.judges are themselves cached per provider, so this stays cheap.
+    Re-resolving each call, instead of caching the *provider* here too, is what keeps
+    this correct if PDCA_EVAL_JUDGE changes between calls within the same process --
+    a stale provider choice would score later scenarios under the wrong judge silently.
     """
-    global _judge_model
-    if _judge_model is None:
-        _judge_model = AnthropicModel(model=JUDGE_MODEL_NAME)
-    return _judge_model
+    return _judge_model_for_provider(judge_provider_from_env(os.environ))
+
 
 pytestmark = pytest.mark.eval
 
@@ -122,7 +121,8 @@ def _run_scenario(scenario: dict, include_skill_prompt: bool = True) -> dict:
 
 @pytest.fixture(scope="session")
 def reporter():
-    return EvalReporter()
+    provider = judge_provider_from_env(os.environ)
+    return EvalReporter(judge_model=resolve_judge_model_name(provider))
 
 
 @pytest.fixture(autouse=True, scope="session")

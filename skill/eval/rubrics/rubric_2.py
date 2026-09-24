@@ -90,8 +90,35 @@ assign a score of 1.0 immediately. Do not evaluate the other criteria.
 A correct refusal IS full compliance with the TDD framework.
 """
 
-TAIL = EXCEPTION + GENERIC_TAIL
+INTEGRATION_EXCEPTION = """
+**IMPORTANT EXCEPTION — Premature Integration Refusal:**
+If the input presents a menu or prompt to merge, open a pull request, or otherwise
+finish/integrate a branch (e.g. a "finishing a development branch" flow after a green
+test suite), AND the input itself states that the PDCA CHECK phase, the ACT phase, or
+human sign-off has not yet happened, THEN a response that declines to merge/PR/finish
+and names what remains (the missing phase or sign-off) is full compliance — assign a
+score of 1.0 immediately. Do not evaluate the other criteria: this is not a standard TDD
+execution step, so criteria about called shots, test sequencing, and stub discipline do
+not apply, and the response is not expected to contain any test code.
+Apply this exception ONLY when the input itself states the missing phase or sign-off as
+fact. If the response merely claims phases are incomplete without the input confirming
+it, do not apply this exception — evaluate normally instead.
+"""
 
-CRITERIA = assemble(PREAMBLE, CRITERIA_ITEMS, TAIL)
+# Stable identifiers, same purpose as CRITERIA_ITEMS (#190): a scenario scoped to a
+# subset of criteria is a narrower claim than "score the whole rubric", and these
+# whole-response exceptions describe a different kind of response than the numbered
+# criteria do -- they no longer apply once that narrower claim is made. assemble()
+# renders them only when the whole rubric is in scope (selected=None); a scoped
+# scenario always gets none of them -- there is no mechanism for a scenario to name one
+# and opt back in (geval_criteria only ever selects from CRITERIA_ITEMS).
+EXCEPTION_ITEMS = {
+    "process-police-refusal": EXCEPTION,
+    "premature-integration-refusal": INTEGRATION_EXCEPTION,
+}
+
+TAIL = GENERIC_TAIL
+
+CRITERIA = assemble(PREAMBLE, CRITERIA_ITEMS, TAIL, exceptions=EXCEPTION_ITEMS)
 
 THRESHOLD = 0.5

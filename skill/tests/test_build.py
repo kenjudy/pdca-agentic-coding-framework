@@ -1396,7 +1396,7 @@ class TestHookInfrastructure(unittest.TestCase):
     def test_judge_model_is_not_constructed_at_module_scope(self):
         """tests/test_evals.py must be importable without a credential (#156).
 
-        deepeval raises during AnthropicModel construction when no key is present, so a
+        deepeval raises during judge-model construction when no key is present, so a
         module-scope judge makes the file unimportable, uncollectable, and unanalysable
         without a secret -- which is why every cheap check has skipped it and why every
         edit to it has been unverifiable except by paying for an eval run.
@@ -1404,10 +1404,24 @@ class TestHookInfrastructure(unittest.TestCase):
         Checked by parsing the source rather than importing it. Importing is the thing
         that does not work, and this test has to run in the default suite, which installs
         neither deepeval nor a key.
+
+        Checks for calls to judge_model()/anthropic_judge_model()/openai_judge_model()
+        as well as the direct deepeval classes (#190 Plan B): after judges.py's
+        extraction, a module-scope `X = judge_model()` line in test_evals.py would
+        construct a real client just as eagerly as a module-scope `AnthropicModel(...)`
+        call did before #156 -- confirmed by injecting exactly that line and finding
+        this guard, before this fix, did not catch it.
         """
         import ast
 
         source = (CLAUDE_SKILL_DIR / "tests" / "test_evals.py").read_text()
+        offending_names = (
+            "AnthropicModel",
+            "OpenAIModel",
+            "judge_model",
+            "anthropic_judge_model",
+            "openai_judge_model",
+        )
         offenders = []
         for node in ast.parse(source).body:
             # A function body runs when called, not when the module is imported, so a
@@ -1419,13 +1433,44 @@ class TestHookInfrastructure(unittest.TestCase):
                     continue
                 func = call.func
                 name = getattr(func, "id", None) or getattr(func, "attr", None)
-                if name == "AnthropicModel":
-                    offenders.append(getattr(node, "lineno", "?"))
+                if name in offending_names:
+                    offenders.append((name, getattr(node, "lineno", "?")))
         self.assertEqual(
             offenders,
             [],
-            f"tests/test_evals.py constructs AnthropicModel at module scope (line(s) "
-            f"{offenders}), so importing the module requires an API key",
+            f"tests/test_evals.py constructs a judge model at module scope {offenders}, "
+            f"so importing the module requires an API key",
+        )
+
+    def test_eval_judges_module_does_not_construct_at_module_scope(self):
+        """eval/judges.py must be importable without a credential (#190 Plan B).
+
+        #156's fix moved judge construction out of tests/test_evals.py's module scope;
+        #190 Plan B moved the construction itself into eval/judges.py, a module the
+        default suite (and eval/rubrics, eval/reporter, etc.) can import freely. That
+        invariant now lives here, not in tests/test_evals.py -- the guard above no
+        longer sees it. Checks for both AnthropicModel and OpenAIModel, since this
+        module builds both providers.
+        """
+        import ast
+
+        source = (CLAUDE_SKILL_DIR / "eval" / "judges.py").read_text()
+        offenders = []
+        for node in ast.parse(source).body:
+            if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                continue
+            for call in ast.walk(node):
+                if not isinstance(call, ast.Call):
+                    continue
+                func = call.func
+                name = getattr(func, "id", None) or getattr(func, "attr", None)
+                if name in ("AnthropicModel", "OpenAIModel"):
+                    offenders.append((name, getattr(node, "lineno", "?")))
+        self.assertEqual(
+            offenders,
+            [],
+            f"eval/judges.py constructs a judge model at module scope {offenders}, so "
+            f"importing the module requires an API key",
         )
 
     def test_eval_collection_needs_no_api_key(self):

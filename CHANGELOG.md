@@ -2,6 +2,275 @@
 
 ## Unreleased
 
+### Added: OpenAI judge-model support for the eval harness, gated behind an opt-in env var (#190 Plan B, steps 0-5)
+
+- **Six review passes before any paid dispatch** (documented in the session, not a
+  file): two Opus plan-review passes, then four Opus CHECK-phase passes, each
+  mutation-testing the real code rather than reading it. Plan review found: no
+  instrument existed to compare judge models at all; the proposed statistic (raw score
+  stddev) is confounded by construction, since deepeval's OpenAI-judge path returns a
+  continuous logprob-weighted score while the Anthropic-judge path returns an
+  unweighted integer score /10 — a less-constrained distribution reads as
+  lower-variance than a more-constrained one either way, so "OpenAI arm has lower
+  stddev" was the predicted outcome under both the hypothesis and the null; and the
+  core premise (Anthropic judges silently fall back to unweighted scoring) was asserted
+  but never verified against the installed package. First CHECK pass found: a guard
+  test that built its own model from a duplicated constant, so mutating the real one
+  left it passing; a canary not actually compliant with the full rubric it was scored
+  on; a go/no-go rule that returned GO at 1-vs-1 failures; an unmatched-temperature
+  confound between the two judges. Second CHECK pass, after those fixes landed, found
+  the canary fix had introduced NEW violations (see below), and two further defects
+  that would have made a paid dispatch actively misleading rather than just
+  inconclusive: pinning both arms to the same temperature also removed Anthropic's own
+  production variance, so neither arm any longer corresponded to the judge actually in
+  production use; and the "fixed" decision rule had dropped an upper bound, so it
+  returned GO even at 10-vs-9 failures — unanimous or near-unanimous Anthropic failure,
+  which is uniform disagreement with the judge, not instability. Both fixed. A fourth
+  CHECK pass then verified those fixes by execution — running the canary's actual
+  TypeScript against a real Vitest install rather than reasoning about it — and
+  confirmed all three were genuine this time, while finding three cheap should-fix
+  items (the JSONL log didn't record which arm each line belonged to; the report had
+  dropped model-name/temperature provenance after the arm rewrite; `decide_go()` wasn't
+  passed the probe's actual shot count, relying on a default that happened to match)
+  and one factual error carried over from the third pass's own suggested fix text (a
+  Vitest assertion message rendering `0` as `+0`, verified directly against real Vitest
+  output across four major versions). All four fixed. See
+  `tests/test_judge_variance_logic.py`'s own docstring, which records `decide_go()`'s
+  history as a caution against tuning a decision rule after seeing a result.
+- **New `eval/judges.py`** consolidates judge-model selection: `judge_provider_from_env()`
+  (defaults to `"anthropic"`; explicit `PDCA_EVAL_JUDGE=openai` opts in; anything else
+  raises `UnknownJudgeProvider` rather than silently falling back), `anthropic_judge_model()`
+  (extracted, zero behavior change, from `tests/test_evals.py`'s prior `judge_model()`),
+  `openai_judge_model()`, and `resolve_judge_model_name()` (a pure name resolver so
+  `EvalReporter`'s provenance field, added in step 0, can record which judge produced a
+  report without constructing a client). Cached per provider, not a single module global,
+  so `PDCA_EVAL_JUDGE` changing mid-session cannot silently return a stale client.
+- **`tests/test_evals.py`'s real harness now honors `PDCA_EVAL_JUDGE`** for scoring.
+  **Known gap, not yet closed:** the reporter's provenance line and `judge_model()`
+  resolve the provider through separate calls (the fixture once at session start,
+  `judge_model()` per call), so nothing currently guarantees they agree if the env var
+  changed between them, and no test asserts the provenance name matches the class of
+  judge actually constructed. Flagged by mutation-testing it (swapping providers/model
+  names in the dispatch logic left the full suite green); left open for a follow-up
+  pass — see "Not yet done" below for why it's safe to defer past the next step.
+- **Judge model: `gpt-4o-mini`, not the newer/cheaper `gpt-5.4-mini` or `gpt-4.1-mini`.**
+  Checked directly against `deepeval`'s installed model registry: every GPT-5.x mini/nano
+  variant has `supports_log_probs=False` (only full-size `gpt-5.4` keeps it in that
+  generation, at $2.50/$15.00 per M tokens), and `gpt-4.1-mini` already has an announced
+  OpenAI API cutoff (2026-10-14). `gpt-4o-mini` ($0.15/$0.60 per M) is the cheapest
+  currently-available model that still exercises the logprob-weighted path this
+  investigation is testing, with no announced API-level retirement as of writing — but no
+  committed lifespan either. If it is deprecated, `test_eval_imports.py`'s guard test
+  below is the tripwire: swapping to whatever replaces it without re-checking
+  `supports_log_probs` will very likely fail that test outright, since every other
+  newer/smaller OpenAI model observed here has dropped the capability.
+- **Free guard test** (`tests/test_eval_imports.py::test_openai_judge_supports_log_probs`):
+  asserts the OpenAI judge is not flagged by `no_log_prob_support()` *and* still has
+  `generate_raw_response` — two checks, not one, because `no_log_prob_support()` alone
+  does not discriminate what this needs: reading its source directly shows it returns
+  `False` for any model type it does not specifically recognize (only `str`/`OpenAIModel`/
+  `AzureOpenAIModel` are inspected), so it returns `False` for `AnthropicModel` too, despite
+  Anthropic not supporting the weighted path. Built via the real `openai_judge_model()`
+  production builder, not a hand-rolled construction from a locally duplicated model-name
+  constant — an earlier version did the latter, and a mutation swapping the real constant
+  to a non-logprob-capable model left it passing undetected.
+- **Paid validation harness (`tests/test_judge_variance_190.py`, excluded from the
+  default suite and from `run-evals.sh`'s sweep): dispatched, real result obtained; a
+  second, generalization-check case added and not yet dispatched.** A pinned canary, a
+  genuine two-cycle response (present-header test+implementation, then absent-header
+  test+implementation — matching how this repo's real scenarios legitimately earn
+  "Implementation finished, moving to CHECK phase" by completing every test the step
+  specifies in one turn), reusing `2-superpowers-tdd-precedence`'s real input verbatim,
+  scored against `rubric_2`'s full *unscoped* rubric to sidestep Plan A's TAIL-scoping fix
+  entirely. Isolates judge variance alone on a fixed response; does not reproduce #136's
+  original 0.00–0.90 finding exactly, since those runs generated a fresh executor response
+  each shot and so mixed output variance with judge variance — a narrower, cheaper first
+  question, stated as such. **Two interleaved arms:** `anthropic_prod` (Haiku via the
+  same cached production builder the real harness uses, unset temperature — the judge
+  actually in use today) and `openai` (gpt-4o-mini, `temperature=0.0`, matching its own
+  default). 10 shots per arm. The go/no-go rule (`eval/judge_variance.py::decide_go`,
+  unit-tested in `tests/test_judge_variance_logic.py`, 10 tests) requires the Anthropic
+  arm's failures to be MIXED (2–8 of 10, not near either extreme — unanimous or
+  near-unanimous failure is uniform disagreement with the judge, not instability), the
+  OpenAI arm to fail at most 1 of 10 times, and OpenAI to fail strictly fewer times than
+  Anthropic. Each shot is appended to a JSONL log — carrying which arm it belongs to —
+  as it completes, and the report is written from a `finally` block with None-safe
+  score formatting and each arm's actual model name and temperature (read off the
+  constructed client), so an exception on a late shot doesn't lose earlier data. The
+  dispatch command includes `--extra eval` (the bare form fails after `run-tests.sh`'s
+  own sync strips that extra, reproduced before fixing it).
+  - **A third arm (`anthropic_t0`, Haiku pinned to `temperature=0.0`, an attribution
+    control) was built, dispatched once, and then dropped.** The dispatch (via a
+    throwaway CI branch and workflow, since no local API keys are available in this
+    session and the real workflow doesn't run this probe) got exactly one real shot —
+    `anthropic_prod`, scoring 0.10/FAIL, docked for declaring "Implementation finished"
+    as premature despite that being the rubric's own required exact handoff phrase —
+    before crashing on the first `anthropic_t0` shot with a genuine `deepeval`/`anthropic`
+    SDK incompatibility (explicit `temperature` combined with `thinking={'type':
+    'disabled'}` raises `TypeError: AsyncMessages.create() got an unexpected keyword
+    argument 'temperature'` against installed `anthropic==1.4.0`) — caught cleanly by
+    the checkpointing above rather than losing the one real shot. Investigating that bug
+    was set aside after reconsidering the arm's actual value: `AnthropicModel` has no
+    `generate_raw_response` at any temperature, so it can never provide the
+    weighted-averaging mechanism this whole investigation is about, regardless of
+    configuration — a low-variance result on this one canary at T=0 would only have
+    shown that temperature reduces noise on this input, not that the underlying
+    mechanism gap closes. The arm's only honest value was as an attribution control
+    (separating "OpenAI looks more stable because of the mechanism" from "OpenAI looks
+    more stable because of its lower default temperature"), and that narrower value
+    wasn't judged worth the SDK-bug investigation. Dropped; not re-fixed.
+  - **Re-dispatched with the 2-arm design (via the same throwaway CI branch/workflow):
+    real result obtained.** `anthropic_prod` 5/10 passed (mean=0.53, stddev=0.34);
+    `openai` 10/10 passed (mean=0.92, stddev=0.10); Fisher exact p=0.0325. Pre-registered
+    go/no-go: **GO**. Reading the failure reasons, per the probe's own rule: of
+    Anthropic's 5 failures, 2 cited the known degenerate-first ambiguity (discount per
+    the rule) and 3 cited the response's exact required handoff phrase as a premature-
+    completion violation — a distinct, unambiguous criterion Anthropic's own *passing*
+    shots correctly credit the identical text for, and one OpenAI's lowest-scoring shot
+    raised without crossing threshold. The signal survives discounting the known
+    confound; still a directional result from n=10/arm on one fixed input, not a
+    confirmed finding — see the generalization check below.
+  - **Generalization check dispatched (CI run
+    [`35883439394`](https://github.com/kenjudy/pdca-agentic-coding-framework/actions/runs/35883439394)):
+    real result obtained, null.** A second fixed pair (`CASE2_INPUT`/`CASE2_OUTPUT`, a
+    `test_interleaved_pass_rate_by_provider_case2_first_step` method reusing the same
+    `_run_one_shot`/`_write_report`/`decide_go` machinery) asks whether the canary's GO
+    result is specific to that one hand-written input or holds on a different one.
+    Reuses a real, previously-scored response verbatim from a saved baseline
+    (`eval/baselines/report_20260909_174245.md`, scenario `2-first-step`, unscoped —
+    unaffected by Plan A, confirmed byte-identical to `eval/scenarios/2_scenarios.json`'s
+    real input) rather than a hand-written second canary, deliberately avoiding the exact
+    mistake that took four CHECK-phase passes to fix for the first one. The reused
+    response has a real, judge-acknowledged defect (truncates mid-Test-4, before the
+    handoff phrase). **Result:** `anthropic_prod` 8/10 passed (mean=0.60, stddev=0.22) —
+    all 10 shots' reasoning explicitly cites the truncation; `openai` 10/10 passed
+    (mean=0.69, stddev=0.09) — none of the 10 shots' reasoning mentions it. Fisher exact
+    p=0.4737 — not significant. Read plainly, OpenAI missed a real defect every single
+    Anthropic shot caught; its higher pass rate here reflects being less discriminating
+    on this input, not more reliable. Full report saved at
+    `eval/baselines/judge-variance-190/judge_variance_190_case2_20260923_154200.md`
+    (`eval/baselines/README.md`'s new "Judge-variance probe artifacts" section explains
+    why it lives there and not as a `report_*.md` baseline).
+  - **Follow-up filed as #199, negative-control spike dispatched (CI run
+    [`35905751337`](https://github.com/kenjudy/pdca-agentic-coding-framework/actions/runs/35905751337)):
+    real result obtained, refutes the strong-leniency hypothesis, surfaces a different
+    one.** Neither prior run had ever shown either judge a response any evaluator with
+    the rubric in hand would call an obvious FAIL — both were either a genuinely good
+    response or a genuinely flawed-but-plausible one, so "OpenAI is more reliable" and
+    "OpenAI just passes things" looked identical on the evidence so far.
+    `NEGATIVE_CANARY_OUTPUT` (`test_interleaved_pass_rate_by_provider_negative_control`)
+    reuses `CANARY_INPUT` with a response that skips the DO phase's methodology outright
+    — no called-shot fields, no test, no RED phase, a completion claim with zero
+    verification — an unambiguous violation of every criterion at once. **Result:**
+    `anthropic_prod` 0/10 passed (mean=0.02, stddev=0.04, every shot scoring 0.00–0.10);
+    `openai` 2/10 passed (mean=0.29, stddev=0.12, 8 of 10 shots correctly scoring well
+    below threshold). Fisher p=0.4737 — not significant. **This refutes the strong
+    reading of the leniency hypothesis:** OpenAI does not pass an obviously bad response
+    at a high rate — its mean score here (0.29) is far below its mean on the genuinely
+    flawed case2 response (0.69) and the genuinely good canary (0.92), so it clearly
+    discriminates. What survives is a narrower, mechanistic difference: across all three
+    runs, OpenAI's scores are consistently less extreme than Anthropic's in both
+    directions — never as low as Anthropic's most damning scores (0.00–0.20 here;
+    Anthropic never once penalized the canary's required handoff phrase below 0.20
+    either, it just did so inconsistently) and never as low as warranted on case2's real
+    defect. This is consistent with the structural difference plan review flagged before
+    any dispatch (continuous logprob-weighted scoring vs. unweighted integer /10):
+    a smoother distribution avoids some of Anthropic's flip-flopping on unambiguous
+    criteria (the canary's win) at the cost of under-penalizing real defects near the
+    threshold (case2 and, partially, here). Full report saved at
+    `eval/baselines/judge-variance-190/judge_variance_190_negctrl_20260923_185712.md`.
+  - **Overall verdict across all three real dispatches: do not adopt `PDCA_EVAL_JUDGE=
+    openai` anywhere off this evidence.** No dispatch shows OpenAI unconditionally more
+    reliable; the pattern is context-dependent in a way that isn't yet actionable as a
+    routing rule (#199's own interpretation table anticipated exactly this ambiguous
+    outcome and named it as "worth a second, differently-shaped negative control before
+    drawing a general conclusion" rather than a stopping point). `2-superpowers-tdd-
+    precedence`'s original flakiness (#190's Problem 1) remains unresolved; a judge swap
+    is not shown to fix it without introducing a new failure mode (under-detecting real
+    defects near the pass threshold).
+- **Not yet done:** the CI workflow/docs plumbing that depends on a routing or adoption
+  decision (none currently justified). Also open,
+  deliberately not fixed: the judge/provenance-identity gap noted above (the probe
+  bypasses `judge_model()` and the reporter fixture, but its `anthropic_prod` arm DOES
+  use the shared provider cache via `anthropic_judge_model()` — a fourth CHECK pass
+  found this matters in one specific way: if another test in the same pytest process
+  calls `anthropic_judge_model()` first with a dummy key, e.g.
+  `test_eval_imports.py::test_anthropic_judge_model_constructs_via_eval_judges`, the
+  cached client keeps that dummy key and the probe's own `anthropic_prod` shots fail
+  loudly with an auth error — not silent, and not a risk when the probe is dispatched
+  alone as documented, but worth closing before any co-dispatch); the provider-keyed
+  cache is still never tested for its own general hazard (two providers built in one
+  process not overwriting each other); and `PDCA_EVAL_JUDGE=openai` with no
+  `OPENAI_API_KEY` would fail only after a paid generation call already ran, in the
+  real per-scenario harness (not in this probe, which builds all three judges before
+  any shot).
+
+### Fixed: scoped scenarios leaked whole-response TAIL exceptions into their score (#190)
+
+- **A scenario that selects a subset of `rubric_2`'s criteria via `geval_criteria` still got
+  the full unscoped TAIL appended.** `rubric_2.TAIL` baked `EXCEPTION` (Process Police
+  Refusal) and `INTEGRATION_EXCEPTION` (Premature Integration Refusal) in unconditionally, so
+  `assemble()`'s `selected=` scoping — added by #148 to omit out-of-scope criteria entirely —
+  never reached them. A scoped scenario like `2-superpowers-tdd-precedence` (which selects
+  only `["called-shot"]`) was still shown both whole-response override blocks verbatim,
+  telling the judge it could award 1.0 immediately on refusal/integration conditions the
+  scenario never claims to be testing.
+- `assemble()` gained an `exceptions: Mapping[str, str] | None` parameter: exception text
+  renders only when `selected is None` (whole-rubric scoring); a scoped selection omits it,
+  matching how `CRITERIA_ITEMS` are already scoped. `rubric_2.py` now declares
+  `EXCEPTION_ITEMS = {"process-police-refusal": EXCEPTION, "premature-integration-refusal":
+  INTEGRATION_EXCEPTION}` and passes it through; `rubric_for_scenario` forwards
+  `getattr(module, "EXCEPTION_ITEMS", None)` so rubrics without exceptions are unaffected.
+- **Verified behavior-neutral for unscoped rendering:** the existing snapshot test pinning
+  `rubric_2.CRITERIA` byte-for-byte against the pre-decomposition string still passes
+  unmodified — whole-rubric scoring (every scenario before #148 opted in, and every scenario
+  today that doesn't set `geval_criteria`) renders identically.
+- **Blast radius confirmed by direct inspection, not assumption:** only
+  `rubric_2` / `2-superpowers-tdd-precedence` is affected. `rubric_1a` also builds a `TAIL`
+  with a whole-response `EXCEPTION`, but no scenario in `1a_scenarios.json` sets
+  `geval_criteria`, so it was never reachable — latent, not fixed here.
+  `rubric_1b`/`rubric_3`/`rubric_4` have no exception text in their `TAIL` at all.
+- **Paid interleaved canary re-check (6 runs, 3/arm) was inconclusive by design, not by
+  outcome.** The canary reused for this check was built for an earlier investigation to
+  trigger via degenerate-first sequencing, not via TAIL-exception leakage — both control
+  (pre-fix: 0.10/0.20/0.10) and treatment (post-fix: 0.20/0.20/0.20) scored low because the
+  judge penalized the same input-sequencing violation in every shot, not because of
+  `EXCEPTION`/`INTEGRATION_EXCEPTION` text. This run does not validate or invalidate the fix
+  either way; the fix's evidence is the RED→GREEN unit tests and the untouched snapshot
+  above. A canary isolating only the TAIL-exception leak channel remains undone.
+
+### Fixed: judge misread `2-superpowers-branch-finish` as a TDD execution step (#190)
+
+- **The judge scored a correct refusal at 0.00.** `generic_tail.py`'s own history shows this
+  exact scenario was the validation case for the prior "every criterion met" → "no criterion
+  violated" GENERIC_TAIL rewording — but #190 found it still scoring 0.00 across 3 shots.
+  Nothing told the judge that TDD-execution criteria (called shot, stub discipline,
+  degenerate-first) don't apply at all when the correct response is a refusal to merge,
+  containing no test code.
+- Added a second whole-response EXCEPTION to `rubric_2.py` (`INTEGRATION_EXCEPTION`),
+  structured like the existing Process Police Refusal exception: assigns 1.0 immediately
+  when the input presents a branch-finish/merge menu **and the input itself states** the
+  CHECK phase, ACT phase, or human sign-off is missing. Scoped to the input's own stated
+  facts rather than the response's claim, so a false refusal can't game it.
+- **Validated (CI run 35616990991):** `2-superpowers-branch-finish` went from 0.00×3
+  (baseline) to a clean 1.00.
+- **A companion fix for the same issue was tried and reverted.** #190 also flagged the judge
+  penalizing the required handoff phrase ("Implementation finished, moving to CHECK phase")
+  on `2-first-step`. A mechanical `must_not_contain` guard mirroring `2-after-passing-test`'s
+  was added, on the assumption that declaring the step "finished" after only the first test
+  was premature. The same CI run falsified this: this harness is single-turn, so the
+  executor legitimately completes the *entire* WebhookDelivery step — all validation and
+  persistence tests — in one response, correctly ending with the handoff phrase (GEval
+  scored all 3 shots ~0.9). Reverted; the false hypothesis and the CI run number are
+  recorded in the scenario's own `description` field so it isn't retried blind.
+- **Not yet done:** `2-superpowers-tdd-precedence`'s GEval variance (#190's "Problem 1")
+  remains open. The only cheap fix (`skip_geval: true`) was flagged as unsafe —
+  `called_shot_required` only confirms the six field *labels* are present, not whether they
+  were stated predictively or backfilled after the test, which is this scenario's whole
+  point. An interleaved A/B swapping the GEval judge model (Haiku 4.5 → Opus 4.6, matching
+  the executor's tier) showed both target scenarios moving the same direction but was
+  underpowered at n=6/arm (Fisher p = 1.0 and p = 0.455) — inconclusive, not adopted.
+
 ### Dependency updates
 
 - `python-dotenv` floor bumped to `>=1.2.3` (Dependabot). `uv.lock` regenerated to

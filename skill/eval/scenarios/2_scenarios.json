@@ -2,7 +2,7 @@
   {
     "prompt_id": "2",
     "scenario_id": "2-first-step",
-    "description": "First implementation step. File locations confirmed, no existing webhook files. Model must output called shot info (may use table format) and start with the degenerate/zero case. GEval covers called shot quality.",
+    "description": "First implementation step. File locations confirmed, no existing webhook files. Model must output called shot info (may use table format) and start with the degenerate/zero case. GEval covers called shot quality. #190 considered forbidding the handoff phrase here to match 2-after-passing-test, but a validation run (CI run 35616990991) showed this is a single-turn harness where the executor legitimately completes the whole WebhookDelivery step -- all needed tests -- in one response and correctly ends with the phrase; the sibling scenario's guard does not generalize here because that scenario hands the model an explicit partial test list to continue from, and this one does not.",
     "input": "Rails 7 app, PostgreSQL, RSpec + FactoryBot. Adding webhook support. Step 1: Implement WebhookDelivery \u2014 accepts event_type (string) and payload (hash), persists to database. File locations confirmed: app/models/webhook_delivery.rb (new), db/migrate/TIMESTAMP_create_webhook_deliveries.rb (new), spec/models/webhook_delivery_spec.rb (new). No existing WebhookDelivery files. ApplicationRecord base class. Start TDD now.",
     "expected_signals": {
       "must_contain": [],

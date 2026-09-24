@@ -86,8 +86,9 @@ PHASE_NAMES = {
 
 
 class EvalReporter:
-    def __init__(self):
+    def __init__(self, judge_model: str | None = None):
         self.results: list[dict] = []
+        self.judge_model = judge_model
 
     def add(self, result: dict) -> None:
         self.results.append(result)
@@ -107,6 +108,11 @@ class EvalReporter:
         # the scores below are comparable to the ones they are comparing them against.
         versions = ", ".join(f"{p}: {_installed_version(p)}" for p in PROVENANCE_PACKAGES)
         lines.append(f"**Environment:** {versions}\n")
+
+        # Recorded explicitly rather than omitted when absent, matching
+        # _installed_version's convention: a missing line reads as an older report
+        # format, while "not recorded" records that no judge model was passed.
+        lines.append(f"**Judge model:** {self.judge_model or 'not recorded'}\n")
 
         from eval.rubrics import RUBRICS
 
