@@ -7,10 +7,17 @@
 - `python-dotenv` floor bumped to `>=1.2.3` (Dependabot). `uv.lock` regenerated to
   match — the bare bound bump alone left the lockfile stale and failing
   `uv sync --locked` in CI.
-- `anthropic` floor bumped to `>=1.8.0` (Dependabot proposed `>=1.7.0`; `1.8.0`
+- `deepeval` floor bumped to `>=4.2.6` (Dependabot proposed `>=4.2.3`; `4.2.6`
   released before this landed, so the floor was raised to match what `uv.lock`
   actually resolves to and is tested against, per
   `TestDependencyFloors::test_declared_floor_matches_the_locked_version`).
+  `uv.lock` regenerated; `skill/run-tests.sh` and the `eval-imports`/reporter-
+  provenance suite (no API calls) both green, including
+  `test_openai_judge_supports_log_probs`, which guards the GEval logprob-weighting
+  mechanism #190 Plan B's judge-variance investigation depends on.
+- `anthropic` floor bumped to `>=1.8.0` (Dependabot proposed `>=1.7.0`; `1.8.0`
+  released before this landed, so the floor was raised to match what `uv.lock`
+  actually resolves to and is tested against, per the same guard test).
   `uv.lock` regenerated; `skill/run-tests.sh` and the `eval-imports`/reporter-
   provenance suite (no API calls) both green against the new version.
 - `ruff` floor bumped to `>=0.16.8` (Dependabot). `uv.lock` regenerated to match — the
