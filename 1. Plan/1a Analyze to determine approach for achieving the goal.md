@@ -15,6 +15,8 @@ If provided, run this prompt in "Planning mode"
 
 <!-- CLAUDE_INJECT: think-probe -->
 
+<!-- CLAUDE_INJECT: plan-critic-probe -->
+
 ---
 ``` markdown
 

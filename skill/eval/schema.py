@@ -1,5 +1,7 @@
 """Scenario schema validation for PDCA eval harness."""
 
+from eval.mechanical import VERDICT_VALUES
+
 
 class ScenarioValidationError(ValueError):
     pass
@@ -36,6 +38,45 @@ def validate_scenario(scenario: dict) -> None:
         raise ScenarioValidationError("expected_signals.skip_geval must be a bool")
 
     _validate_geval_criteria(signals)
+    _validate_verdict_signals(signals)
+
+
+def _validate_verdict_signals(signals: dict) -> None:
+    """Validate optional verdict-field checks (#49/#111's second loosening round).
+
+    Both signals name a label from eval.mechanical.VERDICT_VALUES rather than accepting
+    an arbitrary string, so a typo'd label (e.g. "status" lowercase, or "Ready-to-close")
+    fails here -- a five-second local check -- instead of silently matching nothing and
+    reporting every scenario using it as a false pass forever, the same failure mode
+    #148's test_declared_geval_criteria_exist_in_their_rubric exists to catch for
+    geval_criteria.
+    """
+    if "verdict_fields_required" in signals:
+        labels = signals["verdict_fields_required"]
+        if not isinstance(labels, list):
+            raise ScenarioValidationError("expected_signals.verdict_fields_required must be a list")
+        for label in labels:
+            if label not in VERDICT_VALUES:
+                raise ScenarioValidationError(
+                    f"expected_signals.verdict_fields_required names unknown label "
+                    f"{label!r}; known labels: {sorted(VERDICT_VALUES)}"
+                )
+
+    if "verdict_must_not_be" in signals:
+        forbidden = signals["verdict_must_not_be"]
+        if not isinstance(forbidden, dict):
+            raise ScenarioValidationError("expected_signals.verdict_must_not_be must be a dict")
+        for label, value in forbidden.items():
+            if label not in VERDICT_VALUES:
+                raise ScenarioValidationError(
+                    f"expected_signals.verdict_must_not_be names unknown label {label!r}; "
+                    f"known labels: {sorted(VERDICT_VALUES)}"
+                )
+            if value not in VERDICT_VALUES[label]:
+                raise ScenarioValidationError(
+                    f"expected_signals.verdict_must_not_be[{label!r}] names unknown value "
+                    f"{value!r}; known values for {label!r}: {VERDICT_VALUES[label]}"
+                )
 
 
 def _validate_geval_criteria(signals: dict) -> None:

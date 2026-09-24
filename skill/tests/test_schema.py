@@ -159,3 +159,51 @@ class TestGevalCriteriaScoping:
         that skip_geval scenarios must still assert something mechanically."""
         with pytest.raises(ScenarioValidationError):
             validate_scenario(self._valid(geval_criteria=[], geval_criteria_reason="because"))
+
+
+class TestVerdictSignals:
+    """#49/#111: a scenario may require a verdict field's label+value in any rendering,
+    or forbid a specific value, instead of a literal must_contain/must_not_contain
+    substring that a table-formatted response can defeat without changing its meaning."""
+
+    def _valid(self, **signals):
+        base = {"must_contain": [], "must_not_contain": [], "called_shot_required": False}
+        base.update(signals)
+        return {
+            "prompt_id": "3",
+            "scenario_id": "x",
+            "description": "d",
+            "input": "i",
+            "expected_signals": base,
+        }
+
+    def test_accepts_verdict_fields_required(self):
+        validate_scenario(self._valid(verdict_fields_required=["Status", "Ready to close"]))
+
+    def test_rejects_verdict_fields_required_not_a_list(self):
+        with pytest.raises(ScenarioValidationError):
+            validate_scenario(self._valid(verdict_fields_required="Status"))
+
+    def test_rejects_unknown_verdict_field_label(self):
+        """A typo'd label (e.g. lowercase "status") must fail here, not silently match
+        nothing and report every scenario using it as a false pass forever."""
+        with pytest.raises(ScenarioValidationError) as exc:
+            validate_scenario(self._valid(verdict_fields_required=["status"]))
+        assert "status" in str(exc.value)
+
+    def test_accepts_verdict_must_not_be(self):
+        validate_scenario(self._valid(verdict_must_not_be={"Status": "Complete"}))
+
+    def test_rejects_verdict_must_not_be_not_a_dict(self):
+        with pytest.raises(ScenarioValidationError):
+            validate_scenario(self._valid(verdict_must_not_be=["Status"]))
+
+    def test_rejects_unknown_verdict_must_not_be_label(self):
+        with pytest.raises(ScenarioValidationError):
+            validate_scenario(self._valid(verdict_must_not_be={"status": "Complete"}))
+
+    def test_rejects_unknown_verdict_must_not_be_value(self):
+        """A value that isn't one of the label's own known verdicts (e.g. a typo like
+        "Compelte") must fail here rather than silently never matching."""
+        with pytest.raises(ScenarioValidationError):
+            validate_scenario(self._valid(verdict_must_not_be={"Status": "Compelte"}))

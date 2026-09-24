@@ -70,10 +70,27 @@ COPIED_FROM_ADDON = {
     "ponytail-workflow.md": "ponytail-addon/sources/ponytail-workflow.md",
     "superpowers-setup.md": "superpowers-addon/sources/superpowers-setup.md",
     "superpowers-workflow.md": "superpowers-addon/sources/superpowers-workflow.md",
+    "check-autonomous-critic-addon.md": "autonomous-critic-addon/sources/check-autonomous-critic-addon.md",
+    "autonomous-critic-setup.md": "autonomous-critic-addon/sources/autonomous-critic-setup.md",
 }
 
 EXPORT_SCRIPT_SRC = "beads-addon/scripts/export-requirements.sh"
 EXPORT_SCRIPT_DEST = "scripts/export-requirements.sh"
+
+# Per-phase slash commands (#188) live under plugins/, outside skill_dir, so
+# they can double as a Claude Code plugin directory (claude --plugin-dir).
+# They ride into the skill zip too (#194) so install-skill.sh has something
+# to copy into ~/.claude/commands/ (or the Codex/project equivalent) --
+# without this, the plugin's commands/ directory is the only copy and no
+# installer can reach it.
+PLUGIN_COMMANDS_DIR = "plugins/pdca-framework/commands"
+COMMAND_FILES = (
+    "pdca.md",
+    "pdca-plan.md",
+    "pdca-do.md",
+    "pdca-check.md",
+    "pdca-act.md",
+)
 
 # The only manifest member that must carry a non-default zip permission. Set as
 # a literal, never derived from the on-disk mode: build.py writes every file
@@ -115,8 +132,11 @@ MANIFEST = (
     "references/ponytail-workflow.md",
     "references/superpowers-setup.md",
     "references/superpowers-workflow.md",
+    "references/check-autonomous-critic-addon.md",
+    "references/autonomous-critic-setup.md",
     "references/testing-anti-patterns.md",
     f"references/{EXPORT_SCRIPT_DEST}",
+    *(f"commands/{name}" for name in COMMAND_FILES),
 )
 
 
@@ -170,8 +190,10 @@ def build(skill_dir: Path) -> Path:
     if not injections_dir.is_dir():
         raise BuildError(f"Claude injections directory not found: {injections_dir}")
 
+    commands = core_dir / "commands"
     references.mkdir(parents=True, exist_ok=True)
     (references / "scripts").mkdir(exist_ok=True)
+    commands.mkdir(exist_ok=True)
 
     # plan-prompts.md is a concatenation of two masters, not a copy.
     (references / "plan-prompts.md").write_text(
@@ -195,6 +217,9 @@ def build(skill_dir: Path) -> Path:
         (references / name).write_text(_read(core_dir / addon_source))
 
     (references / EXPORT_SCRIPT_DEST).write_text(_read(core_dir / EXPORT_SCRIPT_SRC))
+
+    for name in COMMAND_FILES:
+        (commands / name).write_text(_read(repo_root / PLUGIN_COMMANDS_DIR / name))
 
     skill_file.unlink(missing_ok=True)
     with zipfile.ZipFile(skill_file, "w", zipfile.ZIP_DEFLATED) as archive:

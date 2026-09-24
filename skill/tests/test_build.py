@@ -22,6 +22,7 @@ SKILL_SRC = CLAUDE_SKILL_DIR / "pdca-framework" / "SKILL.md"
 BEADS_ADDON_DIR = CLAUDE_SKILL_DIR / "pdca-framework" / "beads-addon" / "sources"
 PONYTAIL_ADDON_DIR = CLAUDE_SKILL_DIR / "pdca-framework" / "ponytail-addon" / "sources"
 SUPERPOWERS_ADDON_DIR = CLAUDE_SKILL_DIR / "pdca-framework" / "superpowers-addon" / "sources"
+AUTONOMOUS_CRITIC_ADDON_DIR = CLAUDE_SKILL_DIR / "pdca-framework" / "autonomous-critic-addon" / "sources"
 
 SKILL_NAME = "pdca-framework"
 
@@ -42,8 +43,15 @@ EXPECTED_FILES = [
     f"{SKILL_NAME}/references/ponytail-workflow.md",
     f"{SKILL_NAME}/references/superpowers-setup.md",
     f"{SKILL_NAME}/references/superpowers-workflow.md",
+    f"{SKILL_NAME}/references/check-autonomous-critic-addon.md",
+    f"{SKILL_NAME}/references/autonomous-critic-setup.md",
     f"{SKILL_NAME}/references/testing-anti-patterns.md",
     f"{SKILL_NAME}/references/scripts/export-requirements.sh",
+    f"{SKILL_NAME}/commands/pdca.md",
+    f"{SKILL_NAME}/commands/pdca-plan.md",
+    f"{SKILL_NAME}/commands/pdca-do.md",
+    f"{SKILL_NAME}/commands/pdca-check.md",
+    f"{SKILL_NAME}/commands/pdca-act.md",
 ]
 
 MASTER_FILES = [
@@ -75,15 +83,21 @@ SUPERPOWERS_SOURCE_FILES = [
     SUPERPOWERS_ADDON_DIR / "superpowers-workflow.md",
 ]
 
+AUTONOMOUS_CRITIC_SOURCE_FILES = [
+    AUTONOMOUS_CRITIC_ADDON_DIR / "check-autonomous-critic-addon.md",
+    AUTONOMOUS_CRITIC_ADDON_DIR / "autonomous-critic-setup.md",
+]
+
 # Optional third-party addons. Each slug's source files must exist, and every
 # SKILL.md reference to that slug must be marked Optional. Add a slug here
 # (plus an ADDON_SOURCE_FILES entry) when a new addon lands.
-ADDON_SLUGS = ["beads", "ponytail", "superpowers"]
+ADDON_SLUGS = ["beads", "ponytail", "superpowers", "autonomous-critic"]
 
 ADDON_SOURCE_FILES = {
     "beads": BEADS_SOURCE_FILES,
     "ponytail": PONYTAIL_SOURCE_FILES,
     "superpowers": SUPERPOWERS_SOURCE_FILES,
+    "autonomous-critic": AUTONOMOUS_CRITIC_SOURCE_FILES,
 }
 
 CLAUDE_ADDON_DIR = CLAUDE_SKILL_DIR / "pdca-framework" / "claude-addon" / "injections"
@@ -91,6 +105,7 @@ CLAUDE_INJECTION_FILES = [
     "goal-probe.md",
     "plan-mode-probe.md",
     "think-probe.md",
+    "plan-critic-probe.md",
     "do-think-probe.md",
     "check-review-probe.md",
     "act-retro-probes.md",
@@ -700,6 +715,16 @@ class TestSkillPackage(unittest.TestCase):
             "do-prompts.md does not contain the #155 called-shot wording",
         )
 
+    def test_check_prompts_contains_autonomous_critic_fallback(self):
+        """#165's CHECK master edit must reach the packaged skill, not just the source.
+        Mirrors test_do_prompts_contains_the_first_executing_assertion_language's pattern."""
+        packaged = read_zip_file(SKILL_FILE, f"{SKILL_NAME}/references/check-prompts.md")
+        self.assertIn(
+            "references/autonomous-critic-setup.md",
+            packaged,
+            "check-prompts.md does not contain the #165 autonomous critic fallback wording",
+        )
+
     def test_working_agreements_matches_master(self):
         packaged = read_zip_file(SKILL_FILE, f"{SKILL_NAME}/references/working-agreements.md")
         master = (REPO_ROOT / "Human Working Agreements.md").read_text()
@@ -837,6 +862,29 @@ class TestClaudeInjections(unittest.TestCase):
         probe = (CLAUDE_ADDON_DIR / "plan-mode-probe.md").read_text().strip()
         self.assertIn(probe[:60], content, "plan-prompts.md missing plan-mode-probe injection")
 
+    def test_plan_prompts_contains_plan_critic_probe(self):
+        """#182's plan-critic-probe injection must reach the packaged plan-prompts.md,
+        for both the 1a and 1b masters (each carries its own marker)."""
+        content = read_zip_file(SKILL_FILE, f"{SKILL_NAME}/references/plan-prompts.md")
+        probe = (CLAUDE_ADDON_DIR / "plan-critic-probe.md").read_text().strip()
+        self.assertEqual(
+            content.count(probe[:60]),
+            2,
+            "plan-prompts.md should contain the plan-critic-probe injection twice "
+            "(once from 1a, once from 1b)",
+        )
+
+    def test_plan_prompts_contains_critic_pass_checkpoint(self):
+        """#182's Process Checkpoints critic-pass line must reach the packaged skill,
+        not just the source. Mirrors test_check_prompts_contains_autonomous_critic_fallback's
+        pattern for #165."""
+        packaged = read_zip_file(SKILL_FILE, f"{SKILL_NAME}/references/plan-prompts.md")
+        self.assertIn(
+            "was the operator asked whether they want an adversarial critic pass",
+            packaged,
+            "plan-prompts.md does not contain the #182 critic-pass Process Checkpoint wording",
+        )
+
     def test_do_prompts_contains_commit_after_green(self):
         """do-prompts.md must contain a commit-after-GREEN instruction."""
         content = read_zip_file(SKILL_FILE, f"{SKILL_NAME}/references/do-prompts.md")
@@ -934,6 +982,25 @@ class TestHookInfrastructure(unittest.TestCase):
             "'ran first' is the wrong question and the ordering-based rule above "
             "would misfire on the repo's own subTest-based tests (found in adversarial "
             "review of #155)",
+        )
+
+    def test_rubric2_called_shot_expected_failure_matches_do_master(self):
+        """#168: rubric_2.py's 'called-shot' criterion restated the pre-#155 'Expected
+        failure' wording to the LLM judge. The DO master (post-#155) requires the
+        first-executing assertion, quoted; the rubric was missing both qualifiers.
+        """
+        from eval.rubrics.rubric_2 import CRITERIA_ITEMS
+
+        criterion = CRITERIA_ITEMS["called-shot"]
+        self.assertTrue(
+            "fail first" in criterion,
+            "Missing 'fail first' qualifier: rubric_2 Expected failure criterion does "
+            "not tell the judge to predict the first-executing assertion (#168, #155)",
+        )
+        self.assertTrue(
+            "quoted" in criterion,
+            "Missing 'quoted' qualifier: rubric_2 Expected failure criterion does not "
+            "tell the judge to expect a quoted assertion message (#168, #155)",
         )
 
     def test_testing_anti_patterns_names_the_loose_called_shot_pattern(self):
@@ -1240,6 +1307,35 @@ class TestHookInfrastructure(unittest.TestCase):
             self.skipTest("run-evals.sh not found")
         content = script.read_text()
         self.assertIn("-m eval", content, "run-evals.sh must filter tests with -m eval marker")
+
+    def test_run_evals_warns_and_blocks_when_no_class_specified(self):
+        """run-evals.sh must require explicit confirmation when invoked with no test class.
+
+        No-arg invocation silently includes TestBaselineComparison, which runs all
+        scenarios twice and doubles API cost (~$4-10). This was discovered when a
+        25-minute run had to be killed with no usable output (pdca-ayj). A blocking
+        prompt makes the cost visible before the spend happens.
+        """
+        script = CLAUDE_SKILL_DIR / "run-evals.sh"
+        if not script.exists():
+            self.skipTest("run-evals.sh not found")
+        content = script.read_text()
+        self.assertIn(
+            "$#",
+            content,
+            "run-evals.sh does not warn when invoked with no test class — the full "
+            "sweep (including TestBaselineComparison) runs silently (pdca-ayj)",
+        )
+        self.assertTrue(
+            "WARNING" in content or "warning" in content or "WARN" in content,
+            "run-evals.sh does not emit a warning when no test class is given — "
+            "callers cannot distinguish a targeted run from the full 2x-cost sweep",
+        )
+        self.assertTrue(
+            "read" in content or "confirm" in content or "[y/N]" in content,
+            "run-evals.sh does not require confirmation before the full sweep — "
+            "the 2x cost can be incurred without any human acknowledgement",
+        )
 
     def test_pre_commit_hook_template_exists(self):
         self.assertTrue(

@@ -162,6 +162,12 @@ If you've cloned the repo (e.g. to build from source), `install-skill.sh` / `ins
 ./install-skill.sh codex      # Install to ~/.agents/skills/
 ```
 
+This also installs the five per-phase slash commands (`/pdca`, `/pdca-plan`, `/pdca-do`,
+`/pdca-check`, `/pdca-act`) into the scope's commands directory — `~/.claude/commands/`
+for `personal`, the current project's `.claude/commands/` for `project`, or
+`~/.codex/prompts/` for `codex`. See
+[plugins/pdca-framework/README.md](../plugins/pdca-framework/README.md) for details.
+
 **Windows (PowerShell):**
 ```powershell
 # From the skill directory

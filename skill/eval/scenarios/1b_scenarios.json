@@ -31,5 +31,16 @@
       "must_not_contain": ["Here is the code", "npm install"],
       "called_shot_required": false
     }
+  },
+  {
+    "prompt_id": "1b",
+    "scenario_id": "1b-critic-pass-warranted",
+    "description": "Analysis complete; the plan spans 4 files and introduces a pattern new to the codebase (event sourcing, replacing CRUD-only persistence). Per #182, the Process Checkpoints must explicitly raise whether the operator wants an adversarial critic pass on this analysis and plan before implementation begins — not silently proceed straight to the numbered steps.",
+    "input": "Analysis complete. We're adding an event-sourcing audit trail to our order-processing system. This is a new pattern for this codebase, which is CRUD-only today. Plan touches: OrderService (existing), a new EventStore model, a new event-replay worker, and the OrdersController serializer. No existing precedent for event sourcing here, and no preparatory refactoring identified — the new pieces are additive.",
+    "expected_signals": {
+      "must_contain": [],
+      "must_not_contain": ["Here is the complete implementation", "def replay_events"],
+      "called_shot_required": false
+    }
   }
 ]

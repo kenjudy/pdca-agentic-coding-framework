@@ -7,6 +7,229 @@
 - `python-dotenv` floor bumped to `>=1.2.3` (Dependabot). `uv.lock` regenerated to
   match — the bare bound bump alone left the lockfile stale and failing
   `uv sync --locked` in CI.
+- `anthropic` floor bumped to `>=1.8.0` (Dependabot proposed `>=1.7.0`; `1.8.0`
+  released before this landed, so the floor was raised to match what `uv.lock`
+  actually resolves to and is tested against, per
+  `TestDependencyFloors::test_declared_floor_matches_the_locked_version`).
+  `uv.lock` regenerated; `skill/run-tests.sh` and the `eval-imports`/reporter-
+  provenance suite (no API calls) both green against the new version.
+- `ruff` floor bumped to `>=0.16.8` (Dependabot). `uv.lock` regenerated to match — the
+  bare bound bump alone left the lockfile stale and failing `uv sync --locked` in CI.
+
+### install-skill.sh / install-skill.ps1 now install the per-phase slash commands (#194)
+
+- `install-skill.sh`/`.ps1` extracted the skill zip but never placed the five per-phase
+  command files (`pdca.md`, `pdca-plan.md`, `pdca-do.md`, `pdca-check.md`, `pdca-act.md`,
+  added in #189) anywhere Claude Code or Codex auto-discovers commands from — a normal
+  install left `/pdca-plan` unresolved, with the copy/symlink step documented as a manual
+  follow-up nobody actually did.
+- `build.py` now packages `plugins/pdca-framework/commands/*.md` into the skill zip at
+  `commands/*.md` (new gitignored build artifact `skill/pdca-framework/commands/`,
+  mirroring `references/`), so the zip carries everything an installer needs in one
+  artifact (option 1 from #194, not a second manual install step).
+- `install-skill.sh`/`.ps1` copy those packaged commands into the scope-appropriate
+  directory after extracting the skill: `~/.claude/commands/` for `personal`, the current
+  project's `.claude/commands/` for `project`, `~/.codex/prompts/` for `codex` (Codex's
+  custom-prompt directory).
+- New tests in `skill/tests/test_commands.py` run `install-skill.sh` end-to-end against a
+  fake `HOME` for all three scopes and assert the commands land where each platform
+  reads them from, plus zip-content pinning tests; `EXPECTED_FILES` in `test_build.py`
+  extended to cover the five new manifest entries.
+- Updated `plugins/pdca-framework/README.md` and `skill/README.md` so the documented
+  install path requires no manual command-copying step; the manual copy/symlink
+  instructions remain as an alternative for contributors iterating on a command file
+  directly.
+
+### Eval Quality
+
+- `run-evals.sh`: no-arg invocation now prints a cost warning and requires explicit `y/N`
+  confirmation before running the full sweep (including `TestBaselineComparison`, which
+  doubles API cost). Non-interactive callers (CI, piped stdin) skip the prompt and proceed.
+  Targeted invocations (`bash run-evals.sh tests/test_evals.py::ClassName`) are unaffected.
+  Unit test added (`pdca-ayj`).
+
+- `rubric_2.py` called-shot criterion now matches the post-#155 DO master wording across
+  all five fields (`Behavior under test`, `Expected failure`, `Why this test first`,
+  `Stub check`, `Oracle`). Previously the rubric showed stale placeholder text to the
+  LLM judge, most notably `Expected failure` was missing the "fail first" and "quoted"
+  qualifiers added by #155. Unit test added pinning those two qualifiers (#168).
+
+### Per-phase slash commands: /pdca, /pdca-plan, /pdca-do, /pdca-check, /pdca-act (#188)
+
+- Lands work handed off from a separate session (`kenjudy/obsidian-kenjudy-llc`): five thin
+  router command files, one per PDCA phase plus a full-cycle alias, versioned at
+  `plugins/pdca-framework/commands/` — reusing the plugin scaffold added in `2cb3fa8`
+  ("add plugin manifests for Stride marketplace"), which had shipped as a bare manifest
+  with no actual content until now.
+- Each command names its phase's section in `SKILL.md` and points at that phase's
+  `references/*.md` rather than duplicating content; the four single-phase commands
+  explicitly refuse to proceed into the other phases in the same turn. `/pdca-plan`
+  sequences 1a Analysis before 1b Detailed Planning rather than collapsing them.
+- New `skill/tests/test_commands.py`: static content-shape pinning tests (existence,
+  frontmatter, phase-reference isolation, live cross-check of each command's quoted
+  SKILL.md section header against the current file — not a hardcoded parallel map, so a
+  future section rename fails the test rather than going stale silently).
+- Documented the install path in a new `plugins/pdca-framework/README.md`, linked from
+  the root README's new "Optional: Per-Phase Slash Commands" section: copy/symlink into
+  `~/.claude/commands/` or a project's `.claude/commands/`, mirroring `skill/README.md`'s
+  existing Manual Prompts pattern — verified this is the only currently-working
+  distribution path, since `claude plugin marketplace add` requires a root-level
+  `.claude-plugin/marketplace.json` this repo doesn't have (confirmed by testing it
+  directly, not assumed).
+- Added `"plugins/"` to `skill/check_changelog.py`'s `REQUIRES_ENTRY` so a future PR
+  touching only this directory doesn't silently skip the CI changelog gate.
+- **An adversarial critic pass on the plan caught the plugin-vs-marketplace gap above**
+  before it shipped as an untested claim: the plan originally left "does `commands/`
+  need a `plugin.json` declaration" as an open unknown to resolve during implementation.
+  The critic instead tested it directly with the installed `claude` CLI
+  (`claude --plugin-dir plugins/pdca-framework plugin details pdca-framework`), confirming
+  auto-discovery with zero manifest changes needed, and flagged that this repo's
+  `check_changelog.py` didn't yet account for `plugins/` as release-note material.
+- **Still open, not closeable from this session**: a genuinely fresh Claude Code session
+  loading an edited command file correctly — the other session's own unresolved
+  verification item. Command-cache-on-edit behavior is outside what a sandboxed session
+  can test; needs a human check in a real environment.
+
+### Optional critic-pass probe for the PLAN phase, mirroring CHECK's design (#182)
+
+- CHECK phase already asks the operator whether they want an adversarial critic pass on
+  a multi-file or end-to-end change — a Decision probe (`check-review-probe.md`) plus a
+  model-facing checklist bullet in `3. Completeness Check.md` that records whether the
+  question was raised (added by #146, after a probe-only version proved insufficient).
+  #182 asks for the same pattern in the PLAN phase, on the analysis (1a) and detailed
+  plan (1b).
+- New `plan-critic-probe.md` Decision probe, injected into **both** 1a and 1b masters, so
+  a session that only runs 1a standalone still sees it — not just sessions that continue
+  into 1b.
+- A new Process Checkpoints bullet in `1b Create a detailed implementation plan.md`
+  mirrors CHECK's model-facing checklist line: when a plan spans 3+ files or introduces a
+  new architectural pattern, the plan's own output must record whether the operator was
+  asked about a critic pass, not just an ephemeral human-facing nudge that leaves no
+  trace if declined.
+- New `rubric_1b` criterion (`critic-pass-offered`) and scenario
+  (`1b-critic-pass-warranted`) to validate the checklist bullet — nothing previously
+  exercised this behavior. The Decision probe itself is untestable by eval design (all
+  six existing probes are stripped from the system prompt before evals run, per
+  `strip_decision_probes`, introduced by #71 specifically so probe additions don't
+  require eval scenarios).
+- **An adversarial critic pass on the plan itself caught a real gap**: the initial plan
+  proposed only the Decision probe (probe-only, no eval cost). A fresh subagent review
+  found this copied only half of CHECK's actual mechanism — CHECK's checklist line (not
+  just its probe) is what #146 added after finding probe-only insufficient — and flagged
+  that 1a-only sessions would never see the probe under a 1b-only placement. Both were
+  fixed before implementation: the checklist bullet was added (with the eval work it
+  requires), and the probe was placed in both 1a and 1b.
+- **Validated**: a full `TestPrompt1bEvals` run (4 scenarios × 3 shots) passed 11/12, with
+  the new scenario passing cleanly 3/3. The one failure was the *pre-existing*
+  `1b-multi-system` scenario, whose failing judge calls cited the new criterion by name —
+  but the same underlying behavior (not mentioning a critic pass) was scored a "minor
+  gap" (0.90, pass) in the other two shots, matching this project's documented
+  GEval-inconsistency pattern (#136/#149). Attributed via a targeted interleaved A/B (6
+  pairs, control = pre-#182 1b master, treatment = current) on exactly this scenario:
+  control 6/6 pass, treatment 5/6 pass, Fisher p = 1.0 — a clean null result. The single
+  failure is pre-existing `1b-multi-system` variance, not a regression caused by #182; no
+  further prompt tweaking was made on the strength of one data point, per CLAUDE.md's
+  explicit guidance that a null result is a result. Full-sweep report saved as
+  `skill/eval/baselines/report_20260917_001011.md`.
+- No `TestPrompt1aEvals` regression: 1-shot sanity check across all 3 scenarios passed
+  cleanly, confirming the new content shared via `plan-prompts.md` doesn't disturb 1a's
+  own scoring.
+
+### Autonomous-mode fallback for the CHECK critic pass (#165)
+
+- `3. Check/3. Completeness Check.md`'s adversarial-critic-pass requirement had no answer for
+  "model chosen by the operator" when there is no operator. Added a short portable-core
+  conditional line, plus a new opt-in `autonomous-critic-addon` (following the beads/
+  ponytail/superpowers pattern) holding the Claude-Code-specific mechanics (model-tier table,
+  Agent-tool invocation) and a setup file for declaring a preferred review skill/model in the
+  operator's own project `CLAUDE.md`. Deliberately does *not* extend `claude-addon` — that
+  ships unconditionally into both Claude Code's and Codex's copy of the packaged skill, and
+  would have leaked Claude-Code-specific tool syntax into Codex's.
+- Reuses the project's existing autonomous-mode signal (#143's push-policy convention) rather
+  than inventing a new flag or config format, per the issue's own instruction.
+- New rubric_3 criterion (`autonomous-critic-fallback`) and eval scenario
+  (`3-autonomous-critic-fallback`), scoped via #148's per-scenario criteria mechanism, since
+  nothing previously exercised this behavior at all.
+- **An adversarial critic pass on the plan itself, before implementation, caught a real
+  architectural error**: the initial plan proposed extending `claude-addon` instead of
+  building a new addon, on the mistaken assumption it was already Claude-Code-gated the way
+  beads/ponytail/superpowers are. It isn't — `build.py` injects its content unconditionally
+  into every build. The critic also flagged that "the operator's declared config" had no
+  concrete storage location and that no test would catch mangled master-prompt content;
+  both were addressed before implementation.
+- **Validated** via a full `TestPrompt3Evals` run (6 scenarios x 3 shots, 18 samples, zero
+  harness errors): the new scenario passed consistently, correctly declaring the fallback
+  without pausing to ask and landing on `Status: Needs work` (not `Complete`, since the
+  critic pass it declares hasn't actually run yet — the scenario's own description
+  originally assumed the wrong verdict and was corrected to match). One caveat noted but not
+  acted on: 1 of 9 sampled completions phrased the fallback as an instruction to the operator
+  rather than owning it itself, scored as a disguised handoff — didn't sink the scenario and
+  matches this project's documented single-sample judge-noise pattern, so no prompt change
+  was made on the strength of it alone.
+
+### ACT phase stays factual and completes all 5 stages instead of editorializing (#151)
+
+- `4-tdd-breakdown`'s original judge-reading-only-the-first-line bug (found in the first
+  full-sweep baseline) was gone by the time this was re-checked, but a real content gap
+  remained: the initial retrospective summary had no constraint against editorializing —
+  only Stage 3 did — so responses stated conclusions ("that reasoning was backwards")
+  before reaching the hypothesis-framing stage, and some stopped after Stage 2's question
+  instead of completing all five stages.
+- `4. Act/4. Retrospect for continuous improvement.md` now requires the initial summary to
+  state what happened, not what it means, deferring interpretation to Stage 3; and
+  instructs the agent to write through all five stages itself when no live human reply is
+  available, generalizing Stage 4's existing "offer candidates when stuck" allowance.
+- A first round of this fix surfaced a third, narrower failure mode: responses now
+  completed all five stages but tipped their hand at Stage 4/5 with a soft recommendation
+  ("my lean is A or B, not C"), undermining the choice just offered. Added an explicit
+  no-ranking/no-recommendation instruction to both Stage 4's candidate-hypothesis offer
+  and Stage 5's capture-option list.
+- **Validated via interleaved A/B CI runs** (control = unmodified pre-fix master, treatment
+  = current text, 10 single-shot runs per arm, fired alternately): treatment passed 10/10
+  clean with zero new failure modes, versus control's 6/10 (Fisher p = 0.087 — short of the
+  conventional 0.05 threshold, but this scenario is documented elsewhere in this project as
+  high-variance, and every control failure cited the identical root cause the fix targets).
+  An earlier, smaller round (8 shots/arm, two of the three fixes) measured 6/8 vs 2/8,
+  p = 0.132.
+
+### Called shot requires a sixth field, Oracle: where the expected value comes from (#181)
+
+- Found via production use on an unrelated project: a test can compute its expected value
+  with the same logic it's testing, so the assertion holds regardless of whether that logic
+  is correct. Not a vacuous green (#7) — it fails when stubbed and passes when implemented,
+  so RED/GREEN looks clean. Two real defects (missing install-path files in a manifest,
+  a Windows path-separator bug) survived exactly this shape, caught only by the CHECK
+  phase critic, not by DO-phase tests.
+- `2. Do/2. Test Drive the Change.md`'s called shot now requires a sixth field: **Oracle**
+  — a source independent of the code under test (a file, an HTTP response, a database row,
+  an external tool), not re-derived using the same logic under test.
+- Added anti-pattern #10 (Self-Referential Oracle) to `Testing Anti-Patterns.md`; extended
+  #8 to cover one-directional set claims ("covers every X" needs both directions checked).
+  CHECK phase's critic-pass briefing now asks which tests would still pass if the
+  implementation were subtly wrong.
+- **Validated via interleaved A/B CI runs** (control = pre-#181 master text, treatment =
+  current text, same measuring rubric both arms, 8 single shots per scenario): both
+  `2-first-step` and `3-critic-pass-missing` came back statistically indistinguishable
+  (Fisher p = 1.0) — no regression attributable to this change. An initial, more verbose
+  wording was trimmed after a first-pass single-run eval showed concerning scores; the A/B
+  above confirmed those scores were noise, not caused by either wording.
+
+### Phase-3 verdict matching no longer false-fails on table/heading renderings (#183)
+
+- `3-critic-pass-missing`'s mechanical check failed on both arms of #181's A/B validation
+  (including the unmodified control) on a literal `must_contain: 'Status:'` match, defeated
+  whenever the model rendered its verdict as a heading or markdown table instead of the
+  template's own `**Status:** ...` line — a pre-existing brittleness, not something #181
+  introduced.
+- Already diagnosed and fixed on an unmerged branch from #49's work; ported the fix (not
+  that branch's unrelated evidence-citation feature): `verdict_fields_required` /
+  `verdict_must_not_be` in `eval/mechanical.py` now match a verdict field's label and value
+  together in any rendering (colon, table pipe, heading gap, emoji), case-insensitively on
+  both sides.
+- Validated with a full `TestPrompt3Evals` run (all 5 phase-3 scenarios, 2 shots): the false
+  -positive table/heading failures are gone; the one remaining single-shot miss was a
+  genuine case where the model never stated a holistic Status line at all — a known,
+  previously-flagged content gap, not a matcher defect.
 
 ### Eval reports now record which rubric-ladder version produced them (#172)
 

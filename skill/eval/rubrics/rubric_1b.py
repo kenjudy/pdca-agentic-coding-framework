@@ -10,6 +10,9 @@ Key behaviors evaluated:
    come first, each must leave all tests passing, before any feat: steps begin
 4. No implementation code is written — plan output is prose/structure only
 5. Acceptance criteria and definition of done are stated for each step
+6. When the plan spans 3+ files or introduces a new architectural pattern (#182), the
+   Process Checkpoints explicitly raise whether the operator wants an adversarial critic
+   pass on the analysis and plan before implementation begins
 
 Why these signals:
 - must_contain "test list" / "atomic": core planning deliverables; their absence means
@@ -45,6 +48,12 @@ CRITERIA_ITEMS = {
      class relationships as context. What is prohibited: actual method bodies,
      migration DSL blocks, or code that could be copy-pasted and executed as-is.""",
     "acceptance-criteria": """Acceptance criteria and definition of done for each step.""",
+    "critic-pass-offered": """When the plan spans 3+ files or introduces a new architectural pattern, the
+     Process Checkpoints must explicitly raise whether the operator wants an adversarial
+     critic pass on this analysis and plan (a fresh subagent, as a supplement to their own
+     review) before implementation begins. Silently omitting this consideration for a plan
+     that meets that criterion is a failure; a plan that does not meet the criterion is not
+     required to raise it.""",
 }
 
 TAIL = GENERIC_TAIL

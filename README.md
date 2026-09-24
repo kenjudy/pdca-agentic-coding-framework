@@ -4,6 +4,8 @@ A Claude skill for human-supervised AI-assisted software development using Plan-
 
 > **Looking to build a custom AI workflow for any domain?** See [human-directed-ai-workflow-builder](https://github.com/kenjudy/human-directed-ai-workflow-builder) — generates a tailored PDCA skill for any complex repeatable task, with a built-in learning loop that sharpens it each cycle.
 
+> **Already know the framework and just need a reference?** See [CHEATSHEET.md](CHEATSHEET.md) — a one-page guide to running a PDCA session: what to say at each phase, and what only the human operator can catch.
+
 ---
 
 ## pdca-framework — Three Ways to Use This Framework
@@ -64,6 +66,19 @@ A Claude skill for human-supervised AI-assisted software development using Plan-
 - Install Standard Skill for daily work
 - Keep Manual Prompts for special cases
 - Add Beads Skill when starting complex, long-running features
+
+---
+
+## Optional: Per-Phase Slash Commands
+
+This is an add-on to whichever option above you chose, not a fourth way to use the
+framework — it requires the skill to already be installed. Once it is, five thin
+router commands let you invoke a single phase directly (`/pdca-plan`, `/pdca-do`,
+`/pdca-check`, `/pdca-act`) instead of only the full-cycle `/pdca-framework` skill, plus
+`/pdca` as an explicit full-cycle alias. `/pdca-plan` sequences PLAN's own two sub-steps
+(1a Analysis, then 1b Detailed Planning) rather than collapsing them.
+
+📦 **[Get started with Per-Phase Commands →](plugins/pdca-framework/README.md)**
 
 ---
 
@@ -433,6 +448,7 @@ New-Item -ItemType Directory -Path ".claude\prompts" -Force
 - [Claude Code Documentation](https://docs.anthropic.com/en/docs/claude-code)
 - [PDCA Process Repository](https://github.com/kenjudy/pdca-agentic-coding-framework)
 - [skill/README.md](skill/README.md) — recommended skill-based setup
+- [CHEATSHEET.md](CHEATSHEET.md) — one-page operator reference
 
 ## License
 

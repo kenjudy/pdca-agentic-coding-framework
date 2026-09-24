@@ -55,18 +55,21 @@ fi
 case "$INSTALL_TYPE" in
     personal|p|claude)
         INSTALL_DIR="$HOME/.claude/skills/$SKILL_NAME"
+        COMMANDS_DIR="$HOME/.claude/commands"
         PLATFORM="Claude Code"
         SCOPE="Personal"
         SCOPE_DESC="Available across all your projects"
         ;;
     project|proj)
         INSTALL_DIR="$PWD/.claude/skills/$SKILL_NAME"
+        COMMANDS_DIR="$PWD/.claude/commands"
         PLATFORM="Claude Code"
         SCOPE="Project"
         SCOPE_DESC="Available in current project, shared via git"
         ;;
     codex|c)
         INSTALL_DIR="$HOME/.agents/skills/$SKILL_NAME"
+        COMMANDS_DIR="$HOME/.codex/prompts"
         PLATFORM="Codex"
         SCOPE="Personal"
         SCOPE_DESC="Available across all your Codex projects"
@@ -116,14 +119,26 @@ echo -e "${BLUE}Installed files:${NC}"
 find "$INSTALL_DIR" -type f | sed "s|$INSTALL_DIR/||" | sort
 echo ""
 
+# Step 2: Install the per-phase slash commands (#194) -- the skill zip is
+# extracted above, but /pdca-plan et al. only resolve once these land in a
+# directory Claude Code or Codex actually discovers commands/prompts from.
+if [ -d "$INSTALL_DIR/commands" ]; then
+    echo -e "${BLUE}Installing slash commands to:${NC} $COMMANDS_DIR"
+    mkdir -p "$COMMANDS_DIR"
+    cp "$INSTALL_DIR"/commands/*.md "$COMMANDS_DIR/"
+    echo -e "${GREEN}✓ Commands installed:${NC}"
+    find "$INSTALL_DIR/commands" -type f -name '*.md' | sed "s|$INSTALL_DIR/commands/||" | sort
+    echo ""
+fi
+
 echo -e "${GREEN}Success!${NC} The PDCA framework skill is now available in $PLATFORM."
 echo ""
 
 # Scope-specific next steps
 if [ "$INSTALL_TYPE" = "project" ] || [ "$INSTALL_TYPE" = "proj" ]; then
     echo -e "${BLUE}Next Steps (project install):${NC}"
-    echo "1. Commit the skill to share with your team:"
-    echo "   git add .claude/skills/"
+    echo "1. Commit the skill and commands to share with your team:"
+    echo "   git add .claude/skills/ .claude/commands/"
     echo "   git commit -m 'Add PDCA framework skill'"
     echo ""
 fi
