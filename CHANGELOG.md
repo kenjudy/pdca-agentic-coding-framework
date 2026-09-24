@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+### Dependency updates
+
+- `anthropic` floor bumped to `>=1.8.0` (Dependabot proposed `>=1.7.0`; `1.8.0`
+  released before this landed, so the floor was raised to match what `uv.lock`
+  actually resolves to and is tested against, per
+  `TestDependencyFloors::test_declared_floor_matches_the_locked_version`).
+  `uv.lock` regenerated; `skill/run-tests.sh` and the `eval-imports`/reporter-
+  provenance suite (no API calls) both green against the new version.
+
 ### install-skill.sh / install-skill.ps1 now install the per-phase slash commands (#194)
 
 - `install-skill.sh`/`.ps1` extracted the skill zip but never placed the five per-phase
