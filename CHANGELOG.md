@@ -10,6 +10,8 @@
   `TestDependencyFloors::test_declared_floor_matches_the_locked_version`).
   `uv.lock` regenerated; `skill/run-tests.sh` and the `eval-imports`/reporter-
   provenance suite (no API calls) both green against the new version.
+- `ruff` floor bumped to `>=0.16.8` (Dependabot). `uv.lock` regenerated to match — the
+  bare bound bump alone left the lockfile stale and failing `uv sync --locked` in CI.
 
 ### install-skill.sh / install-skill.ps1 now install the per-phase slash commands (#194)
 

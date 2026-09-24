@@ -118,7 +118,7 @@ jobs:
       # responses need reading. eval/results/ is gitignored and regenerated per run.
       - name: Upload eval results
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: eval-results
           path: skill/eval/results/
