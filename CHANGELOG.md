@@ -4,6 +4,9 @@
 
 ### Dependency updates
 
+- `python-dotenv` floor bumped to `>=1.2.3` (Dependabot). `uv.lock` regenerated to
+  match — the bare bound bump alone left the lockfile stale and failing
+  `uv sync --locked` in CI.
 - `deepeval` floor bumped to `>=4.2.6` (Dependabot proposed `>=4.2.3`; `4.2.6`
   released before this landed, so the floor was raised to match what `uv.lock`
   actually resolves to and is tested against, per
