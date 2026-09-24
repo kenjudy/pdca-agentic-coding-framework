@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+### Dependency updates
+
+- `python-dotenv` floor bumped to `>=1.2.3` (Dependabot). `uv.lock` regenerated to
+  match — the bare bound bump alone left the lockfile stale and failing
+  `uv sync --locked` in CI.
+
 ### Eval reports now record which rubric-ladder version produced them (#172)
 
 - No report could previously tell a reader whether it was produced by the same rubric
