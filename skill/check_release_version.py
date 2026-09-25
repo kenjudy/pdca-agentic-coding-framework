@@ -17,6 +17,7 @@ Exits 0 when consistent, 1 otherwise, printing each problem to stderr.
 
 from __future__ import annotations
 
+import json
 import re
 import sys
 from pathlib import Path
@@ -69,6 +70,18 @@ def check_release_version(tag: str, repo_root: Path) -> list[str]:
             problems.append(
                 f"CHANGELOG's newest released heading is v{match.group(1)} but the release is "
                 f"tagged {tag} -- promote the '## Unreleased' section to '## v{version}' before tagging"
+            )
+
+    plugin_json_path = repo_root / "plugins" / "pdca-framework" / ".claude-plugin" / "plugin.json"
+    if not plugin_json_path.is_file():
+        problems.append(f"plugin.json not found at {plugin_json_path}")
+    else:
+        plugin_version = json.loads(plugin_json_path.read_text()).get("version")
+        if plugin_version != version:
+            problems.append(
+                f"plugin.json says v{plugin_version} but the release is tagged {tag} -- "
+                "update plugins/pdca-framework/.claude-plugin/plugin.json's 'version' field "
+                "(it gates delivery to marketplace installs, so a missed bump is silent)"
             )
 
     return problems
