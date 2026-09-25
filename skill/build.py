@@ -15,6 +15,7 @@ the way `build-skill.sh` derived everything from `SCRIPT_DIR`:
 
 from __future__ import annotations
 
+import shutil
 import sys
 import zipfile
 from pathlib import Path
@@ -228,7 +229,11 @@ def build(skill_dir: Path) -> Path:
     for name in COMMAND_FILES:
         (commands / name).write_text(_read(repo_root / PLUGIN_COMMANDS_DIR / name))
 
-    plugin_skill_dir.mkdir(parents=True, exist_ok=True)
+    # Pruned before writing, not just overwritten: a reference removed from MANIFEST
+    # must not leave a stale committed file behind that no signal ever revisits.
+    if plugin_skill_dir.exists():
+        shutil.rmtree(plugin_skill_dir)
+    plugin_skill_dir.mkdir(parents=True)
     (plugin_skill_dir / "SKILL.md").write_text(_read(core_dir / "SKILL.md"))
 
     (plugin_skill_dir / "references" / "scripts").mkdir(parents=True, exist_ok=True)

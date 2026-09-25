@@ -104,6 +104,26 @@ def test_plugin_references_match_built_zip():
     )
 
 
+def test_build_prunes_stale_files_from_plugin_skill_dir():
+    """#203 CHECK-phase finding: build() never removed anything from the plugin's
+    embedded skill directory before rewriting it, so a reference file removed from
+    MANIFEST would leave its stale committed copy behind forever -- undetectable by
+    run-tests.sh's freshness gate, which only sees changes to already-tracked paths."""
+    import build
+
+    plugin_skill_dir = CLAUDE_SKILL_DIR.parent / build.PLUGIN_SKILL_DIR
+    plugin_skill_dir.mkdir(parents=True, exist_ok=True)
+    stale_file = plugin_skill_dir / "stale-leftover.md"
+    stale_file.write_text("content from a reference no longer in MANIFEST")
+
+    build.build(skill_dir=CLAUDE_SKILL_DIR)
+
+    assert not stale_file.exists(), (
+        f"{stale_file} still exists after build() -- a reference removed from "
+        "MANIFEST leaves its stale committed copy behind forever (#203)"
+    )
+
+
 def _find_pwsh() -> str | None:
     """Locate a pwsh executable: PATH first (how CI will have it), then the
     fixed path a manual local install lands at when following PowerShell's

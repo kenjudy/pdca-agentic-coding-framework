@@ -48,13 +48,21 @@ echo "=== Checking plugin skill copy is fresh (#203) ==="
 # masters. If that differs from what is committed, a master or SKILL.md changed
 # without the plugin's embedded copy being regenerated and committed alongside
 # it -- catch it here, not after a marketplace install ships stale content.
+#
+# `git status --porcelain`, not `git diff --exit-code`: diff only sees changes to
+# already-tracked files, so it is blind to a reference file added to MANIFEST
+# without `git add` (build.py prunes removed ones, but a newly-added file still
+# needs staging). Porcelain output includes untracked ("??") entries too.
 set +e
-git -C "$SCRIPT_DIR/.." diff --exit-code -- plugins/pdca-framework/skills/pdca-framework
-FRESHNESS_EXIT=$?
+FRESHNESS_STATUS="$(git -C "$SCRIPT_DIR/.." status --porcelain -- plugins/pdca-framework/skills/pdca-framework)"
 set -e
-if [ "$FRESHNESS_EXIT" -ne 0 ]; then
+if [ -n "$FRESHNESS_STATUS" ]; then
+    FRESHNESS_EXIT=1
     echo "✗ plugins/pdca-framework/skills/pdca-framework is stale -- run 'bash build-skill.sh'"
     echo "  and commit the result alongside the master/SKILL.md change above."
+    echo "$FRESHNESS_STATUS"
+else
+    FRESHNESS_EXIT=0
 fi
 
 echo ""
