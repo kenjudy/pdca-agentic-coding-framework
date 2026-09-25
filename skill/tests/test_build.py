@@ -1312,6 +1312,19 @@ class TestHookInfrastructure(unittest.TestCase):
                     "default and the other agent instruction file",
                 )
 
+    def test_claude_md_names_plugin_embedded_copy(self):
+        """#203: build.py now also writes plugins/pdca-framework/skills/pdca-framework/,
+        a second location a contributor could mistakenly hand-edit -- the existing
+        'never edit build artifacts' warning must name it, not just references/."""
+        claude_md = (REPO_ROOT / "CLAUDE.md").read_text()
+        self.assertIn(
+            "plugins/pdca-framework/skills/",
+            claude_md,
+            "CLAUDE.md's build-artifact warning doesn't name the plugin's embedded "
+            "copy (plugins/pdca-framework/skills/) -- #203 added a second location "
+            "build.py writes to that a contributor could mistakenly hand-edit",
+        )
+
     def test_settings_json_has_no_machine_specific_path(self):
         """.claude/settings.json is checked in, so it must run on every clone.
 
