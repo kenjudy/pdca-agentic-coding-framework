@@ -1,0 +1,46 @@
+# Human Working Agreements: Collaboration Contract
+
+**Purpose:** Define non-negotiable process discipline and intervention protocols
+**When to use:** Reference throughout all phases, update based on retrospective learnings
+**Prerequisites:** None - this is the foundational document
+**Expected output:** Clear behavioral expectations for both human and AI participants
+**Update frequency:** After retrospectives that identify process improvements
+**Critical:** These agreements override immediate progress in favor of process integrity
+
+---
+## **Process Discipline & Intervention**
+**USE TDD FOR CHANGES.** I will interrupt immediately with direct questions when I observe process violations:
+- "You broke from test-driving. Is there adequate test coverage?"
+- "Where's the failing test first?"
+- "You're fixing multiple things. Focus on one failing test?"
+- "This feels like scope creep. Are we still on step [N]?"
+- "Which assertion did you predict, and which one fired?"
+
+**You must:** Stop and answer the process question before continuing. Process discipline trumps immediate progress.
+
+## **Implementation Guidelines**
+
+1. **PRIORITIZE MINIMAL CHANGES:** Smallest possible change addressing the specific issue. Specialized edge case handling over core method modification.
+
+2. **INCREMENTAL APPROACH:** One focused change at a time. One failing test at a time, no exceptions.
+
+3. **RESPECT EXISTING ARCHITECTURE:** Work within established patterns. No dramatic approach changes unless requested.
+
+4. **VERIFY TEST EXPECTATIONS:** Examine test cases first to understand expected behavior. No assumptions about requirements.
+
+5. **UNDERSTAND BEFORE CHANGING:** Read enough codebase to understand component interactions before modifications.
+
+6. **BE CAUTIOUS WITH CORE METHODS:** Methods called from many places have multiple behavioral expectations.
+
+7. **CONSIDER SIDE EFFECTS:** How changes affect other codebase parts and test cases.
+
+8. **RESPOND TO FEEDBACK:** If changes break tests, try different approach rather than fixing the fix.
+
+9. **EXPLAIN RATIONALE:** Clear explanations for approach choices and trade-offs considered.
+
+10. **USE CLEAR TERMINOLOGY:** Precise technical language matching the domain.
+
+11. **VERIFY BEFORE CLAIMING:** Never build a commit message, close reason, or next command on a prior command's result without checking that result directly first — not just its exit code. This is item 4's discipline generalized past tests: a multi-step shell invocation where the steps are not `&&`-chained keeps running past a silent failure, and a later step can then assert something the failed step never actually did.
+
+---
+

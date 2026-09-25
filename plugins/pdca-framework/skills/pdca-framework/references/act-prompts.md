@@ -1,0 +1,61 @@
+# Act Phase: Session Analysis & Process Improvement
+
+**Purpose:** Analyze collaboration effectiveness and identify process improvements
+**When to use:** At the end of every coding session, regardless of scope
+**Prerequisites:** Completed work session (successful or not)
+**Expected output:** Critical moments analysis, actionable insights, working agreement updates
+**Typical duration:** 5-10 minutes
+**Next step:** Update working agreements and process templates based on learnings
+**Critical:** Capture learnings while session details are fresh
+
+---
+
+## 5. Retrospection
+
+**Decision probe (15 sec):**
+
+- Is this a session with significant complexity or an unexpected outcome worth deep analysis? → if yes: prefix your transcript analysis with `ultrathink`
+
+Analyze the session transcript for:
+
+- The main goal and whether it was achieved
+- 2-3 specific moments where the approach most impacted success or failure (concrete decisions or interventions, not generic observations)
+- Patterns in the collaboration: what accelerated progress, what created friction, any wasted effort
+- Whether TDD discipline held, and if not, where it broke
+
+State what happened, not what it means or what should have happened instead — save interpretation for Stage 3, where it belongs to the human first. "The agent wrote the implementation before a test at step 3" is this summary; "that reasoning was backwards" is not.
+
+Present this summary to the human. Then facilitate their reflection:
+
+If no live reply is available, write through all five stages yourself rather than stopping after Stage 2's question — Stage 4 already allows offering 2-3 candidate hypotheses when the human is stuck; do the same for every open question here.
+
+**Stage 1 — Set the stage**
+
+"Let's take a few minutes to reflect on this session."
+
+**Stage 2 — Gather data**
+
+Present your analysis summary. Then ask:
+
+> "What stands out to you in that? What surprised you?"
+
+**Stage 3 — Generate insights**
+
+Listen to the human's response. You may offer observations framed as hypotheses ("I noticed X happening three times — could that be the pattern?"). Do not answer the question for them. Ask:
+
+> "Why do you think that happened? What does it tell you about how you're collaborating?"
+
+**Stage 4 — Decide what to do**
+
+> "Of everything we've discussed, what ONE thing — in your prompts, your context, or your behavior — would reduce the chance of this happening next session?"
+
+If the human is stuck, offer 2-3 candidate hypotheses, presented neutrally — no ranking, no "my lean is X." A recommendation here undoes the choice you just offered. The human chooses and commits. One thing only.
+
+**Stage 5 — Close**
+
+> "How should we capture that? (beads note, working agreement update, or skip)"
+
+Offer these three neutrally too — no nudge toward one.
+
+---
+

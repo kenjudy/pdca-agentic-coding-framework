@@ -73,6 +73,37 @@ def test_export_script_is_executable():
     )
 
 
+def test_plugin_references_match_built_zip():
+    """The plugin's embedded skill (#203) must carry the same references/ content
+    already shipped in the .skill zip, not just SKILL.md -- otherwise phases other
+    than the one covered by SKILL.md's own prose have nothing behind them."""
+    import build
+
+    zip_path = build.build(skill_dir=CLAUDE_SKILL_DIR)
+    plugin_skill_dir = CLAUDE_SKILL_DIR.parent / build.PLUGIN_SKILL_DIR
+    reference_members = [m for m in build.MANIFEST if m.startswith("references/")]
+
+    with zipfile.ZipFile(zip_path) as zf:
+        for member in reference_members:
+            packaged = zf.read(f"{SKILL_NAME}/{member}").decode()
+            plugin_path = plugin_skill_dir / member
+            assert plugin_path.is_file(), (
+                f"Plugin skill copy missing: {plugin_path} -- build.py must copy "
+                "this reference file so the plugin ships a complete skill (#203)"
+            )
+            assert plugin_path.read_text() == packaged, (
+                f"{plugin_path} doesn't match the packaged {member} -- build.py's "
+                "plugin copy is stale"
+            )
+
+    script_path = plugin_skill_dir / "references" / build.EXPORT_SCRIPT_DEST
+    mode = script_path.stat().st_mode & 0o777
+    assert mode & 0o100, (
+        f"{script_path} is not owner-executable (mode {oct(mode)}) -- the plugin's "
+        "copy must preserve the executable bit the zip's member carries"
+    )
+
+
 def _find_pwsh() -> str | None:
     """Locate a pwsh executable: PATH first (how CI will have it), then the
     fixed path a manual local install lands at when following PowerShell's

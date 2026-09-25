@@ -231,6 +231,18 @@ def build(skill_dir: Path) -> Path:
     plugin_skill_dir.mkdir(parents=True, exist_ok=True)
     (plugin_skill_dir / "SKILL.md").write_text(_read(core_dir / "SKILL.md"))
 
+    (plugin_skill_dir / "references" / "scripts").mkdir(parents=True, exist_ok=True)
+    for member in MANIFEST:
+        if not member.startswith("references/"):
+            continue
+        source_path = core_dir / member
+        dest_path = plugin_skill_dir / member
+        if member == EXECUTABLE_MEMBER:
+            dest_path.write_bytes(source_path.read_bytes())
+            dest_path.chmod(EXECUTABLE_MODE)
+        else:
+            dest_path.write_text(_read(source_path))
+
     skill_file.unlink(missing_ok=True)
     with zipfile.ZipFile(skill_file, "w", zipfile.ZIP_DEFLATED) as archive:
         for member in MANIFEST:
