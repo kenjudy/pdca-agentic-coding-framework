@@ -186,10 +186,13 @@ Manual/scripted skill install (unzip or `install-skill.sh`):
 bash .claude/skills/pdca-framework/references/scripts/export-requirements.sh requirements.md
 ```
 
-Plugin marketplace install — the skill lives under the plugin's own root, not `.claude/skills/`:
-```bash
-bash "$CLAUDE_PLUGIN_ROOT/skills/pdca-framework/references/scripts/export-requirements.sh" requirements.md
-```
+Plugin marketplace install: the skill lives under the plugin's own cache directory, whose exact
+path varies by marketplace and installed version, so there is no fixed path to hardcode here
+(and `$CLAUDE_PLUGIN_ROOT` does not help — it is only substituted inside skill/command/agent
+markdown that Claude Code loads directly, not inside this reference file or in the environment
+of a command run via the Bash tool). `scripts/export-requirements.sh` sits in the same
+`references/` directory as this file, so resolve it from the path you read this document from,
+then run it: `bash <that references/ directory>/scripts/export-requirements.sh requirements.md`.
 
 The script uses `bd graph --all --compact` for a dependency overview, then iterates all open epics and their child tasks via `bd show`.
 
@@ -203,10 +206,9 @@ Run (manual/scripted skill install):
 bash .claude/skills/pdca-framework/references/scripts/export-requirements.sh requirements.md
 ```
 
-Or, under a plugin marketplace install:
-```bash
-bash "$CLAUDE_PLUGIN_ROOT/skills/pdca-framework/references/scripts/export-requirements.sh" requirements.md
-```
+Under a plugin marketplace install, resolve `scripts/export-requirements.sh` from the same
+`references/` directory this skill's other files were read from instead (its exact path
+varies by marketplace and version, so it can't be hardcoded here).
 
 Then present the contents of requirements.md to the user.
 ```

@@ -1210,11 +1210,17 @@ class TestHookInfrastructure(unittest.TestCase):
             "reason asserts something depended on it (#138)",
         )
 
-    def test_beads_workflow_covers_both_install_paths(self):
-        """#203: export-requirements.sh's path is wrong under a plugin install --
-        the script lives under the plugin's own root there, not .claude/skills/.
-        Checked against the master directly; build.py's existing copy logic
-        propagates the fix to both the zip and the plugin's embedded copy."""
+    def test_beads_workflow_plugin_path_is_resolvable(self):
+        """#203 CHECK-phase finding: export-requirements.sh's path is wrong under a
+        plugin install (the script lives under the plugin's own root there, not
+        .claude/skills/) -- but $CLAUDE_PLUGIN_ROOT does not fix it. Per Claude
+        Code's plugin variable docs (code.claude.com/docs/en/plugins-reference),
+        that variable is substituted only inside skill/command/agent markdown
+        Claude Code loads directly -- not inside a references/*.md file read via
+        Read, and not in the environment of a Bash-tool-executed command. The
+        guidance must instead have the agent resolve the path from where it read
+        this file. Checked against the master directly; build.py's existing copy
+        logic propagates the fix to both the zip and the plugin's embedded copy."""
         master = (
             REPO_ROOT / "skill" / "pdca-framework" / "beads-addon" / "sources" / "beads-workflow.md"
         ).read_text()
@@ -1223,12 +1229,25 @@ class TestHookInfrastructure(unittest.TestCase):
             master,
             "beads-workflow.md lost its manual-install path for export-requirements.sh",
         )
+        bash_blocks = re.findall(r"```bash\n(.*?)```", master, re.DOTALL)
+        self.assertTrue(bash_blocks, "no bash code fences found in beads-workflow.md")
+        for block in bash_blocks:
+            with self.subTest(block=block[:40]):
+                self.assertNotIn(
+                    "CLAUDE_PLUGIN_ROOT",
+                    block,
+                    "a bash snippet in beads-workflow.md relies on $CLAUDE_PLUGIN_ROOT, "
+                    "which does not substitute inside a references/*.md file read via "
+                    "Read, nor in the environment of a Bash-tool command (#203) -- "
+                    "explaining this limitation in prose is fine, using it in a "
+                    "command meant to actually be run is not",
+                )
         self.assertIn(
-            "CLAUDE_PLUGIN_ROOT",
-            master,
-            "beads-workflow.md has no plugin-install-aware path (expected "
-            "'CLAUDE_PLUGIN_ROOT') alongside its existing manual-install path -- the "
-            "hardcoded .claude/skills/... path is wrong under a plugin install (#203)",
+            "scripts/export-requirements.sh",
+            master.split(".claude/skills/pdca-framework/references/scripts/export-requirements.sh")[1],
+            "beads-workflow.md has no plugin-install-aware guidance after its "
+            "manual-install path -- expected an instruction to resolve the script "
+            "relative to wherever this reference file was read from (#203)",
         )
 
     def test_run_tests_script_exists(self):
