@@ -116,6 +116,32 @@ class TestSectionHeadersMatchCurrentSkillMd(unittest.TestCase):
             )
 
 
+class TestSkillReferenceIsNamespaceAgnostic(unittest.TestCase):
+    """#203: commands hardcoded `anthropic-skills:pdca-framework`, which only
+    resolves when the skill happens to be loaded from that specific marketplace.
+    Installed via plugins/pdca-framework's own self-hosted marketplace instead,
+    Claude Code namespaces the bundled skill as `pdca-framework:pdca-framework` --
+    a hardcoded prefix breaks exactly the install path #203 exists to support."""
+
+    def test_no_command_hardcodes_marketplace_prefix(self):
+        for name in EXPECTED_COMMAND_FILES:
+            content = (COMMANDS_DIR / name).read_text()
+            with self.subTest(file=name):
+                self.assertNotIn(
+                    "anthropic-skills:pdca-framework",
+                    content,
+                    f"{name} hardcodes a marketplace-qualified skill prefix "
+                    "('anthropic-skills:pdca-framework') -- this breaks when the "
+                    "skill is installed via a different marketplace/plugin (#203)",
+                )
+                self.assertIn(
+                    "`pdca-framework` skill",
+                    content,
+                    f"{name} does not reference the skill by its bare name -- "
+                    "expected the phrase '`pdca-framework` skill' (#203)",
+                )
+
+
 class TestPlanCommandSequencing(unittest.TestCase):
     def test_1a_precedes_1b_and_both_are_named(self):
         content = (COMMANDS_DIR / "pdca-plan.md").read_text()
