@@ -643,6 +643,30 @@ class TestReadme(unittest.TestCase):
             "skill/README.md's '**Current Version:**' line",
         )
 
+    def test_plugin_json_version_matches_readme(self):
+        """#203: plugin.json's version now gates delivery to marketplace installs --
+        Claude Code caches an installed plugin by this string and won't re-fetch
+        until it changes, so a missed bump here means installed users silently never
+        see the update, unlike a stale README which is merely inaccurate."""
+        import json
+
+        readme_match = re.search(r"\*\*Current Version:\*\*\s*v(\d+\.\d+\.\d+)", self.content)
+        self.assertIsNotNone(readme_match, "README.md has no '**Current Version:** vX.Y.Z' line to check")
+        assert readme_match is not None
+        readme_version = readme_match.group(1)
+
+        plugin_json_path = REPO_ROOT / "plugins" / "pdca-framework" / ".claude-plugin" / "plugin.json"
+        self.assertTrue(plugin_json_path.is_file(), f"plugin.json not found at {plugin_json_path}")
+        plugin_version = json.loads(plugin_json_path.read_text())["version"]
+
+        self.assertEqual(
+            plugin_version,
+            readme_version,
+            f"plugin.json version ({plugin_version}) does not match README's Current "
+            f"Version (v{readme_version}) -- with plugin.json driving marketplace "
+            "delivery (#203), a missed bump means installed users never see the update",
+        )
+
 
 class TestSkillPackage(unittest.TestCase):
     """Validate the built pdca-framework.skill zip package."""
