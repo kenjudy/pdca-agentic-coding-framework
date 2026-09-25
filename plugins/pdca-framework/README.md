@@ -1,7 +1,8 @@
-# PDCA Framework — Per-Phase Slash Commands
+# PDCA Framework — Claude Code Plugin
 
-Five thin router commands that let you invoke a single PDCA phase directly, instead of
-only the full-cycle `/pdca-framework` skill:
+A self-contained Claude Code plugin bundling the `pdca-framework` skill (`skills/pdca-framework/`,
+built from the same masters as `pdca-framework.skill`) and five thin router commands that
+invoke a single PDCA phase directly instead of the full cycle:
 
 | Command | Phase |
 |---|---|
@@ -16,16 +17,26 @@ that phase's `references/*.md` file(s) rather than duplicating their content, an
 the four single-phase commands explicitly refuses to proceed into the other phases in the
 same turn.
 
-**Prerequisite:** these commands require the `pdca-framework` skill to already be
-installed and active (see [../../skill/README.md](../../skill/README.md)). They are a
-convenience layer on top of the skill, not a replacement for it — a command invoked
-without the skill installed will say so rather than silently failing.
-
 ## Install
 
-**Recommended:** `skill/install-skill.sh` (or `install-skill.ps1` on Windows) installs
-these commands automatically alongside the `pdca-framework` skill — no manual copy step
-required:
+**Recommended: via the self-hosted marketplace** (see [`../../.claude-plugin/marketplace.json`](../../.claude-plugin/marketplace.json)) —
+installs the skill and all five commands in one step, no separate skill install needed:
+
+```bash
+claude plugin marketplace add kenjudy/pdca-agentic-coding-framework
+claude plugin install pdca-framework
+```
+
+**Already have the skill installed manually?** Remove the old copies first to avoid
+running two side by side — see [../../skill/README.md](../../skill/README.md)'s
+Claude Code install section for the exact paths to remove.
+
+### Alternative: commands only, skill installed separately
+
+If you only want the router commands — say, because you're installing the skill via
+`skill/install-skill.sh` rather than the plugin marketplace — `install-skill.sh` (or
+`install-skill.ps1` on Windows) installs these commands automatically alongside the
+skill, no manual copy step required:
 
 ```bash
 cd skill
@@ -35,7 +46,9 @@ cd skill
 
 This places the five command files in `~/.claude/commands/` (personal), the current
 project's `.claude/commands/` (project), or `~/.codex/prompts/` (codex) — whichever the
-chosen scope's platform auto-discovers.
+chosen scope's platform auto-discovers. Note the commands reference the skill by its bare
+name (`pdca-framework`), so they resolve regardless of which install path put the skill
+in place.
 
 ### Manual install
 
@@ -67,16 +80,13 @@ git commit -m "Add PDCA per-phase slash commands"
 ```bash
 claude --plugin-dir plugins/pdca-framework
 ```
-This loads the commands as a Claude Code plugin for the current session — useful for
-trying them out, but not persistent across sessions the way copying into
-`~/.claude/commands/` is.
+This loads the whole plugin (skill and commands) for the current session — useful for
+trying it out, but not persistent across sessions the way `claude plugin install` or
+copying into `~/.claude/commands/` is.
 
-**Note on plugin marketplace distribution:** this directory is laid out as a Claude Code
-plugin (`.claude-plugin/plugin.json`) so it can be referenced by a marketplace catalog
-that lists it via git-subdir source — this repo does not host its own marketplace catalog
-(no root-level `.claude-plugin/marketplace.json`), so `claude plugin marketplace add` does
-not work directly against this repo today. The copy/symlink method above is the supported
-install path until a marketplace listing exists.
+**Note:** this manual copy method only places the commands — it does not install the
+skill they route to. Use the marketplace install above for a self-contained setup, or
+install the skill separately via `skill/install-skill.sh` first.
 
 ## Verify
 

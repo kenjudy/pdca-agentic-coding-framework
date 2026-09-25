@@ -2,6 +2,36 @@
 
 ## Unreleased
 
+### Added: plugins/pdca-framework is now marketplace-installable, with an embedded skill (#203)
+
+- `plugins/pdca-framework/` previously shipped only the five router commands, which
+  referenced the skill under a hardcoded `anthropic-skills:pdca-framework` prefix —
+  installing the plugin via its own marketplace gave commands that told the user the
+  skill wasn't installed, since Claude Code namespaces a plugin-bundled skill as
+  `pdca-framework:pdca-framework`. Confirmed live with the `claude` CLI: installing
+  from a self-hosted marketplace and invoking `/pdca-framework:pdca-plan` now resolves
+  the bundled skill correctly.
+- `build.py` now writes `plugins/pdca-framework/skills/pdca-framework/` (`SKILL.md` +
+  `references/`, executable bit preserved on `export-requirements.sh`) from the same
+  masters as `pdca-framework.skill`, so the plugin is self-contained. `run-tests.sh`
+  fails if that copy drifts from a fresh build.
+- Router commands reference the skill by its bare name instead of a hardcoded
+  marketplace prefix, so they resolve under any install source.
+- Added a root-level `.claude-plugin/marketplace.json` so
+  `claude plugin marketplace add kenjudy/pdca-agentic-coding-framework` works
+  directly — validated clean with `claude plugin validate .`.
+- `plugin.json`'s `version` now gates delivery to marketplace installs (Claude Code
+  caches an installed plugin by that string); it was stale at 1.1.0 against the
+  README's 1.3.0, unchecked. Bumped, and `check_release_version.py` now validates it
+  against the release tag alongside README and CHANGELOG.
+- `beads-workflow.md` documents both the manual-install and `$CLAUDE_PLUGIN_ROOT`
+  plugin-install paths for `export-requirements.sh`.
+- `skill/README.md` and `plugins/pdca-framework/README.md` now lead with the
+  marketplace install for Claude Code, keeping the manual/scripted unzip install as
+  a documented fallback (building from source, customizing prompts pre-release, or
+  older Claude Code versions without plugin support). claude.ai and Codex install
+  sections are unchanged.
+
 ### Added: OpenAI judge-model support for the eval harness, gated behind an opt-in env var (#190 Plan B, steps 0-5)
 
 - **Six review passes before any paid dispatch** (documented in the session, not a

@@ -69,11 +69,38 @@ This is the primary distribution path — upload `pdca-framework.skill` directly
 
 ### For Claude Code (Command Line)
 
-Claude Code uses a **directory-based** skill format, not the `.skill` package file.
+#### Recommended: Install via Plugin Marketplace
+
+Claude Code plugins are distributed through marketplaces, and this repo hosts its own —
+no third-party catalog required (see [`.claude-plugin/marketplace.json`](../.claude-plugin/marketplace.json)):
+
+```bash
+claude plugin marketplace add kenjudy/pdca-agentic-coding-framework
+claude plugin install pdca-framework
+```
+
+This installs the `pdca-framework` skill and the five per-phase slash commands
+(`/pdca-framework:pdca`, `/pdca-framework:pdca-plan`, `/pdca-framework:pdca-do`,
+`/pdca-framework:pdca-check`, `/pdca-framework:pdca-act`) in one step. Updates land the
+same way once a new version is tagged: `claude plugin update pdca-framework`.
+
+**Already have the skill installed manually (below)?** Remove the old copies first so you
+don't end up with two copies of the skill and commands active at once:
+```bash
+rm -rf ~/.claude/skills/pdca-framework ~/.claude/commands/pdca*.md    # personal scope
+rm -rf .claude/skills/pdca-framework .claude/commands/pdca*.md        # project scope
+```
+
+#### Alternative: Manual Install (Directory-Based)
+
+Claude Code also supports installing the skill as a plain directory, not through the
+plugin system — useful for building from source, customizing prompts before a release
+exists, or on a Claude Code version that predates plugin support. This is the same
+`.skill` package file used elsewhere on this page, unzipped by hand.
 
 [Download `pdca-framework.skill` from Releases](https://github.com/kenjudy/pdca-agentic-coding-framework/releases/latest) first.
 
-#### Install - Personal Skills (Available Across All Projects)
+##### Install - Personal Skills (Available Across All Projects)
 
 Just the downloaded `.skill` file — no repo clone needed:
 
@@ -116,7 +143,7 @@ Add-Type -AssemblyName System.IO.Compression.FileSystem
 # Result: same pdca-framework/ layout as above, under %USERPROFILE%\.claude\skills\
 ```
 
-#### Install - Project Skill (Shared with Team via Git)
+##### Install - Project Skill (Shared with Team via Git)
 
 Use this instead of the personal install above when the skill should travel with a specific repo rather than depend on each teammate remembering to install it themselves. Claude Code auto-discovers skills committed under `.claude/skills/` in a project (no config needed), so anyone who clones the repo and runs `claude` there gets the PDCA workflow automatically — useful when a team wants to standardize how a particular codebase is worked on, not just how one person works everywhere. The tradeoff: it's scoped to this one repo (personal installs at `~/.claude/skills/` apply everywhere), and first-time cloners will see a one-time workspace-trust prompt for the committed `.claude/` config.
 
@@ -147,7 +174,7 @@ git add .claude/skills/
 git commit -m "Add PDCA framework skill"
 ```
 
-#### Alternative: Install via Script (Repo Clone Only)
+##### Alternative: Install via Script (Repo Clone Only)
 
 If you've cloned the repo (e.g. to build from source), `install-skill.sh` / `install-skill.ps1` wraps the same unzip steps and prompts for scope:
 
@@ -181,7 +208,7 @@ for `personal`, the current project's `.claude/commands/` for `project`, or
 
 See [BUILD.md](BUILD.md) for full details, including troubleshooting and CI/CD automation.
 
-#### Verify Installation
+##### Verify Installation
 
 **macOS/Linux (Bash):**
 ```bash
