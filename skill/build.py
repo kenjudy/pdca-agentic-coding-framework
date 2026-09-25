@@ -83,7 +83,13 @@ EXPORT_SCRIPT_DEST = "scripts/export-requirements.sh"
 # to copy into ~/.claude/commands/ (or the Codex/project equivalent) --
 # without this, the plugin's commands/ directory is the only copy and no
 # installer can reach it.
-PLUGIN_COMMANDS_DIR = "plugins/pdca-framework/commands"
+PLUGIN_DIR = "plugins/pdca-framework"
+PLUGIN_COMMANDS_DIR = f"{PLUGIN_DIR}/commands"
+
+# The plugin also needs a working copy of the skill itself (#203) -- without
+# this, installing plugins/pdca-framework/ via a marketplace gives someone the
+# router commands above with no skill for them to route to.
+PLUGIN_SKILL_DIR = f"{PLUGIN_DIR}/skills/{SKILL_NAME}"
 COMMAND_FILES = (
     "pdca.md",
     "pdca-plan.md",
@@ -184,6 +190,7 @@ def build(skill_dir: Path) -> Path:
     references = core_dir / "references"
     injections_dir = core_dir / "claude-addon" / "injections"
     skill_file = skill_dir / f"{SKILL_NAME}.skill"
+    plugin_skill_dir = repo_root / PLUGIN_SKILL_DIR
 
     if not (core_dir / "SKILL.md").is_file():
         raise BuildError(f"Skill descriptor not found: {core_dir / 'SKILL.md'}")
@@ -220,6 +227,9 @@ def build(skill_dir: Path) -> Path:
 
     for name in COMMAND_FILES:
         (commands / name).write_text(_read(repo_root / PLUGIN_COMMANDS_DIR / name))
+
+    plugin_skill_dir.mkdir(parents=True, exist_ok=True)
+    (plugin_skill_dir / "SKILL.md").write_text(_read(core_dir / "SKILL.md"))
 
     skill_file.unlink(missing_ok=True)
     with zipfile.ZipFile(skill_file, "w", zipfile.ZIP_DEFLATED) as archive:

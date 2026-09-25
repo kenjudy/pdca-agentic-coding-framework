@@ -249,6 +249,29 @@ class TestSkillMdSource(unittest.TestCase):
                 self.assertIn(phase, self.content, f"Phase {phase} not found in SKILL.md")
 
 
+PLUGIN_SKILL_DIR = REPO_ROOT / "plugins" / "pdca-framework" / "skills" / SKILL_NAME
+
+
+class TestPluginSkillEmbed(unittest.TestCase):
+    """The plugin bundled under plugins/pdca-framework/ must carry a working copy
+    of the skill build.py produces, not just the router commands (#203) -- otherwise
+    installing the plugin gives commands that route to a skill that isn't there."""
+
+    def test_plugin_skill_md_matches_built_source(self):
+        plugin_skill_md = PLUGIN_SKILL_DIR / "SKILL.md"
+        self.assertTrue(
+            plugin_skill_md.is_file(),
+            f"Plugin skill copy missing: {plugin_skill_md} -- build.py must copy "
+            f"{SKILL_SRC} here so installing the plugin includes a working skill (#203)",
+        )
+        self.assertEqual(
+            plugin_skill_md.read_text(),
+            SKILL_SRC.read_text(),
+            "plugins/pdca-framework/skills/pdca-framework/SKILL.md doesn't match "
+            "skill/pdca-framework/SKILL.md -- build.py's plugin copy is stale",
+        )
+
+
 README_FILE = CLAUDE_SKILL_DIR / "README.md"
 CHANGELOG_FILE = REPO_ROOT / "CHANGELOG.md"
 
