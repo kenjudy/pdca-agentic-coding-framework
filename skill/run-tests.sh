@@ -43,6 +43,21 @@ echo "=== Building PDCA Framework Skill ==="
 bash "$SCRIPT_DIR/build-skill.sh"
 
 echo ""
+echo "=== Checking plugin skill copy is fresh (#203) ==="
+# build.py just wrote plugins/pdca-framework/skills/pdca-framework/ from the
+# masters. If that differs from what is committed, a master or SKILL.md changed
+# without the plugin's embedded copy being regenerated and committed alongside
+# it -- catch it here, not after a marketplace install ships stale content.
+set +e
+git -C "$SCRIPT_DIR/.." diff --exit-code -- plugins/pdca-framework/skills/pdca-framework
+FRESHNESS_EXIT=$?
+set -e
+if [ "$FRESHNESS_EXIT" -ne 0 ]; then
+    echo "✗ plugins/pdca-framework/skills/pdca-framework is stale -- run 'bash build-skill.sh'"
+    echo "  and commit the result alongside the master/SKILL.md change above."
+fi
+
+echo ""
 echo "=== Lint (ruff) ==="
 set +e
 (cd "$SCRIPT_DIR" && uv run --locked ruff check .) 2>&1
@@ -57,6 +72,7 @@ TEST_EXIT=$?
 set -e
 
 COMBINED_EXIT=$(( RUFF_EXIT > TEST_EXIT ? RUFF_EXIT : TEST_EXIT ))
+COMBINED_EXIT=$(( FRESHNESS_EXIT > COMBINED_EXIT ? FRESHNESS_EXIT : COMBINED_EXIT ))
 
 if [ "$COMBINED_EXIT" -eq 0 ]; then
     echo ""
@@ -64,7 +80,7 @@ if [ "$COMBINED_EXIT" -eq 0 ]; then
     exit 0
 else
     echo ""
-    echo "✗ Checks failed (ruff=$RUFF_EXIT tests=$TEST_EXIT)."
+    echo "✗ Checks failed (freshness=$FRESHNESS_EXIT ruff=$RUFF_EXIT tests=$TEST_EXIT)."
     if [ "$WARN_ONLY" = "1" ]; then
         echo "  (warn-only mode — commit allowed)"
         exit 0
