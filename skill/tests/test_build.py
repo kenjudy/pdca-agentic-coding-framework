@@ -252,6 +252,66 @@ class TestSkillMdSource(unittest.TestCase):
 PLUGIN_SKILL_DIR = REPO_ROOT / "plugins" / "pdca-framework" / "skills" / SKILL_NAME
 
 
+class TestMarketplaceJson(unittest.TestCase):
+    """#203: a root-level .claude-plugin/marketplace.json is what lets
+    'claude plugin marketplace add kenjudy/pdca-agentic-coding-framework' work
+    directly, per Claude Code's documented marketplace mechanism -- without it,
+    the only way to reach this plugin is a third-party catalog listing it."""
+
+    def setUp(self):
+        import json
+
+        self.path = REPO_ROOT / ".claude-plugin" / "marketplace.json"
+        self.assertTrue(
+            self.path.is_file(),
+            f"marketplace.json not found at {self.path} -- needed for "
+            "'claude plugin marketplace add' to work (#203)",
+        )
+        self.data = json.loads(self.path.read_text())
+
+    def test_has_name_and_owner(self):
+        self.assertIn("name", self.data, "marketplace.json missing top-level 'name'")
+        self.assertIn("owner", self.data, "marketplace.json missing top-level 'owner'")
+        self.assertIn("name", self.data["owner"], "marketplace.json's 'owner' missing 'name'")
+
+    def test_lists_pdca_framework_plugin(self):
+        plugins = self.data.get("plugins", [])
+        entries = [p for p in plugins if p.get("name") == "pdca-framework"]
+        self.assertEqual(len(entries), 1, "marketplace.json must list exactly one 'pdca-framework' entry")
+        self.assertEqual(
+            entries[0].get("source"),
+            "./plugins/pdca-framework",
+            "the pdca-framework entry's source must point at ./plugins/pdca-framework",
+        )
+
+    def test_entry_has_no_version_field(self):
+        """plugin.json's version is what gates delivery (#203) -- a version here
+        would silently take precedence over it, per Claude Code's own resolution
+        order, defeating the release-time bump check added for plugin.json."""
+        entries = [p for p in self.data.get("plugins", []) if p.get("name") == "pdca-framework"]
+        self.assertTrue(entries, "pdca-framework entry not found")
+        self.assertNotIn(
+            "version",
+            entries[0],
+            "marketplace.json's pdca-framework entry must not set its own 'version' -- "
+            "plugin.json's version is the single source of truth for delivery gating",
+        )
+
+    def test_entry_name_matches_plugin_json(self):
+        import json
+
+        plugin_json = json.loads(
+            (REPO_ROOT / "plugins" / "pdca-framework" / ".claude-plugin" / "plugin.json").read_text()
+        )
+        entries = [p for p in self.data.get("plugins", []) if p.get("name") == "pdca-framework"]
+        self.assertTrue(entries, "pdca-framework entry not found")
+        self.assertEqual(
+            entries[0]["name"],
+            plugin_json["name"],
+            "marketplace.json entry name must match plugin.json's own 'name'",
+        )
+
+
 class TestPluginSkillEmbed(unittest.TestCase):
     """The plugin bundled under plugins/pdca-framework/ must carry a working copy
     of the skill build.py produces, not just the router commands (#203) -- otherwise
