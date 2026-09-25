@@ -181,8 +181,14 @@ bd list --closed --type epic | grep -i [domain]
 
 Generate a structured markdown document from all open epics and their tasks (open or closed). Useful for handoffs, reviews, and planning the next PDCA cycle.
 
+Manual/scripted skill install (unzip or `install-skill.sh`):
 ```bash
 bash .claude/skills/pdca-framework/references/scripts/export-requirements.sh requirements.md
+```
+
+Plugin marketplace install — the skill lives under the plugin's own root, not `.claude/skills/`:
+```bash
+bash "$CLAUDE_PLUGIN_ROOT/skills/pdca-framework/references/scripts/export-requirements.sh" requirements.md
 ```
 
 The script uses `bd graph --all --compact` for a dependency overview, then iterates all open epics and their child tasks via `bd show`.
@@ -192,9 +198,14 @@ The script uses `bd graph --all --compact` for a dependency overview, then itera
 ```markdown
 Generate a requirements document from all open beads epics and their tasks.
 
-Run:
+Run (manual/scripted skill install):
 ```bash
 bash .claude/skills/pdca-framework/references/scripts/export-requirements.sh requirements.md
+```
+
+Or, under a plugin marketplace install:
+```bash
+bash "$CLAUDE_PLUGIN_ROOT/skills/pdca-framework/references/scripts/export-requirements.sh" requirements.md
 ```
 
 Then present the contents of requirements.md to the user.

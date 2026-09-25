@@ -1210,6 +1210,27 @@ class TestHookInfrastructure(unittest.TestCase):
             "reason asserts something depended on it (#138)",
         )
 
+    def test_beads_workflow_covers_both_install_paths(self):
+        """#203: export-requirements.sh's path is wrong under a plugin install --
+        the script lives under the plugin's own root there, not .claude/skills/.
+        Checked against the master directly; build.py's existing copy logic
+        propagates the fix to both the zip and the plugin's embedded copy."""
+        master = (
+            REPO_ROOT / "skill" / "pdca-framework" / "beads-addon" / "sources" / "beads-workflow.md"
+        ).read_text()
+        self.assertIn(
+            ".claude/skills/pdca-framework/references/scripts/export-requirements.sh",
+            master,
+            "beads-workflow.md lost its manual-install path for export-requirements.sh",
+        )
+        self.assertIn(
+            "CLAUDE_PLUGIN_ROOT",
+            master,
+            "beads-workflow.md has no plugin-install-aware path (expected "
+            "'CLAUDE_PLUGIN_ROOT') alongside its existing manual-install path -- the "
+            "hardcoded .claude/skills/... path is wrong under a plugin install (#203)",
+        )
+
     def test_run_tests_script_exists(self):
         self.assertTrue(
             (CLAUDE_SKILL_DIR / "run-tests.sh").exists(),
