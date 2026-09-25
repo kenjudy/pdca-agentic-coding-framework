@@ -728,6 +728,35 @@ class TestReadme(unittest.TestCase):
         )
 
 
+class TestPluginReadme(unittest.TestCase):
+    """#207 (CHECK-phase follow-up on #203): plugins/pdca-framework/README.md's
+    command table and Verify section still only reflected the manual-copy install
+    path, even though skill/README.md now leads with the marketplace install --
+    a marketplace user reading this same plugin's own README would be told to
+    type /pdca-plan, which does not resolve under that install path."""
+
+    def setUp(self):
+        self.content = (REPO_ROOT / "plugins" / "pdca-framework" / "README.md").read_text()
+
+    def test_documents_qualified_command_names(self):
+        self.assertIn(
+            "/pdca-framework:pdca-plan",
+            self.content,
+            "plugins/pdca-framework/README.md's command table doesn't mention the "
+            "plugin-qualified form (e.g. /pdca-framework:pdca-plan) that a "
+            "marketplace install actually uses (#207)",
+        )
+
+    def test_verify_section_covers_marketplace_install(self):
+        verify_section = self.content.split("## Verify")[-1]
+        self.assertIn(
+            "claude plugin list",
+            verify_section,
+            "plugins/pdca-framework/README.md's Verify section has no marketplace-"
+            "install check (e.g. `claude plugin list`), only the manual-copy one (#207)",
+        )
+
+
 class TestSkillPackage(unittest.TestCase):
     """Validate the built pdca-framework.skill zip package."""
 

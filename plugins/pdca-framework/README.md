@@ -4,13 +4,18 @@ A self-contained Claude Code plugin bundling the `pdca-framework` skill (`skills
 built from the same masters as `pdca-framework.skill`) and five thin router commands that
 invoke a single PDCA phase directly instead of the full cycle:
 
-| Command | Phase |
-|---|---|
-| `/pdca` | Full cycle (Plan → Do → Check → Act) — alias for the `pdca-framework` skill |
-| `/pdca-plan` | PLAN only — sequences 1a Analysis, then 1b Detailed Planning |
-| `/pdca-do` | DO only — TDD implementation with active oversight |
-| `/pdca-check` | CHECK only — completeness validation |
-| `/pdca-act` | ACT only — retrospective and continuous improvement |
+| Command (marketplace install) | Command (manual copy) | Phase |
+|---|---|---|
+| `/pdca-framework:pdca` | `/pdca` | Full cycle (Plan → Do → Check → Act) — alias for the `pdca-framework` skill |
+| `/pdca-framework:pdca-plan` | `/pdca-plan` | PLAN only — sequences 1a Analysis, then 1b Detailed Planning |
+| `/pdca-framework:pdca-do` | `/pdca-do` | DO only — TDD implementation with active oversight |
+| `/pdca-framework:pdca-check` | `/pdca-check` | CHECK only — completeness validation |
+| `/pdca-framework:pdca-act` | `/pdca-act` | ACT only — retrospective and continuous improvement |
+
+Claude Code namespaces a plugin's commands under the plugin's own name, so a marketplace
+install (below) resolves the qualified form on the left; a manual copy into
+`~/.claude/commands/` resolves the bare form on the right. Use whichever column matches
+how you installed.
 
 Each command is a thin router: it names its phase's section in `SKILL.md` and points at
 that phase's `references/*.md` file(s) rather than duplicating their content, and each of
@@ -90,11 +95,20 @@ install the skill separately via `skill/install-skill.sh` first.
 
 ## Verify
 
+**Marketplace install:**
+```bash
+claude plugin list
+```
+Should show `pdca-framework@<marketplace-name>` enabled. Then in a Claude Code session,
+`/pdca-framework:pdca-plan` (etc.) should appear as an available slash command.
+
+**Manual copy install:**
 ```bash
 ls ~/.claude/commands/pdca*.md   # or .claude/commands/ for a project install
 ```
-
 Then in a Claude Code session, `/pdca-plan` (etc.) should appear as an available slash
-command. **A fresh session is required** — command definitions load once per session, so
+command.
+
+**Either way, a fresh session is required** — command definitions load once per session, so
 editing an already-loaded command file will not update mid-session; re-check in a newly
 started session before trusting an edit.
