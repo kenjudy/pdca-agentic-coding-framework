@@ -2,6 +2,34 @@
 
 ## Unreleased
 
+### Changed: plugin renamed pdca-framework -> pdca, short commands (/pdca:plan etc.)
+
+- `plugins/pdca-framework/` renamed to `plugins/pdca/` via `git mv` (history preserved);
+  `plugin.json`'s `name` field changed to `pdca`, matching `marketplace.json`'s entry. No
+  migration map needed — nothing had shipped from this marketplace yet. The skill itself
+  keeps its own name, `pdca-framework` (`SKILL_NAME` in `build.py` is unchanged;
+  `PLUGIN_NAME` is the new, independent constant).
+- Short marketplace commands (`/pdca:plan`, `/pdca:do`, `/pdca:check`, `/pdca:act`,
+  `/pdca:cycle`) added via `plugin.json`'s `commands` manifest key, aliasing to the
+  **unrenamed** `commands/pdca-*.md` files — a plain file rename was considered and
+  rejected: `/plan` would collide with Claude Code's own built-in `/plan` (plan mode),
+  and `/do`/`/check`/`/act` are dangerously generic, which would have broken the
+  manual-copy and `.skill`-zip install paths where these files ship unnamespaced.
+  Verified live: installed from a marketplace, confirmed all five short names resolve
+  and actually route to the skill (not just present in the manifest).
+- `run-tests.sh`'s freshness gate no longer hardcodes the plugin path — it was found,
+  during this change's own PLAN-phase critic pass, that a hardcoded path would have
+  silently stopped protecting anything the moment the plugin was renamed (`git status
+  --porcelain` on a missing path exits 0 with empty output). Now derives the path from
+  `build.PLUGIN_SKILL_DIR` at runtime.
+- Command bodies now name sibling commands in both the manual-install form (`/pdca-plan`)
+  and the plugin-install short-alias form (`/pdca:plan`), since one file ships to both
+  install paths.
+- Fixed three follow-up issues from #203's CHECK-phase critic pass in the same pass:
+  #206 (namespace regression test used one exact string, not a general pattern), #205
+  (release-version check's plugin.json coverage gaps), #204 (already fixed by an earlier
+  commit; closed with re-verification evidence, not a new change).
+
 ### Added: plugins/pdca-framework is now marketplace-installable, with an embedded skill (#203)
 
 - `plugins/pdca-framework/` previously shipped only the five router commands, which

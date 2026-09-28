@@ -80,9 +80,9 @@ claude plugin install pdca
 ```
 
 This installs the `pdca-framework` skill and the five per-phase slash commands
-(`/pdca-framework:pdca`, `/pdca-framework:pdca-plan`, `/pdca-framework:pdca-do`,
-`/pdca-framework:pdca-check`, `/pdca-framework:pdca-act`) in one step. Updates land the
-same way once a new version is tagged: `claude plugin update pdca`.
+(`/pdca:cycle`, `/pdca:plan`, `/pdca:do`, `/pdca:check`, `/pdca:act`) in one
+step. Updates land the same way once a new version is tagged:
+`claude plugin update pdca`.
 
 **Already have the skill installed manually (below)?** Remove the old copies first so you
 don't end up with two copies of the skill and commands active at once:

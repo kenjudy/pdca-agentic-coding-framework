@@ -826,10 +826,10 @@ class TestPluginReadme(unittest.TestCase):
 
     def test_documents_qualified_command_names(self):
         self.assertIn(
-            "/pdca-framework:pdca-plan",
+            "/pdca:plan",
             self.content,
             "plugins/pdca/README.md's command table doesn't mention the "
-            "plugin-qualified form (e.g. /pdca-framework:pdca-plan) that a "
+            "plugin-qualified short-alias form (e.g. /pdca:plan) that a "
             "marketplace install actually uses (#207)",
         )
 
