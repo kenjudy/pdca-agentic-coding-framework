@@ -652,6 +652,42 @@ class TestProjectSetup(unittest.TestCase):
             "can't silently disable the freshness gate",
         )
 
+    def test_run_tests_script_freshness_gate_cannot_fail_open(self):
+        """CHECK-phase critic finding on the repo-reorg: the prior guard test only
+        checked that one old string was gone -- it would still pass if PLUGIN_SKILL_DIR
+        were re-hardcoded to the new path, or if the git status line's pathspec were
+        typo'd, or if an empty/missing path or a failing `git status` were silently
+        read as "nothing to report" (git exits 128 on some malformed pathspecs, with
+        empty stdout -- indistinguishable from a clean result unless the exit code is
+        checked). Verified live: an empty PLUGIN_SKILL_DIR now aborts with exit 1
+        rather than reporting clean, and a git status failure (tested with a
+        deliberately malformed pathspec) is caught by its exit code rather than its
+        empty stdout being read as success."""
+        script = (CLAUDE_SKILL_DIR / "run-tests.sh").read_text()
+        self.assertIn(
+            "import build; print(build.PLUGIN_SKILL_DIR)",
+            script,
+            "run-tests.sh no longer derives PLUGIN_SKILL_DIR from build.py's own constant",
+        )
+        self.assertIn(
+            'git -C "$SCRIPT_DIR/.." status --porcelain -- "$PLUGIN_SKILL_DIR"',
+            script,
+            "the git status call must reference the derived $PLUGIN_SKILL_DIR variable, "
+            "not a hardcoded or differently-spelled pathspec",
+        )
+        self.assertIn(
+            '[ -z "$PLUGIN_SKILL_DIR" ]',
+            script,
+            "run-tests.sh has no guard against PLUGIN_SKILL_DIR resolving to empty",
+        )
+        self.assertIn(
+            "GIT_STATUS_EXIT",
+            script,
+            "run-tests.sh does not check git status's own exit code -- a failing git "
+            "status (e.g. a malformed pathspec, exit 128) writes nothing to stdout, "
+            "which would otherwise be silently read as 'nothing to report'",
+        )
+
 
 class TestDependencyFloors(unittest.TestCase):
     """pyproject.toml's declared floors must not understate what is actually locked.

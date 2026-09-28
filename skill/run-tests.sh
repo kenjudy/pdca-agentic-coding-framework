@@ -59,9 +59,27 @@ echo "=== Checking plugin skill copy is fresh (#203) ==="
 # without `git add` (build.py prunes removed ones, but a newly-added file still
 # needs staging). Porcelain output includes untracked ("??") entries too.
 PLUGIN_SKILL_DIR="$(cd "$SCRIPT_DIR" && uv run --locked python3 -c 'import build; print(build.PLUGIN_SKILL_DIR)')"
+
+# Trust nothing about the derived path: an empty value or a missing directory
+# must abort loudly, not fall through into a `git status` call whose failure
+# (or vacuous success) would silently read as "nothing to report" -- exactly
+# the fail-open failure mode this whole gate exists to avoid.
+if [ -z "$PLUGIN_SKILL_DIR" ] || [ ! -d "$SCRIPT_DIR/../$PLUGIN_SKILL_DIR" ]; then
+    echo "✗ Could not resolve the plugin skill directory (build.PLUGIN_SKILL_DIR resolved"
+    echo "  to '$PLUGIN_SKILL_DIR', which is empty or not a directory) -- aborting rather"
+    echo "  than silently skipping the freshness check."
+    exit 1
+fi
+
 set +e
 FRESHNESS_STATUS="$(git -C "$SCRIPT_DIR/.." status --porcelain -- "$PLUGIN_SKILL_DIR")"
+GIT_STATUS_EXIT=$?
 set -e
+if [ "$GIT_STATUS_EXIT" -ne 0 ]; then
+    echo "✗ 'git status' failed while checking $PLUGIN_SKILL_DIR (exit $GIT_STATUS_EXIT) --"
+    echo "  aborting rather than treating an error as 'nothing to report'."
+    exit 1
+fi
 if [ -n "$FRESHNESS_STATUS" ]; then
     FRESHNESS_EXIT=1
     echo "✗ $PLUGIN_SKILL_DIR is stale -- run 'bash build-skill.sh'"
