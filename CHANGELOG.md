@@ -1,6 +1,6 @@
 # PDCA Framework Skill - Update Summary
 
-## Unreleased
+## v1.4.0 (2026-09-28)
 
 ### Changed: plugin renamed pdca-framework -> pdca, short commands (/pdca:plan etc.)
 
