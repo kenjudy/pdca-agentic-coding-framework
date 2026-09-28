@@ -1,4 +1,4 @@
-"""Verify a release tag agrees with README.md and CHANGELOG.md before publishing.
+"""Verify a release tag agrees with README.md, CHANGELOG.md, and plugin.json before publishing.
 
 `tests/test_build.py::TestReadme::test_current_version_matches_changelog` ties the two
 files to each other, which catches the drift that actually happened at v1.2.0 (the
@@ -102,7 +102,7 @@ def main(argv: list[str]) -> int:
             print(f"  - {problem}", file=sys.stderr)
         return 1
 
-    print(f"Release version check passed: tag {argv[1]} agrees with README.md and CHANGELOG.md")
+    print(f"Release version check passed: tag {argv[1]} agrees with README.md, CHANGELOG.md, and plugin.json")
     return 0
 
 

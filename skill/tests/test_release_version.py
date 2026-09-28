@@ -57,8 +57,10 @@ PLUGIN_JSON_TEMPLATE = """{{
 
 def _repo(readme: str, released: str, plugin: str | None = None) -> TemporaryDirectory:
     """Build a throwaway repo root with a README, CHANGELOG, and plugin.json at the
-    given versions. `plugin` defaults to `released` so existing callers that don't
-    care about plugin.json get a value that never contributes an extra problem."""
+    given versions. `plugin` defaults to `released`, which keeps plugin.json out of
+    `problems` only when the caller's tag also equals `released` -- callers checking
+    a tag that differs from `released` (e.g. testing README/CHANGELOG drift against
+    the tag) must pass `plugin` explicitly if they want plugin.json excluded (#205)."""
     if plugin is None:
         plugin = released
     tmp = TemporaryDirectory()
@@ -88,7 +90,7 @@ class TestReleaseVersionCheck(unittest.TestCase):
         Publishing here would attach a package whose README says v1.2.0 to a release
         labeled v1.3.0, with every existing test green.
         """
-        with _repo(readme="1.2.0", released="1.2.0") as root:
+        with _repo(readme="1.2.0", released="1.2.0", plugin="1.3.0") as root:
             problems = check_release_version("v1.3.0", Path(root))
 
         self.assertTrue(problems, "a tag matching neither file must be reported")
@@ -126,6 +128,21 @@ class TestReleaseVersionCheck(unittest.TestCase):
 
         self.assertTrue(problems, "a plugin.json behind the tag must be reported")
         self.assertIn("plugin.json", " ".join(problems))
+
+    def test_reports_missing_plugin_json(self):
+        """#205: the 'plugin.json not found' branch had no direct test -- it
+        already worked (added alongside #203's plugin.json check), but nothing
+        protected it from a future regression."""
+        with TemporaryDirectory() as name:
+            root = Path(name)
+            (root / "skill").mkdir()
+            (root / "skill" / "README.md").write_text(README_TEMPLATE.format(readme="1.3.0"))
+            (root / "CHANGELOG.md").write_text(CHANGELOG_TEMPLATE.format(released="1.3.0"))
+            # No plugins/ directory at all.
+            problems = check_release_version("v1.3.0", root)
+
+        self.assertTrue(problems, "a missing plugin.json must be reported")
+        self.assertIn("plugin.json not found", " ".join(problems))
 
     def test_reports_missing_readme_version_line(self):
         with TemporaryDirectory() as name:
