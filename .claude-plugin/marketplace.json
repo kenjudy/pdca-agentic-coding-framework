@@ -3,7 +3,7 @@
   "owner": {
     "name": "Ken Judy"
   },
-  "description": "Self-hosted marketplace for the pdca-framework Claude Code plugin.",
+  "description": "Self-hosted marketplace for the pdca Claude Code plugin.",
   "plugins": [
     {
       "name": "pdca",
