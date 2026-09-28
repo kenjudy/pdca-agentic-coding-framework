@@ -290,7 +290,15 @@ I need to add a new payment validation feature to our checkout flow.
 Let's use the PDCA framework.
 ```
 
-Or explicitly reference the skill:
+**On Claude Code**, run the full cycle explicitly with a slash command instead —
+`/pdca:cycle` (marketplace install) or `/pdca` (manual install):
+
+```
+/pdca:cycle I need to fix a bug in the user authentication system.
+```
+
+**On claude.ai or Codex**, where slash commands aren't available, explicitly
+reference the skill by name instead:
 
 ```
 @pdca-framework I need to fix a bug in the user authentication system.
@@ -327,22 +335,40 @@ Claude will facilitate:
 
 ## Using Specific Phases
 
+On Claude Code, each phase has its own slash command — `/pdca:plan`/`/pdca-plan`,
+`/pdca:do`/`/pdca-do`, `/pdca:check`/`/pdca-check`, `/pdca:act`/`/pdca-act` (marketplace
+install / manual install respectively; see [Installation](#for-claude-code-command-line)
+above for which applies to you). On claude.ai or Codex, where slash commands aren't
+available, reference the skill by name instead.
+
 ### Get Analysis Prompt
+```
+/pdca:plan Show me the analysis phase prompt
+```
 ```
 @pdca-framework Show me the analysis phase prompt
 ```
 
 ### Get Planning Prompt
 ```
+/pdca:plan I need the detailed planning template
+```
+```
 @pdca-framework I need the detailed planning template
 ```
 
 ### Get TDD Implementation Checklist
 ```
+/pdca:do Show me the DO phase checklist
+```
+```
 @pdca-framework Show me the DO phase checklist
 ```
 
 ### Run a Retrospective
+```
+/pdca:act Let's retrospect on this session
+```
 ```
 @pdca-framework Let's retrospect on this session
 ```
@@ -411,7 +437,9 @@ an updated version of this skill?
 **Symptoms:** Claude doesn't use the framework when discussing code
 
 **Solutions:**
-1. Explicitly reference it: `@pdca-framework`
+1. On Claude Code, invoke it directly with a slash command instead of relying on
+   auto-trigger: `/pdca:cycle` (marketplace install) or `/pdca` (manual install). On
+   claude.ai or Codex, explicitly reference it: `@pdca-framework`
 2. Use trigger words: "code generation", "TDD", "PDCA cycle"
 3. Check skill is enabled in settings
 
@@ -421,12 +449,21 @@ an updated version of this skill?
 **Solution:** This is expected behavior when context window fills. Follow the skill's recovery process:
 1. Stop the thread immediately
 2. Tell Claude what you observe
-3. Say: `@pdca-framework I'm seeing context drift. Let's refocus on step [X] using the DO phase checklist`
+3. On Claude Code, refocus with the DO command directly:
+   `/pdca:do I'm seeing context drift. Let's refocus on step [X] using the DO phase checklist`
+   (or `/pdca-do` on a manual install). On claude.ai or Codex:
+   `@pdca-framework I'm seeing context drift. Let's refocus on step [X] using the DO phase checklist`
 
 ### Too Much Boilerplate
 **Symptoms:** Prompts feel repetitive or verbose
 
-**Solution:** The skill is designed for 1-3 hour coding sessions. For very small changes:
+**Solution:** The skill is designed for 1-3 hour coding sessions. For very small changes,
+jump straight to DO on Claude Code:
+```
+/pdca:do Quick mode - I just need to [simple change].
+Skip to DO phase with minimal planning.
+```
+or on claude.ai/Codex:
 ```
 @pdca-framework Quick mode - I just need to [simple change]. 
 Skip to DO phase with minimal planning.
@@ -450,7 +487,11 @@ Stop. Our working agreement is to use TDD. Show me the failing test first.
 - **Too large:** > 3 hours (context drift likely)
 
 ### 2. Run Daily Retrospectives
-After each session:
+After each session, on Claude Code:
+```
+/pdca:act Let's retrospect on today's work
+```
+or on claude.ai/Codex:
 ```
 @pdca-framework Let's retrospect on today's work
 ```
@@ -858,4 +899,6 @@ There's no PDCA-side install step. `references/ponytail-setup.md` covers:
 
 ---
 
-**Ready to start?** Try: `@pdca-framework I need to [your coding task]`
+**Ready to start?** On Claude Code, try: `/pdca:cycle I need to [your coding task]`
+(or `/pdca` on a manual install). On claude.ai or Codex, try:
+`@pdca-framework I need to [your coding task]`
