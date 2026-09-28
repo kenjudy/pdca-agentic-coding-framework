@@ -7,7 +7,7 @@ Follow only the PLAN phase of the `pdca-framework` skill: its "1. PLAN" section 
 
 **1b. Detailed Planning** — only after 1a is done. Produce the numbered, atomic implementation plan (testing strategy, preparatory refactoring if needed, acceptance criteria per step, definition of done, risk areas, rollback approach).
 
-Do not proceed to DO, CHECK, or ACT in this turn — those are separate commands (`/pdca-do`, `/pdca-check`, `/pdca-act`).
+Do not proceed to DO, CHECK, or ACT in this turn — those are separate commands: `/pdca-do`, `/pdca-check`, `/pdca-act` (manual install) or `/pdca:do`, `/pdca:check`, `/pdca:act` (plugin install).
 
 If the `pdca-framework` skill is not installed, tell the user to install it first rather than proceeding without it.
 

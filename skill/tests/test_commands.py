@@ -46,12 +46,26 @@ ALL_PHASE_REFERENCE_FILES = [
 ]
 
 # Each single-phase command's own reference file, and the other three commands
-# it must explicitly decline to proceed into.
+# it must explicitly decline to proceed into -- both the manual-install form
+# (/pdca-x) and the plugin-install short-alias form (/pdca:x), since one body
+# is shipped to both install paths and can't hardcode just one's naming scheme.
 SINGLE_PHASE_FILES = {
-    "pdca-plan.md": {"own_reference": "plan-prompts.md", "other_commands": ["/pdca-do", "/pdca-check", "/pdca-act"]},
-    "pdca-do.md": {"own_reference": "do-prompts.md", "other_commands": ["/pdca-plan", "/pdca-check", "/pdca-act"]},
-    "pdca-check.md": {"own_reference": "check-prompts.md", "other_commands": ["/pdca-plan", "/pdca-do", "/pdca-act"]},
-    "pdca-act.md": {"own_reference": "act-prompts.md", "other_commands": ["/pdca-plan", "/pdca-do", "/pdca-check"]},
+    "pdca-plan.md": {
+        "own_reference": "plan-prompts.md",
+        "other_commands": ["/pdca-do", "/pdca-check", "/pdca-act", "/pdca:do", "/pdca:check", "/pdca:act"],
+    },
+    "pdca-do.md": {
+        "own_reference": "do-prompts.md",
+        "other_commands": ["/pdca-plan", "/pdca-check", "/pdca-act", "/pdca:plan", "/pdca:check", "/pdca:act"],
+    },
+    "pdca-check.md": {
+        "own_reference": "check-prompts.md",
+        "other_commands": ["/pdca-plan", "/pdca-do", "/pdca-act", "/pdca:plan", "/pdca:do", "/pdca:act"],
+    },
+    "pdca-act.md": {
+        "own_reference": "act-prompts.md",
+        "other_commands": ["/pdca-plan", "/pdca-do", "/pdca-check", "/pdca:plan", "/pdca:do", "/pdca:check"],
+    },
 }
 
 SECTION_HEADER_RE = re.compile(r'its "([^"]+)" section in SKILL\.md')
@@ -96,6 +110,21 @@ class TestPhaseSeparation(unittest.TestCase):
         content = (COMMANDS_DIR / "pdca.md").read_text()
         for ref in ALL_PHASE_REFERENCE_FILES:
             self.assertIn(ref, content, f"pdca.md does not reference {ref}")
+
+    def test_full_cycle_names_both_install_forms_of_each_phase_command(self):
+        content = (COMMANDS_DIR / "pdca.md").read_text()
+        for form in (
+            "/pdca-plan",
+            "/pdca-do",
+            "/pdca-check",
+            "/pdca-act",
+            "/pdca:plan",
+            "/pdca:do",
+            "/pdca:check",
+            "/pdca:act",
+        ):
+            with self.subTest(form=form):
+                self.assertIn(form, content, f"pdca.md does not name {form} among the single-phase commands")
 
 
 class TestSectionHeadersMatchCurrentSkillMd(unittest.TestCase):
