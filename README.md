@@ -78,7 +78,7 @@ router commands let you invoke a single phase directly (`/pdca-plan`, `/pdca-do`
 `/pdca` as an explicit full-cycle alias. `/pdca-plan` sequences PLAN's own two sub-steps
 (1a Analysis, then 1b Detailed Planning) rather than collapsing them.
 
-📦 **[Get started with Per-Phase Commands →](plugins/pdca-framework/README.md)**
+📦 **[Get started with Per-Phase Commands →](plugins/pdca/README.md)**
 
 ---
 

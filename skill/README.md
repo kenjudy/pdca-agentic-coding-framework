@@ -76,13 +76,13 @@ no third-party catalog required (see [`.claude-plugin/marketplace.json`](../.cla
 
 ```bash
 claude plugin marketplace add kenjudy/pdca-agentic-coding-framework
-claude plugin install pdca-framework
+claude plugin install pdca
 ```
 
 This installs the `pdca-framework` skill and the five per-phase slash commands
 (`/pdca-framework:pdca`, `/pdca-framework:pdca-plan`, `/pdca-framework:pdca-do`,
 `/pdca-framework:pdca-check`, `/pdca-framework:pdca-act`) in one step. Updates land the
-same way once a new version is tagged: `claude plugin update pdca-framework`.
+same way once a new version is tagged: `claude plugin update pdca`.
 
 **Already have the skill installed manually (below)?** Remove the old copies first so you
 don't end up with two copies of the skill and commands active at once:
@@ -193,7 +193,7 @@ This also installs the five per-phase slash commands (`/pdca`, `/pdca-plan`, `/p
 `/pdca-check`, `/pdca-act`) into the scope's commands directory — `~/.claude/commands/`
 for `personal`, the current project's `.claude/commands/` for `project`, or
 `~/.codex/prompts/` for `codex`. See
-[plugins/pdca-framework/README.md](../plugins/pdca-framework/README.md) for details.
+[plugins/pdca/README.md](../plugins/pdca/README.md) for details.
 
 **Windows (PowerShell):**
 ```powershell

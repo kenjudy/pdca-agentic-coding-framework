@@ -24,7 +24,7 @@ import zipfile
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).parent.parent.parent
-COMMANDS_DIR = REPO_ROOT / "plugins" / "pdca-framework" / "commands"
+COMMANDS_DIR = REPO_ROOT / "plugins" / "pdca" / "commands"
 SKILL_MD = REPO_ROOT / "skill" / "pdca-framework" / "SKILL.md"
 SKILL_DIR = REPO_ROOT / "skill"
 SKILL_ZIP = SKILL_DIR / "pdca-framework.skill"

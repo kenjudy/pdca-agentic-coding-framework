@@ -249,7 +249,8 @@ class TestSkillMdSource(unittest.TestCase):
                 self.assertIn(phase, self.content, f"Phase {phase} not found in SKILL.md")
 
 
-PLUGIN_SKILL_DIR = REPO_ROOT / "plugins" / "pdca-framework" / "skills" / SKILL_NAME
+PLUGIN_NAME = "pdca"
+PLUGIN_SKILL_DIR = REPO_ROOT / "plugins" / PLUGIN_NAME / "skills" / SKILL_NAME
 
 
 class TestMarketplaceJson(unittest.TestCase):
@@ -274,26 +275,26 @@ class TestMarketplaceJson(unittest.TestCase):
         self.assertIn("owner", self.data, "marketplace.json missing top-level 'owner'")
         self.assertIn("name", self.data["owner"], "marketplace.json's 'owner' missing 'name'")
 
-    def test_lists_pdca_framework_plugin(self):
+    def test_lists_pdca_plugin(self):
         plugins = self.data.get("plugins", [])
-        entries = [p for p in plugins if p.get("name") == "pdca-framework"]
-        self.assertEqual(len(entries), 1, "marketplace.json must list exactly one 'pdca-framework' entry")
+        entries = [p for p in plugins if p.get("name") == PLUGIN_NAME]
+        self.assertEqual(len(entries), 1, f"marketplace.json must list exactly one '{PLUGIN_NAME}' entry")
         self.assertEqual(
             entries[0].get("source"),
-            "./plugins/pdca-framework",
-            "the pdca-framework entry's source must point at ./plugins/pdca-framework",
+            f"./plugins/{PLUGIN_NAME}",
+            f"the {PLUGIN_NAME} entry's source must point at ./plugins/{PLUGIN_NAME}",
         )
 
     def test_entry_has_no_version_field(self):
         """plugin.json's version is what gates delivery (#203) -- a version here
         would silently take precedence over it, per Claude Code's own resolution
         order, defeating the release-time bump check added for plugin.json."""
-        entries = [p for p in self.data.get("plugins", []) if p.get("name") == "pdca-framework"]
-        self.assertTrue(entries, "pdca-framework entry not found")
+        entries = [p for p in self.data.get("plugins", []) if p.get("name") == PLUGIN_NAME]
+        self.assertTrue(entries, f"{PLUGIN_NAME} entry not found")
         self.assertNotIn(
             "version",
             entries[0],
-            "marketplace.json's pdca-framework entry must not set its own 'version' -- "
+            f"marketplace.json's {PLUGIN_NAME} entry must not set its own 'version' -- "
             "plugin.json's version is the single source of truth for delivery gating",
         )
 
@@ -301,10 +302,10 @@ class TestMarketplaceJson(unittest.TestCase):
         import json
 
         plugin_json = json.loads(
-            (REPO_ROOT / "plugins" / "pdca-framework" / ".claude-plugin" / "plugin.json").read_text()
+            (REPO_ROOT / "plugins" / PLUGIN_NAME / ".claude-plugin" / "plugin.json").read_text()
         )
-        entries = [p for p in self.data.get("plugins", []) if p.get("name") == "pdca-framework"]
-        self.assertTrue(entries, "pdca-framework entry not found")
+        entries = [p for p in self.data.get("plugins", []) if p.get("name") == PLUGIN_NAME]
+        self.assertTrue(entries, f"{PLUGIN_NAME} entry not found")
         self.assertEqual(
             entries[0]["name"],
             plugin_json["name"],
@@ -313,7 +314,7 @@ class TestMarketplaceJson(unittest.TestCase):
 
 
 class TestPluginSkillEmbed(unittest.TestCase):
-    """The plugin bundled under plugins/pdca-framework/ must carry a working copy
+    """The plugin bundled under plugins/pdca/ must carry a working copy
     of the skill build.py produces, not just the router commands (#203) -- otherwise
     installing the plugin gives commands that route to a skill that isn't there."""
 
@@ -327,7 +328,7 @@ class TestPluginSkillEmbed(unittest.TestCase):
         self.assertEqual(
             plugin_skill_md.read_text(),
             SKILL_SRC.read_text(),
-            "plugins/pdca-framework/skills/pdca-framework/SKILL.md doesn't match "
+            "plugins/pdca/skills/pdca-framework/SKILL.md doesn't match "
             "skill/pdca-framework/SKILL.md -- build.py's plugin copy is stale",
         )
 
@@ -566,6 +567,22 @@ class TestProjectSetup(unittest.TestCase):
                 "invokes with 'uv run' may resolve outside the venv (issue #89)",
             )
 
+    def test_run_tests_script_does_not_hardcode_plugin_path(self):
+        """The freshness gate must derive its target from build.PLUGIN_SKILL_DIR, not a
+        literal string. A hardcoded path silently stops protecting anything the moment
+        the plugin directory is renamed: `git status --porcelain` on a now-missing path
+        prints a warning to stderr but exits 0 with empty stdout, so the gate reports
+        clean forever instead of failing loudly. Found by the repo-reorg PLAN's own
+        CHECK-equivalent critic pass -- this is the fix, not a hypothetical."""
+        script = (CLAUDE_SKILL_DIR / "run-tests.sh").read_text()
+        self.assertNotIn(
+            "plugins/pdca-framework/skills/pdca-framework",
+            script,
+            "run-tests.sh hardcodes the plugin skill path as a literal string -- it must "
+            "derive it from build.PLUGIN_SKILL_DIR instead, so a future plugin rename "
+            "can't silently disable the freshness gate",
+        )
+
 
 class TestDependencyFloors(unittest.TestCase):
     """pyproject.toml's declared floors must not understate what is actually locked.
@@ -715,7 +732,7 @@ class TestReadme(unittest.TestCase):
         assert readme_match is not None
         readme_version = readme_match.group(1)
 
-        plugin_json_path = REPO_ROOT / "plugins" / "pdca-framework" / ".claude-plugin" / "plugin.json"
+        plugin_json_path = REPO_ROOT / "plugins" / PLUGIN_NAME / ".claude-plugin" / "plugin.json"
         self.assertTrue(plugin_json_path.is_file(), f"plugin.json not found at {plugin_json_path}")
         plugin_version = json.loads(plugin_json_path.read_text())["version"]
 
@@ -729,20 +746,20 @@ class TestReadme(unittest.TestCase):
 
 
 class TestPluginReadme(unittest.TestCase):
-    """#207 (CHECK-phase follow-up on #203): plugins/pdca-framework/README.md's
+    """#207 (CHECK-phase follow-up on #203): plugins/pdca/README.md's
     command table and Verify section still only reflected the manual-copy install
     path, even though skill/README.md now leads with the marketplace install --
     a marketplace user reading this same plugin's own README would be told to
     type /pdca-plan, which does not resolve under that install path."""
 
     def setUp(self):
-        self.content = (REPO_ROOT / "plugins" / "pdca-framework" / "README.md").read_text()
+        self.content = (REPO_ROOT / "plugins" / PLUGIN_NAME / "README.md").read_text()
 
     def test_documents_qualified_command_names(self):
         self.assertIn(
             "/pdca-framework:pdca-plan",
             self.content,
-            "plugins/pdca-framework/README.md's command table doesn't mention the "
+            "plugins/pdca/README.md's command table doesn't mention the "
             "plugin-qualified form (e.g. /pdca-framework:pdca-plan) that a "
             "marketplace install actually uses (#207)",
         )
@@ -752,7 +769,7 @@ class TestPluginReadme(unittest.TestCase):
         self.assertIn(
             "claude plugin list",
             verify_section,
-            "plugins/pdca-framework/README.md's Verify section has no marketplace-"
+            "plugins/pdca/README.md's Verify section has no marketplace-"
             "install check (e.g. `claude plugin list`), only the manual-copy one (#207)",
         )
 
@@ -1361,15 +1378,15 @@ class TestHookInfrastructure(unittest.TestCase):
                 )
 
     def test_claude_md_names_plugin_embedded_copy(self):
-        """#203: build.py now also writes plugins/pdca-framework/skills/pdca-framework/,
+        """#203: build.py now also writes plugins/pdca/skills/pdca-framework/,
         a second location a contributor could mistakenly hand-edit -- the existing
         'never edit build artifacts' warning must name it, not just references/."""
         claude_md = (REPO_ROOT / "CLAUDE.md").read_text()
         self.assertIn(
-            "plugins/pdca-framework/skills/",
+            "plugins/pdca/skills/",
             claude_md,
             "CLAUDE.md's build-artifact warning doesn't name the plugin's embedded "
-            "copy (plugins/pdca-framework/skills/) -- #203 added a second location "
+            "copy (plugins/pdca/skills/) -- #203 added a second location "
             "build.py writes to that a contributor could mistakenly hand-edit",
         )
 

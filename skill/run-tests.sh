@@ -44,21 +44,27 @@ bash "$SCRIPT_DIR/build-skill.sh"
 
 echo ""
 echo "=== Checking plugin skill copy is fresh (#203) ==="
-# build.py just wrote plugins/pdca-framework/skills/pdca-framework/ from the
-# masters. If that differs from what is committed, a master or SKILL.md changed
-# without the plugin's embedded copy being regenerated and committed alongside
-# it -- catch it here, not after a marketplace install ships stale content.
+# build.py just wrote the plugin's embedded skill directory from the masters. If
+# that differs from what is committed, a master or SKILL.md changed without the
+# plugin's embedded copy being regenerated and committed alongside it -- catch it
+# here, not after a marketplace install ships stale content.
+#
+# The path is derived from build.PLUGIN_SKILL_DIR, never hardcoded: a literal
+# string here would silently stop protecting anything the moment the plugin
+# directory is renamed (git status --porcelain on a missing path exits 0 with
+# empty output, not a loud failure).
 #
 # `git status --porcelain`, not `git diff --exit-code`: diff only sees changes to
 # already-tracked files, so it is blind to a reference file added to MANIFEST
 # without `git add` (build.py prunes removed ones, but a newly-added file still
 # needs staging). Porcelain output includes untracked ("??") entries too.
+PLUGIN_SKILL_DIR="$(cd "$SCRIPT_DIR" && uv run --locked python3 -c 'import build; print(build.PLUGIN_SKILL_DIR)')"
 set +e
-FRESHNESS_STATUS="$(git -C "$SCRIPT_DIR/.." status --porcelain -- plugins/pdca-framework/skills/pdca-framework)"
+FRESHNESS_STATUS="$(git -C "$SCRIPT_DIR/.." status --porcelain -- "$PLUGIN_SKILL_DIR")"
 set -e
 if [ -n "$FRESHNESS_STATUS" ]; then
     FRESHNESS_EXIT=1
-    echo "✗ plugins/pdca-framework/skills/pdca-framework is stale -- run 'bash build-skill.sh'"
+    echo "✗ $PLUGIN_SKILL_DIR is stale -- run 'bash build-skill.sh'"
     echo "  and commit the result alongside the master/SKILL.md change above."
     echo "$FRESHNESS_STATUS"
 else

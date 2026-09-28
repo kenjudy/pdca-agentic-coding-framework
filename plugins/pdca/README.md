@@ -29,7 +29,7 @@ installs the skill and all five commands in one step, no separate skill install 
 
 ```bash
 claude plugin marketplace add kenjudy/pdca-agentic-coding-framework
-claude plugin install pdca-framework
+claude plugin install pdca
 ```
 
 **Already have the skill installed manually?** Remove the old copies first to avoid
@@ -64,26 +64,26 @@ them yourself into a directory Claude Code already auto-discovers:
 **Personal (all projects) — macOS/Linux:**
 ```bash
 mkdir -p ~/.claude/commands
-cp plugins/pdca-framework/commands/*.md ~/.claude/commands/
+cp plugins/pdca/commands/*.md ~/.claude/commands/
 ```
 
 **Personal (all projects) — Windows (PowerShell):**
 ```powershell
 New-Item -ItemType Directory -Path "$HOME\.claude\commands" -Force | Out-Null
-Copy-Item plugins\pdca-framework\commands\*.md "$HOME\.claude\commands\"
+Copy-Item plugins\pdca\commands\*.md "$HOME\.claude\commands\"
 ```
 
 **Project-scoped (shared with a team via git), from that project's root:**
 ```bash
 mkdir -p .claude/commands
-cp /path/to/pdca-agentic-coding-framework/plugins/pdca-framework/commands/*.md .claude/commands/
+cp /path/to/pdca-agentic-coding-framework/plugins/pdca/commands/*.md .claude/commands/
 git add .claude/commands/
 git commit -m "Add PDCA per-phase slash commands"
 ```
 
 **Try it without copying, for this session only:**
 ```bash
-claude --plugin-dir plugins/pdca-framework
+claude --plugin-dir plugins/pdca
 ```
 This loads the whole plugin (skill and commands) for the current session — useful for
 trying it out, but not persistent across sessions the way `claude plugin install` or
@@ -99,8 +99,8 @@ install the skill separately via `skill/install-skill.sh` first.
 ```bash
 claude plugin list
 ```
-Should show `pdca-framework@<marketplace-name>` enabled. Then in a Claude Code session,
-`/pdca-framework:pdca-plan` (etc.) should appear as an available slash command.
+Should show `pdca@<marketplace-name>` enabled. Then in a Claude Code session,
+`/pdca:pdca-plan` (etc.) should appear as an available slash command.
 
 **Manual copy install:**
 ```bash

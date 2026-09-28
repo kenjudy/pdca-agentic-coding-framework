@@ -47,7 +47,7 @@ More prose.
 """
 
 PLUGIN_JSON_TEMPLATE = """{{
-  "name": "pdca-framework",
+  "name": "pdca",
   "version": "{plugin}",
   "description": "TDD-disciplined AI code generation using Plan-Do-Check-Act methodology.",
   "author": {{"name": "Ken Judy", "email": "ken@kenjudy.us"}}
@@ -66,7 +66,7 @@ def _repo(readme: str, released: str, plugin: str | None = None) -> TemporaryDir
     (root / "skill").mkdir()
     (root / "skill" / "README.md").write_text(README_TEMPLATE.format(readme=readme))
     (root / "CHANGELOG.md").write_text(CHANGELOG_TEMPLATE.format(released=released))
-    plugin_dir = root / "plugins" / "pdca-framework" / ".claude-plugin"
+    plugin_dir = root / "plugins" / "pdca" / ".claude-plugin"
     plugin_dir.mkdir(parents=True)
     (plugin_dir / "plugin.json").write_text(PLUGIN_JSON_TEMPLATE.format(plugin=plugin))
     return tmp

@@ -6,8 +6,8 @@
   "description": "Self-hosted marketplace for the pdca-framework Claude Code plugin.",
   "plugins": [
     {
-      "name": "pdca-framework",
-      "source": "./plugins/pdca-framework",
+      "name": "pdca",
+      "source": "./plugins/pdca",
       "description": "TDD-disciplined AI code generation using Plan-Do-Check-Act methodology. Enforces architecture-first analysis, strict red-green-refactor, Socratic ACT retrospectives, and optional Beads task tracking integration."
     }
   ]

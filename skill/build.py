@@ -84,12 +84,18 @@ EXPORT_SCRIPT_DEST = "scripts/export-requirements.sh"
 # to copy into ~/.claude/commands/ (or the Codex/project equivalent) --
 # without this, the plugin's commands/ directory is the only copy and no
 # installer can reach it.
-PLUGIN_DIR = "plugins/pdca-framework"
+#
+# PLUGIN_NAME is the plugin's own identity (plugin.json's "name", and the
+# marketplace namespace prefix, e.g. /pdca:plan) -- distinct from SKILL_NAME,
+# which names the skill the plugin bundles and never changes independent of
+# the .skill zip's own identity.
+PLUGIN_NAME = "pdca"
+PLUGIN_DIR = f"plugins/{PLUGIN_NAME}"
 PLUGIN_COMMANDS_DIR = f"{PLUGIN_DIR}/commands"
 
 # The plugin also needs a working copy of the skill itself (#203) -- without
-# this, installing plugins/pdca-framework/ via a marketplace gives someone the
-# router commands above with no skill for them to route to.
+# this, installing the plugin via a marketplace gives someone the router
+# commands above with no skill for them to route to.
 PLUGIN_SKILL_DIR = f"{PLUGIN_DIR}/skills/{SKILL_NAME}"
 COMMAND_FILES = (
     "pdca.md",
