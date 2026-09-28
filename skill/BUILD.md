@@ -311,9 +311,12 @@ After building:
    ```
 
 2. **Test in Claude:**
-   - Upload `pdca-framework.skill` to Claude.ai
-   - Or install in Claude Code (skills sync automatically)
-   - Test with: `@pdca-framework Show me the analysis prompt`
+   - Upload `pdca-framework.skill` to Claude.ai, or install in Claude Code (skills sync
+     automatically)
+   - On Claude Code, test with the PLAN slash command: `/pdca:plan Show me the analysis
+     prompt` (marketplace install) or `/pdca-plan Show me the analysis prompt` (manual
+     install)
+   - On claude.ai, test with: `@pdca-framework Show me the analysis prompt`
 
 3. **Review generated files:**
    ```bash
