@@ -1,5 +1,18 @@
 # PDCA Framework Skill - Update Summary
 
+## Unreleased
+
+### Documentation
+- Fixed `skill/README.md`, root `README.md`, and `skill/BUILD.md`, which still only
+  showed the pre-#203/#210 `@pdca-framework` mention syntax in their usage examples,
+  with no indication that Claude Code slash commands exist. Every phase-specific
+  example now leads with the matching slash command (`/pdca:plan`, `/pdca:do`,
+  `/pdca:check`, `/pdca:act`, `/pdca:cycle` for marketplace installs; `/pdca-plan` etc.
+  for manual installs), with `@pdca-framework` kept alongside for claude.ai/Codex,
+  where slash commands aren't available.
+
+---
+
 ## v1.4.0 (2026-09-28)
 
 ### Changed: plugin renamed pdca-framework -> pdca, short commands (/pdca:plan etc.)

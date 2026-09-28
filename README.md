@@ -69,13 +69,17 @@ A Claude skill for human-supervised AI-assisted software development using Plan-
 
 ---
 
-## Optional: Per-Phase Slash Commands
+## Optional: Per-Phase Slash Commands (Claude Code)
 
-This is an add-on to whichever option above you chose, not a fourth way to use the
-framework — it requires the skill to already be installed. Once it is, five thin
-router commands let you invoke a single phase directly (`/pdca-plan`, `/pdca-do`,
-`/pdca-check`, `/pdca-act`) instead of only the full-cycle `/pdca-framework` skill, plus
-`/pdca` as an explicit full-cycle alias. `/pdca-plan` sequences PLAN's own two sub-steps
+If you installed the Standard Skill via the [Claude Code plugin marketplace](skill/README.md#recommended-install-via-plugin-marketplace)
+(`claude plugin install pdca`), you already have this — it installs the skill and five
+thin router commands (`/pdca:plan`, `/pdca:do`, `/pdca:check`, `/pdca:act`, plus
+`/pdca:cycle` as an explicit full-cycle alias) together in one step.
+
+If you installed the skill manually instead, this is an add-on: `install-skill.sh`
+places five equivalent commands (`/pdca-plan`, `/pdca-do`, `/pdca-check`, `/pdca-act`,
+`/pdca`) alongside it. Either form lets you invoke a single phase directly instead of
+running the full cycle; `/pdca:plan`/`/pdca-plan` sequences PLAN's own two sub-steps
 (1a Analysis, then 1b Detailed Planning) rather than collapsing them.
 
 📦 **[Get started with Per-Phase Commands →](plugins/pdca/README.md)**
