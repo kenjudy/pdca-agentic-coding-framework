@@ -15,6 +15,7 @@ the way `build-skill.sh` derived everything from `SCRIPT_DIR`:
 
 from __future__ import annotations
 
+import shutil
 import sys
 import zipfile
 from pathlib import Path
@@ -83,7 +84,19 @@ EXPORT_SCRIPT_DEST = "scripts/export-requirements.sh"
 # to copy into ~/.claude/commands/ (or the Codex/project equivalent) --
 # without this, the plugin's commands/ directory is the only copy and no
 # installer can reach it.
-PLUGIN_COMMANDS_DIR = "plugins/pdca-framework/commands"
+#
+# PLUGIN_NAME is the plugin's own identity (plugin.json's "name", and the
+# marketplace namespace prefix, e.g. /pdca:plan) -- distinct from SKILL_NAME,
+# which names the skill the plugin bundles and never changes independent of
+# the .skill zip's own identity.
+PLUGIN_NAME = "pdca"
+PLUGIN_DIR = f"plugins/{PLUGIN_NAME}"
+PLUGIN_COMMANDS_DIR = f"{PLUGIN_DIR}/commands"
+
+# The plugin also needs a working copy of the skill itself (#203) -- without
+# this, installing the plugin via a marketplace gives someone the router
+# commands above with no skill for them to route to.
+PLUGIN_SKILL_DIR = f"{PLUGIN_DIR}/skills/{SKILL_NAME}"
 COMMAND_FILES = (
     "pdca.md",
     "pdca-plan.md",
@@ -184,6 +197,7 @@ def build(skill_dir: Path) -> Path:
     references = core_dir / "references"
     injections_dir = core_dir / "claude-addon" / "injections"
     skill_file = skill_dir / f"{SKILL_NAME}.skill"
+    plugin_skill_dir = repo_root / PLUGIN_SKILL_DIR
 
     if not (core_dir / "SKILL.md").is_file():
         raise BuildError(f"Skill descriptor not found: {core_dir / 'SKILL.md'}")
@@ -220,6 +234,25 @@ def build(skill_dir: Path) -> Path:
 
     for name in COMMAND_FILES:
         (commands / name).write_text(_read(repo_root / PLUGIN_COMMANDS_DIR / name))
+
+    # Pruned before writing, not just overwritten: a reference removed from MANIFEST
+    # must not leave a stale committed file behind that no signal ever revisits.
+    if plugin_skill_dir.exists():
+        shutil.rmtree(plugin_skill_dir)
+    plugin_skill_dir.mkdir(parents=True)
+    (plugin_skill_dir / "SKILL.md").write_text(_read(core_dir / "SKILL.md"))
+
+    (plugin_skill_dir / "references" / "scripts").mkdir(parents=True, exist_ok=True)
+    for member in MANIFEST:
+        if not member.startswith("references/"):
+            continue
+        source_path = core_dir / member
+        dest_path = plugin_skill_dir / member
+        if member == EXECUTABLE_MEMBER:
+            dest_path.write_bytes(source_path.read_bytes())
+            dest_path.chmod(EXECUTABLE_MODE)
+        else:
+            dest_path.write_text(_read(source_path))
 
     skill_file.unlink(missing_ok=True)
     with zipfile.ZipFile(skill_file, "w", zipfile.ZIP_DEFLATED) as archive:

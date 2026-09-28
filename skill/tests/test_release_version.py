@@ -46,14 +46,31 @@ Some prose.
 More prose.
 """
 
+PLUGIN_JSON_TEMPLATE = """{{
+  "name": "pdca",
+  "version": "{plugin}",
+  "description": "TDD-disciplined AI code generation using Plan-Do-Check-Act methodology.",
+  "author": {{"name": "Ken Judy", "email": "ken@kenjudy.us"}}
+}}
+"""
 
-def _repo(readme: str, released: str) -> TemporaryDirectory:
-    """Build a throwaway repo root with a README and CHANGELOG at the given versions."""
+
+def _repo(readme: str, released: str, plugin: str | None = None) -> TemporaryDirectory:
+    """Build a throwaway repo root with a README, CHANGELOG, and plugin.json at the
+    given versions. `plugin` defaults to `released`, which keeps plugin.json out of
+    `problems` only when the caller's tag also equals `released` -- callers checking
+    a tag that differs from `released` (e.g. testing README/CHANGELOG drift against
+    the tag) must pass `plugin` explicitly if they want plugin.json excluded (#205)."""
+    if plugin is None:
+        plugin = released
     tmp = TemporaryDirectory()
     root = Path(tmp.name)
     (root / "skill").mkdir()
     (root / "skill" / "README.md").write_text(README_TEMPLATE.format(readme=readme))
     (root / "CHANGELOG.md").write_text(CHANGELOG_TEMPLATE.format(released=released))
+    plugin_dir = root / "plugins" / "pdca" / ".claude-plugin"
+    plugin_dir.mkdir(parents=True)
+    (plugin_dir / "plugin.json").write_text(PLUGIN_JSON_TEMPLATE.format(plugin=plugin))
     return tmp
 
 
@@ -73,7 +90,7 @@ class TestReleaseVersionCheck(unittest.TestCase):
         Publishing here would attach a package whose README says v1.2.0 to a release
         labeled v1.3.0, with every existing test green.
         """
-        with _repo(readme="1.2.0", released="1.2.0") as root:
+        with _repo(readme="1.2.0", released="1.2.0", plugin="1.3.0") as root:
             problems = check_release_version("v1.3.0", Path(root))
 
         self.assertTrue(problems, "a tag matching neither file must be reported")
@@ -97,10 +114,35 @@ class TestReleaseVersionCheck(unittest.TestCase):
 
     def test_reports_both_problems_at_once(self):
         """A maintainer should learn about every mismatch in one run, not one per re-tag."""
-        with _repo(readme="1.1.0", released="1.2.0") as root:
+        with _repo(readme="1.1.0", released="1.2.0", plugin="1.3.0") as root:
             problems = check_release_version("v1.3.0", Path(root))
 
         self.assertEqual(len(problems), 2, f"expected a README and a CHANGELOG problem, got: {problems}")
+
+    def test_rejects_stale_plugin_json(self):
+        """#203: plugin.json now gates marketplace delivery -- if it's behind the
+        tag, installed users silently never receive the release, unlike a stale
+        README, which is merely inaccurate."""
+        with _repo(readme="1.3.0", released="1.3.0", plugin="1.1.0") as root:
+            problems = check_release_version("v1.3.0", Path(root))
+
+        self.assertTrue(problems, "a plugin.json behind the tag must be reported")
+        self.assertIn("plugin.json", " ".join(problems))
+
+    def test_reports_missing_plugin_json(self):
+        """#205: the 'plugin.json not found' branch had no direct test -- it
+        already worked (added alongside #203's plugin.json check), but nothing
+        protected it from a future regression."""
+        with TemporaryDirectory() as name:
+            root = Path(name)
+            (root / "skill").mkdir()
+            (root / "skill" / "README.md").write_text(README_TEMPLATE.format(readme="1.3.0"))
+            (root / "CHANGELOG.md").write_text(CHANGELOG_TEMPLATE.format(released="1.3.0"))
+            # No plugins/ directory at all.
+            problems = check_release_version("v1.3.0", root)
+
+        self.assertTrue(problems, "a missing plugin.json must be reported")
+        self.assertIn("plugin.json not found", " ".join(problems))
 
     def test_reports_missing_readme_version_line(self):
         with TemporaryDirectory() as name:

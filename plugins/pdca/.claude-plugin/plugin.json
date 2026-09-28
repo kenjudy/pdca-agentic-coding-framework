@@ -1,0 +1,16 @@
+{
+  "name": "pdca",
+  "version": "1.4.0",
+  "description": "TDD-disciplined AI code generation using Plan-Do-Check-Act methodology. Enforces architecture-first analysis, strict red-green-refactor, Socratic ACT retrospectives, and optional Beads task tracking integration.",
+  "author": {
+    "name": "Ken Judy",
+    "email": "ken@kenjudy.us"
+  },
+  "commands": {
+    "plan": { "source": "./commands/pdca-plan.md" },
+    "do": { "source": "./commands/pdca-do.md" },
+    "check": { "source": "./commands/pdca-check.md" },
+    "act": { "source": "./commands/pdca-act.md" },
+    "cycle": { "source": "./commands/pdca.md" }
+  }
+}

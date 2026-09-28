@@ -249,6 +249,159 @@ class TestSkillMdSource(unittest.TestCase):
                 self.assertIn(phase, self.content, f"Phase {phase} not found in SKILL.md")
 
 
+PLUGIN_NAME = "pdca"
+PLUGIN_SKILL_DIR = REPO_ROOT / "plugins" / PLUGIN_NAME / "skills" / SKILL_NAME
+
+
+class TestMarketplaceJson(unittest.TestCase):
+    """#203: a root-level .claude-plugin/marketplace.json is what lets
+    'claude plugin marketplace add kenjudy/pdca-agentic-coding-framework' work
+    directly, per Claude Code's documented marketplace mechanism -- without it,
+    the only way to reach this plugin is a third-party catalog listing it."""
+
+    def setUp(self):
+        import json
+
+        self.path = REPO_ROOT / ".claude-plugin" / "marketplace.json"
+        self.assertTrue(
+            self.path.is_file(),
+            f"marketplace.json not found at {self.path} -- needed for "
+            "'claude plugin marketplace add' to work (#203)",
+        )
+        self.data = json.loads(self.path.read_text())
+
+    def test_has_name_and_owner(self):
+        self.assertIn("name", self.data, "marketplace.json missing top-level 'name'")
+        self.assertIn("owner", self.data, "marketplace.json missing top-level 'owner'")
+        self.assertIn("name", self.data["owner"], "marketplace.json's 'owner' missing 'name'")
+
+    def test_lists_pdca_plugin(self):
+        plugins = self.data.get("plugins", [])
+        entries = [p for p in plugins if p.get("name") == PLUGIN_NAME]
+        self.assertEqual(len(entries), 1, f"marketplace.json must list exactly one '{PLUGIN_NAME}' entry")
+        self.assertEqual(
+            entries[0].get("source"),
+            f"./plugins/{PLUGIN_NAME}",
+            f"the {PLUGIN_NAME} entry's source must point at ./plugins/{PLUGIN_NAME}",
+        )
+
+    def test_entry_has_no_version_field(self):
+        """plugin.json's version is what gates delivery (#203) -- a version here
+        would silently take precedence over it, per Claude Code's own resolution
+        order, defeating the release-time bump check added for plugin.json."""
+        entries = [p for p in self.data.get("plugins", []) if p.get("name") == PLUGIN_NAME]
+        self.assertTrue(entries, f"{PLUGIN_NAME} entry not found")
+        self.assertNotIn(
+            "version",
+            entries[0],
+            f"marketplace.json's {PLUGIN_NAME} entry must not set its own 'version' -- "
+            "plugin.json's version is the single source of truth for delivery gating",
+        )
+
+    def test_entry_name_matches_plugin_json(self):
+        import json
+
+        plugin_json = json.loads(
+            (REPO_ROOT / "plugins" / PLUGIN_NAME / ".claude-plugin" / "plugin.json").read_text()
+        )
+        entries = [p for p in self.data.get("plugins", []) if p.get("name") == PLUGIN_NAME]
+        self.assertTrue(entries, f"{PLUGIN_NAME} entry not found")
+        self.assertEqual(
+            entries[0]["name"],
+            plugin_json["name"],
+            "marketplace.json entry name must match plugin.json's own 'name'",
+        )
+
+
+class TestPluginShortCommandAliases(unittest.TestCase):
+    """Repo-reorg initiative: get /pdca:plan instead of /pdca:pdca-plan without
+    renaming the underlying command files (which must stay pdca-*.md -- a plain
+    rename to plan.md etc. would collide with Claude Code's own built-in /plan
+    and generic names like /do, /check, /act, breaking the non-plugin install
+    path where these files ship unnamespaced). Short names come only from
+    plugin.json's `commands` manifest key aliasing to the unrenamed files --
+    confirmed live that setting this key requires listing every command
+    explicitly, since it turns off Claude Code's directory scan of commands/."""
+
+    EXPECTED_ALIASES = {
+        "plan": "pdca-plan.md",
+        "do": "pdca-do.md",
+        "check": "pdca-check.md",
+        "act": "pdca-act.md",
+        "cycle": "pdca.md",
+    }
+
+    def setUp(self):
+        import json
+
+        self.plugin_json_path = REPO_ROOT / "plugins" / PLUGIN_NAME / ".claude-plugin" / "plugin.json"
+        self.plugin_json = json.loads(self.plugin_json_path.read_text())
+
+    def test_plugin_json_commands_alias_all_command_files(self):
+        import build
+
+        self.assertIn(
+            "commands",
+            self.plugin_json,
+            "plugin.json has no top-level 'commands' key -- needed to alias short "
+            "names (e.g. 'plan') to the unrenamed commands/pdca-plan.md file",
+        )
+        commands = self.plugin_json["commands"]
+
+        self.assertEqual(
+            set(commands.keys()),
+            set(self.EXPECTED_ALIASES.keys()),
+            "plugin.json's 'commands' key does not define exactly the expected "
+            f"short aliases {sorted(self.EXPECTED_ALIASES)}",
+        )
+
+        for alias, filename in self.EXPECTED_ALIASES.items():
+            with self.subTest(alias=alias):
+                entry = commands[alias]
+                self.assertIsInstance(
+                    entry,
+                    dict,
+                    f"commands.{alias} must be an object with a 'source' key -- the "
+                    "string-shorthand form fails `claude plugin validate` (confirmed live)",
+                )
+                self.assertEqual(
+                    entry.get("source"),
+                    f"./commands/{filename}",
+                    f"commands.{alias}.source must point at the unrenamed ./commands/{filename}",
+                )
+
+        aliased_files = {Path(e["source"]).name for e in commands.values()}
+        for command_file in build.COMMAND_FILES:
+            with self.subTest(command_file=command_file):
+                self.assertIn(
+                    command_file,
+                    aliased_files,
+                    f"{command_file} is in build.COMMAND_FILES but no alias in plugin.json's "
+                    "'commands' key covers it -- since setting this key disables the automatic "
+                    "commands/ scan, an uncovered file would silently stop being exposed at all",
+                )
+
+
+class TestPluginSkillEmbed(unittest.TestCase):
+    """The plugin bundled under plugins/pdca/ must carry a working copy
+    of the skill build.py produces, not just the router commands (#203) -- otherwise
+    installing the plugin gives commands that route to a skill that isn't there."""
+
+    def test_plugin_skill_md_matches_built_source(self):
+        plugin_skill_md = PLUGIN_SKILL_DIR / "SKILL.md"
+        self.assertTrue(
+            plugin_skill_md.is_file(),
+            f"Plugin skill copy missing: {plugin_skill_md} -- build.py must copy "
+            f"{SKILL_SRC} here so installing the plugin includes a working skill (#203)",
+        )
+        self.assertEqual(
+            plugin_skill_md.read_text(),
+            SKILL_SRC.read_text(),
+            "plugins/pdca/skills/pdca-framework/SKILL.md doesn't match "
+            "skill/pdca-framework/SKILL.md -- build.py's plugin copy is stale",
+        )
+
+
 README_FILE = CLAUDE_SKILL_DIR / "README.md"
 CHANGELOG_FILE = REPO_ROOT / "CHANGELOG.md"
 
@@ -483,6 +636,58 @@ class TestProjectSetup(unittest.TestCase):
                 "invokes with 'uv run' may resolve outside the venv (issue #89)",
             )
 
+    def test_run_tests_script_does_not_hardcode_plugin_path(self):
+        """The freshness gate must derive its target from build.PLUGIN_SKILL_DIR, not a
+        literal string. A hardcoded path silently stops protecting anything the moment
+        the plugin directory is renamed: `git status --porcelain` on a now-missing path
+        prints a warning to stderr but exits 0 with empty stdout, so the gate reports
+        clean forever instead of failing loudly. Found by the repo-reorg PLAN's own
+        CHECK-equivalent critic pass -- this is the fix, not a hypothetical."""
+        script = (CLAUDE_SKILL_DIR / "run-tests.sh").read_text()
+        self.assertNotIn(
+            "plugins/pdca-framework/skills/pdca-framework",
+            script,
+            "run-tests.sh hardcodes the plugin skill path as a literal string -- it must "
+            "derive it from build.PLUGIN_SKILL_DIR instead, so a future plugin rename "
+            "can't silently disable the freshness gate",
+        )
+
+    def test_run_tests_script_freshness_gate_cannot_fail_open(self):
+        """CHECK-phase critic finding on the repo-reorg: the prior guard test only
+        checked that one old string was gone -- it would still pass if PLUGIN_SKILL_DIR
+        were re-hardcoded to the new path, or if the git status line's pathspec were
+        typo'd, or if an empty/missing path or a failing `git status` were silently
+        read as "nothing to report" (git exits 128 on some malformed pathspecs, with
+        empty stdout -- indistinguishable from a clean result unless the exit code is
+        checked). Verified live: an empty PLUGIN_SKILL_DIR now aborts with exit 1
+        rather than reporting clean, and a git status failure (tested with a
+        deliberately malformed pathspec) is caught by its exit code rather than its
+        empty stdout being read as success."""
+        script = (CLAUDE_SKILL_DIR / "run-tests.sh").read_text()
+        self.assertIn(
+            "import build; print(build.PLUGIN_SKILL_DIR)",
+            script,
+            "run-tests.sh no longer derives PLUGIN_SKILL_DIR from build.py's own constant",
+        )
+        self.assertIn(
+            'git -C "$SCRIPT_DIR/.." status --porcelain -- "$PLUGIN_SKILL_DIR"',
+            script,
+            "the git status call must reference the derived $PLUGIN_SKILL_DIR variable, "
+            "not a hardcoded or differently-spelled pathspec",
+        )
+        self.assertIn(
+            '[ -z "$PLUGIN_SKILL_DIR" ]',
+            script,
+            "run-tests.sh has no guard against PLUGIN_SKILL_DIR resolving to empty",
+        )
+        self.assertIn(
+            "GIT_STATUS_EXIT",
+            script,
+            "run-tests.sh does not check git status's own exit code -- a failing git "
+            "status (e.g. a malformed pathspec, exit 128) writes nothing to stdout, "
+            "which would otherwise be silently read as 'nothing to report'",
+        )
+
 
 class TestDependencyFloors(unittest.TestCase):
     """pyproject.toml's declared floors must not understate what is actually locked.
@@ -618,6 +823,59 @@ class TestReadme(unittest.TestCase):
             f"README Current Version (v{readme_version}) does not match the newest "
             f"released version in CHANGELOG.md (v{changelog_version}) -- update "
             "skill/README.md's '**Current Version:**' line",
+        )
+
+    def test_plugin_json_version_matches_readme(self):
+        """#203: plugin.json's version now gates delivery to marketplace installs --
+        Claude Code caches an installed plugin by this string and won't re-fetch
+        until it changes, so a missed bump here means installed users silently never
+        see the update, unlike a stale README which is merely inaccurate."""
+        import json
+
+        readme_match = re.search(r"\*\*Current Version:\*\*\s*v(\d+\.\d+\.\d+)", self.content)
+        self.assertIsNotNone(readme_match, "README.md has no '**Current Version:** vX.Y.Z' line to check")
+        assert readme_match is not None
+        readme_version = readme_match.group(1)
+
+        plugin_json_path = REPO_ROOT / "plugins" / PLUGIN_NAME / ".claude-plugin" / "plugin.json"
+        self.assertTrue(plugin_json_path.is_file(), f"plugin.json not found at {plugin_json_path}")
+        plugin_version = json.loads(plugin_json_path.read_text())["version"]
+
+        self.assertEqual(
+            plugin_version,
+            readme_version,
+            f"plugin.json version ({plugin_version}) does not match README's Current "
+            f"Version (v{readme_version}) -- with plugin.json driving marketplace "
+            "delivery (#203), a missed bump means installed users never see the update",
+        )
+
+
+class TestPluginReadme(unittest.TestCase):
+    """#207 (CHECK-phase follow-up on #203): plugins/pdca/README.md's
+    command table and Verify section still only reflected the manual-copy install
+    path, even though skill/README.md now leads with the marketplace install --
+    a marketplace user reading this same plugin's own README would be told to
+    type /pdca-plan, which does not resolve under that install path."""
+
+    def setUp(self):
+        self.content = (REPO_ROOT / "plugins" / PLUGIN_NAME / "README.md").read_text()
+
+    def test_documents_qualified_command_names(self):
+        self.assertIn(
+            "/pdca:plan",
+            self.content,
+            "plugins/pdca/README.md's command table doesn't mention the "
+            "plugin-qualified short-alias form (e.g. /pdca:plan) that a "
+            "marketplace install actually uses (#207)",
+        )
+
+    def test_verify_section_covers_marketplace_install(self):
+        verify_section = self.content.split("## Verify")[-1]
+        self.assertIn(
+            "claude plugin list",
+            verify_section,
+            "plugins/pdca/README.md's Verify section has no marketplace-"
+            "install check (e.g. `claude plugin list`), only the manual-copy one (#207)",
         )
 
 
@@ -1103,6 +1361,46 @@ class TestHookInfrastructure(unittest.TestCase):
             "reason asserts something depended on it (#138)",
         )
 
+    def test_beads_workflow_plugin_path_is_resolvable(self):
+        """#203 CHECK-phase finding: export-requirements.sh's path is wrong under a
+        plugin install (the script lives under the plugin's own root there, not
+        .claude/skills/) -- but $CLAUDE_PLUGIN_ROOT does not fix it. Per Claude
+        Code's plugin variable docs (code.claude.com/docs/en/plugins-reference),
+        that variable is substituted only inside skill/command/agent markdown
+        Claude Code loads directly -- not inside a references/*.md file read via
+        Read, and not in the environment of a Bash-tool-executed command. The
+        guidance must instead have the agent resolve the path from where it read
+        this file. Checked against the master directly; build.py's existing copy
+        logic propagates the fix to both the zip and the plugin's embedded copy."""
+        master = (
+            REPO_ROOT / "skill" / "pdca-framework" / "beads-addon" / "sources" / "beads-workflow.md"
+        ).read_text()
+        self.assertIn(
+            ".claude/skills/pdca-framework/references/scripts/export-requirements.sh",
+            master,
+            "beads-workflow.md lost its manual-install path for export-requirements.sh",
+        )
+        bash_blocks = re.findall(r"```bash\n(.*?)```", master, re.DOTALL)
+        self.assertTrue(bash_blocks, "no bash code fences found in beads-workflow.md")
+        for block in bash_blocks:
+            with self.subTest(block=block[:40]):
+                self.assertNotIn(
+                    "CLAUDE_PLUGIN_ROOT",
+                    block,
+                    "a bash snippet in beads-workflow.md relies on $CLAUDE_PLUGIN_ROOT, "
+                    "which does not substitute inside a references/*.md file read via "
+                    "Read, nor in the environment of a Bash-tool command (#203) -- "
+                    "explaining this limitation in prose is fine, using it in a "
+                    "command meant to actually be run is not",
+                )
+        self.assertIn(
+            "scripts/export-requirements.sh",
+            master.split(".claude/skills/pdca-framework/references/scripts/export-requirements.sh")[1],
+            "beads-workflow.md has no plugin-install-aware guidance after its "
+            "manual-install path -- expected an instruction to resolve the script "
+            "relative to wherever this reference file was read from (#203)",
+        )
+
     def test_run_tests_script_exists(self):
         self.assertTrue(
             (CLAUDE_SKILL_DIR / "run-tests.sh").exists(),
@@ -1183,6 +1481,19 @@ class TestHookInfrastructure(unittest.TestCase):
                     f"{name} instructs unconditional self-push, contradicting the approval "
                     "default and the other agent instruction file",
                 )
+
+    def test_claude_md_names_plugin_embedded_copy(self):
+        """#203: build.py now also writes plugins/pdca/skills/pdca-framework/,
+        a second location a contributor could mistakenly hand-edit -- the existing
+        'never edit build artifacts' warning must name it, not just references/."""
+        claude_md = (REPO_ROOT / "CLAUDE.md").read_text()
+        self.assertIn(
+            "plugins/pdca/skills/",
+            claude_md,
+            "CLAUDE.md's build-artifact warning doesn't name the plugin's embedded "
+            "copy (plugins/pdca/skills/) -- #203 added a second location "
+            "build.py writes to that a contributor could mistakenly hand-edit",
+        )
 
     def test_settings_json_has_no_machine_specific_path(self):
         """.claude/settings.json is checked in, so it must run on every clone.

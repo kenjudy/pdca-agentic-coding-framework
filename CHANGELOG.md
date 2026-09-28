@@ -1,6 +1,64 @@
 # PDCA Framework Skill - Update Summary
 
-## Unreleased
+## v1.4.0 (2026-09-28)
+
+### Changed: plugin renamed pdca-framework -> pdca, short commands (/pdca:plan etc.)
+
+- `plugins/pdca-framework/` renamed to `plugins/pdca/` via `git mv` (history preserved);
+  `plugin.json`'s `name` field changed to `pdca`, matching `marketplace.json`'s entry. No
+  migration map needed — nothing had shipped from this marketplace yet. The skill itself
+  keeps its own name, `pdca-framework` (`SKILL_NAME` in `build.py` is unchanged;
+  `PLUGIN_NAME` is the new, independent constant).
+- Short marketplace commands (`/pdca:plan`, `/pdca:do`, `/pdca:check`, `/pdca:act`,
+  `/pdca:cycle`) added via `plugin.json`'s `commands` manifest key, aliasing to the
+  **unrenamed** `commands/pdca-*.md` files — a plain file rename was considered and
+  rejected: `/plan` would collide with Claude Code's own built-in `/plan` (plan mode),
+  and `/do`/`/check`/`/act` are dangerously generic, which would have broken the
+  manual-copy and `.skill`-zip install paths where these files ship unnamespaced.
+  Verified live: installed from a marketplace, confirmed all five short names resolve
+  and actually route to the skill (not just present in the manifest).
+- `run-tests.sh`'s freshness gate no longer hardcodes the plugin path — it was found,
+  during this change's own PLAN-phase critic pass, that a hardcoded path would have
+  silently stopped protecting anything the moment the plugin was renamed (`git status
+  --porcelain` on a missing path exits 0 with empty output). Now derives the path from
+  `build.PLUGIN_SKILL_DIR` at runtime.
+- Command bodies now name sibling commands in both the manual-install form (`/pdca-plan`)
+  and the plugin-install short-alias form (`/pdca:plan`), since one file ships to both
+  install paths.
+- Fixed three follow-up issues from #203's CHECK-phase critic pass in the same pass:
+  #206 (namespace regression test used one exact string, not a general pattern), #205
+  (release-version check's plugin.json coverage gaps), #204 (already fixed by an earlier
+  commit; closed with re-verification evidence, not a new change).
+
+### Added: plugins/pdca-framework is now marketplace-installable, with an embedded skill (#203)
+
+- `plugins/pdca-framework/` previously shipped only the five router commands, which
+  referenced the skill under a hardcoded `anthropic-skills:pdca-framework` prefix —
+  installing the plugin via its own marketplace gave commands that told the user the
+  skill wasn't installed, since Claude Code namespaces a plugin-bundled skill as
+  `pdca-framework:pdca-framework`. Confirmed live with the `claude` CLI: installing
+  from a self-hosted marketplace and invoking `/pdca-framework:pdca-plan` now resolves
+  the bundled skill correctly.
+- `build.py` now writes `plugins/pdca-framework/skills/pdca-framework/` (`SKILL.md` +
+  `references/`, executable bit preserved on `export-requirements.sh`) from the same
+  masters as `pdca-framework.skill`, so the plugin is self-contained. `run-tests.sh`
+  fails if that copy drifts from a fresh build.
+- Router commands reference the skill by its bare name instead of a hardcoded
+  marketplace prefix, so they resolve under any install source.
+- Added a root-level `.claude-plugin/marketplace.json` so
+  `claude plugin marketplace add kenjudy/pdca-agentic-coding-framework` works
+  directly — validated clean with `claude plugin validate .`.
+- `plugin.json`'s `version` now gates delivery to marketplace installs (Claude Code
+  caches an installed plugin by that string); it was stale at 1.1.0 against the
+  README's 1.3.0, unchecked. Bumped, and `check_release_version.py` now validates it
+  against the release tag alongside README and CHANGELOG.
+- `beads-workflow.md` documents both the manual-install and `$CLAUDE_PLUGIN_ROOT`
+  plugin-install paths for `export-requirements.sh`.
+- `skill/README.md` and `plugins/pdca-framework/README.md` now lead with the
+  marketplace install for Claude Code, keeping the manual/scripted unzip install as
+  a documented fallback (building from source, customizing prompts pre-release, or
+  older Claude Code versions without plugin support). claude.ai and Codex install
+  sections are unchanged.
 
 ### Added: OpenAI judge-model support for the eval harness, gated behind an opt-in env var (#190 Plan B, steps 0-5)
 

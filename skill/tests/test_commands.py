@@ -24,7 +24,7 @@ import zipfile
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).parent.parent.parent
-COMMANDS_DIR = REPO_ROOT / "plugins" / "pdca-framework" / "commands"
+COMMANDS_DIR = REPO_ROOT / "plugins" / "pdca" / "commands"
 SKILL_MD = REPO_ROOT / "skill" / "pdca-framework" / "SKILL.md"
 SKILL_DIR = REPO_ROOT / "skill"
 SKILL_ZIP = SKILL_DIR / "pdca-framework.skill"
@@ -46,12 +46,26 @@ ALL_PHASE_REFERENCE_FILES = [
 ]
 
 # Each single-phase command's own reference file, and the other three commands
-# it must explicitly decline to proceed into.
+# it must explicitly decline to proceed into -- both the manual-install form
+# (/pdca-x) and the plugin-install short-alias form (/pdca:x), since one body
+# is shipped to both install paths and can't hardcode just one's naming scheme.
 SINGLE_PHASE_FILES = {
-    "pdca-plan.md": {"own_reference": "plan-prompts.md", "other_commands": ["/pdca-do", "/pdca-check", "/pdca-act"]},
-    "pdca-do.md": {"own_reference": "do-prompts.md", "other_commands": ["/pdca-plan", "/pdca-check", "/pdca-act"]},
-    "pdca-check.md": {"own_reference": "check-prompts.md", "other_commands": ["/pdca-plan", "/pdca-do", "/pdca-act"]},
-    "pdca-act.md": {"own_reference": "act-prompts.md", "other_commands": ["/pdca-plan", "/pdca-do", "/pdca-check"]},
+    "pdca-plan.md": {
+        "own_reference": "plan-prompts.md",
+        "other_commands": ["/pdca-do", "/pdca-check", "/pdca-act", "/pdca:do", "/pdca:check", "/pdca:act"],
+    },
+    "pdca-do.md": {
+        "own_reference": "do-prompts.md",
+        "other_commands": ["/pdca-plan", "/pdca-check", "/pdca-act", "/pdca:plan", "/pdca:check", "/pdca:act"],
+    },
+    "pdca-check.md": {
+        "own_reference": "check-prompts.md",
+        "other_commands": ["/pdca-plan", "/pdca-do", "/pdca-act", "/pdca:plan", "/pdca:do", "/pdca:act"],
+    },
+    "pdca-act.md": {
+        "own_reference": "act-prompts.md",
+        "other_commands": ["/pdca-plan", "/pdca-do", "/pdca-check", "/pdca:plan", "/pdca:do", "/pdca:check"],
+    },
 }
 
 SECTION_HEADER_RE = re.compile(r'its "([^"]+)" section in SKILL\.md')
@@ -97,6 +111,21 @@ class TestPhaseSeparation(unittest.TestCase):
         for ref in ALL_PHASE_REFERENCE_FILES:
             self.assertIn(ref, content, f"pdca.md does not reference {ref}")
 
+    def test_full_cycle_names_both_install_forms_of_each_phase_command(self):
+        content = (COMMANDS_DIR / "pdca.md").read_text()
+        for form in (
+            "/pdca-plan",
+            "/pdca-do",
+            "/pdca-check",
+            "/pdca-act",
+            "/pdca:plan",
+            "/pdca:do",
+            "/pdca:check",
+            "/pdca:act",
+        ):
+            with self.subTest(form=form):
+                self.assertIn(form, content, f"pdca.md does not name {form} among the single-phase commands")
+
 
 class TestSectionHeadersMatchCurrentSkillMd(unittest.TestCase):
     """Live cross-check (not a hardcoded parallel map): extract the section header
@@ -114,6 +143,41 @@ class TestSectionHeadersMatchCurrentSkillMd(unittest.TestCase):
             self.assertIn(
                 header, skill_md, f"{name} quotes SKILL.md section {header!r}, which is not currently present"
             )
+
+
+class TestSkillReferenceIsNamespaceAgnostic(unittest.TestCase):
+    """#203: commands hardcoded `anthropic-skills:pdca-framework`, which only
+    resolves when the skill happens to be loaded from that specific marketplace.
+    Installed via this plugin's own self-hosted marketplace instead, Claude Code
+    namespaces the bundled skill as `pdca:pdca-framework` -- a hardcoded prefix
+    breaks exactly the install path #203 exists to support.
+
+    #206: the original fix only rejected the one exact string that broke, so a
+    command file hardcoding a *different* qualified prefix (e.g. `foo:pdca-framework`)
+    would have slipped through undetected. This uses a general pattern instead --
+    confirmed (by this PLAN's own critic pass) not to false-positive against the
+    plugin's own name (it keys on the literal `:pdca-framework` suffix, so `pdca`
+    appearing elsewhere in a command's text, e.g. in `/pdca:plan`, does not match)."""
+
+    MARKETPLACE_QUALIFIED_SKILL_REF = re.compile(r"[\w-]+:pdca-framework\b")
+
+    def test_no_command_hardcodes_marketplace_prefix(self):
+        for name in EXPECTED_COMMAND_FILES:
+            content = (COMMANDS_DIR / name).read_text()
+            with self.subTest(file=name):
+                self.assertNotRegex(
+                    content,
+                    self.MARKETPLACE_QUALIFIED_SKILL_REF,
+                    f"{name} hardcodes a marketplace-qualified skill prefix "
+                    "(matching '[\\w-]+:pdca-framework') -- this breaks when the "
+                    "skill is installed via a different marketplace/plugin (#203, #206)",
+                )
+                self.assertIn(
+                    "`pdca-framework` skill",
+                    content,
+                    f"{name} does not reference the skill by its bare name -- "
+                    "expected the phrase '`pdca-framework` skill' (#203)",
+                )
 
 
 class TestPlanCommandSequencing(unittest.TestCase):

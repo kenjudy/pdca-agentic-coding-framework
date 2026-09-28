@@ -1,0 +1,14 @@
+{
+  "name": "pdca-framework-marketplace",
+  "owner": {
+    "name": "Ken Judy"
+  },
+  "description": "Self-hosted marketplace for the pdca Claude Code plugin.",
+  "plugins": [
+    {
+      "name": "pdca",
+      "source": "./plugins/pdca",
+      "description": "TDD-disciplined AI code generation using Plan-Do-Check-Act methodology. Enforces architecture-first analysis, strict red-green-refactor, Socratic ACT retrospectives, and optional Beads task tracking integration."
+    }
+  ]
+}
