@@ -313,6 +313,75 @@ class TestMarketplaceJson(unittest.TestCase):
         )
 
 
+class TestPluginShortCommandAliases(unittest.TestCase):
+    """Repo-reorg initiative: get /pdca:plan instead of /pdca:pdca-plan without
+    renaming the underlying command files (which must stay pdca-*.md -- a plain
+    rename to plan.md etc. would collide with Claude Code's own built-in /plan
+    and generic names like /do, /check, /act, breaking the non-plugin install
+    path where these files ship unnamespaced). Short names come only from
+    plugin.json's `commands` manifest key aliasing to the unrenamed files --
+    confirmed live that setting this key requires listing every command
+    explicitly, since it turns off Claude Code's directory scan of commands/."""
+
+    EXPECTED_ALIASES = {
+        "plan": "pdca-plan.md",
+        "do": "pdca-do.md",
+        "check": "pdca-check.md",
+        "act": "pdca-act.md",
+        "cycle": "pdca.md",
+    }
+
+    def setUp(self):
+        import json
+
+        self.plugin_json_path = REPO_ROOT / "plugins" / PLUGIN_NAME / ".claude-plugin" / "plugin.json"
+        self.plugin_json = json.loads(self.plugin_json_path.read_text())
+
+    def test_plugin_json_commands_alias_all_command_files(self):
+        import build
+
+        self.assertIn(
+            "commands",
+            self.plugin_json,
+            "plugin.json has no top-level 'commands' key -- needed to alias short "
+            "names (e.g. 'plan') to the unrenamed commands/pdca-plan.md file",
+        )
+        commands = self.plugin_json["commands"]
+
+        self.assertEqual(
+            set(commands.keys()),
+            set(self.EXPECTED_ALIASES.keys()),
+            "plugin.json's 'commands' key does not define exactly the expected "
+            f"short aliases {sorted(self.EXPECTED_ALIASES)}",
+        )
+
+        for alias, filename in self.EXPECTED_ALIASES.items():
+            with self.subTest(alias=alias):
+                entry = commands[alias]
+                self.assertIsInstance(
+                    entry,
+                    dict,
+                    f"commands.{alias} must be an object with a 'source' key -- the "
+                    "string-shorthand form fails `claude plugin validate` (confirmed live)",
+                )
+                self.assertEqual(
+                    entry.get("source"),
+                    f"./commands/{filename}",
+                    f"commands.{alias}.source must point at the unrenamed ./commands/{filename}",
+                )
+
+        aliased_files = {Path(e["source"]).name for e in commands.values()}
+        for command_file in build.COMMAND_FILES:
+            with self.subTest(command_file=command_file):
+                self.assertIn(
+                    command_file,
+                    aliased_files,
+                    f"{command_file} is in build.COMMAND_FILES but no alias in plugin.json's "
+                    "'commands' key covers it -- since setting this key disables the automatic "
+                    "commands/ scan, an uncovered file would silently stop being exposed at all",
+                )
+
+
 class TestPluginSkillEmbed(unittest.TestCase):
     """The plugin bundled under plugins/pdca/ must carry a working copy
     of the skill build.py produces, not just the router commands (#203) -- otherwise
