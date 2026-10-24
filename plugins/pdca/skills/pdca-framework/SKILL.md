@@ -83,6 +83,18 @@ This addon is fully optional. Without it, autonomous sessions fall back to a fre
 no third-party skill, on a different model than the one doing the work — never the same session
 reviewing itself.
 
+## Tutorial Mode (Optional)
+
+Explains the current phase — what it is, how to use it, what comes next — directly in each
+phase's response to the human operator. Off by default; a project opts in once, durably,
+rather than the agent guessing from conversation context.
+
+**Setup**: See `references/tutorial-setup.md` for how to turn it on (durably in your project
+instructions, or for a single invocation) and its scope.
+
+This addon is fully optional. The framework works identically with or without it — no PLAN,
+DO, CHECK, or ACT behavior changes, only whether an explanatory aside is added to the reply.
+
 ## PDCA Cycle Overview
 
 Each step has distinct prompts and human commitments:
@@ -92,6 +104,7 @@ Each step has distinct prompts and human commitments:
 - **Planning**: Create detailed execution plan with numbered steps and checkpoints
 - See `references/plan-prompts.md` for complete templates
 - **Beads (Optional)**: See `references/plan-beads-addon.md` for epic tracking
+- **Tutorial (Optional)**: only when tutorial mode is on (see `references/tutorial-setup.md`), also follow `references/plan-tutorial-addon.md`
 
 ### 2. DO: Code Generation (30 min - 2.5 hrs)
 - **TDD Implementation**: Red-green-refactor with checklist-based guidance
@@ -99,18 +112,21 @@ Each step has distinct prompts and human commitments:
 - See `references/do-prompts.md` for implementation checklists
 - **Anti-patterns**: See `references/testing-anti-patterns.md` for common TDD violations to avoid
 - **Beads (Optional)**: See `references/do-beads-addon.md` for TDD step tracking
+- **Tutorial (Optional)**: only when tutorial mode is on (see `references/tutorial-setup.md`), also follow `references/do-tutorial-addon.md`
 
 ### 3. CHECK: Validate (2-5 min)
 - **Completeness**: Verify against analysis, plan, and quality standards
 - **Definition of Done**: Explicit checklist for delivery readiness
 - See `references/check-prompts.md` for validation templates
 - **Beads (Optional)**: See `references/check-beads-addon.md` for task graph validation
+- **Tutorial (Optional)**: only when tutorial mode is on (see `references/tutorial-setup.md`), also follow `references/check-tutorial-addon.md`
 
 ### 4. ACT: Retrospect (5-10 min)
 - **Process Review**: Identify what worked and what to improve
 - **Continuous Improvement**: Update 1-3 small things for next cycle
 - See `references/act-prompts.md` for retrospective guides
 - **Beads (Optional)**: See `references/act-beads-addon.md` for storing retrospectives
+- **Tutorial (Optional)**: only when tutorial mode is on (see `references/tutorial-setup.md`), also follow `references/act-tutorial-addon.md`
 
 ## When to Use Each Phase
 

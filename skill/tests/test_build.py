@@ -102,10 +102,11 @@ TUTORIAL_SOURCE_FILES = [
     TUTORIAL_ADDON_DIR / "act-tutorial-addon.md",
 ]
 
-# Optional third-party addons. Each slug's source files must exist, and every
-# SKILL.md reference to that slug must be marked Optional. Add a slug here
-# (plus an ADDON_SOURCE_FILES entry) when a new addon lands.
-ADDON_SLUGS = ["beads", "ponytail", "superpowers", "autonomous-critic"]
+# Optional addons (third-party integrations and first-party PDCA-owned ones alike).
+# Each slug's source files must exist, and every SKILL.md reference to that slug must
+# be marked Optional. Add a slug here (plus an ADDON_SOURCE_FILES entry) when a new
+# addon lands.
+ADDON_SLUGS = ["beads", "ponytail", "superpowers", "autonomous-critic", "tutorial"]
 
 ADDON_SOURCE_FILES = {
     "beads": BEADS_SOURCE_FILES,
