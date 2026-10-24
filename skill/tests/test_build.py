@@ -47,6 +47,7 @@ EXPECTED_FILES = [
     f"{SKILL_NAME}/references/check-autonomous-critic-addon.md",
     f"{SKILL_NAME}/references/autonomous-critic-setup.md",
     f"{SKILL_NAME}/references/tutorial-setup.md",
+    f"{SKILL_NAME}/references/plan-tutorial-addon.md",
     f"{SKILL_NAME}/references/testing-anti-patterns.md",
     f"{SKILL_NAME}/references/scripts/export-requirements.sh",
     f"{SKILL_NAME}/commands/pdca.md",
@@ -92,6 +93,7 @@ AUTONOMOUS_CRITIC_SOURCE_FILES = [
 
 TUTORIAL_SOURCE_FILES = [
     TUTORIAL_ADDON_DIR / "tutorial-setup.md",
+    TUTORIAL_ADDON_DIR / "plan-tutorial-addon.md",
 ]
 
 # Optional third-party addons. Each slug's source files must exist, and every
