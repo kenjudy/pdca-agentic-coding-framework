@@ -50,6 +50,7 @@ EXPECTED_FILES = [
     f"{SKILL_NAME}/references/plan-tutorial-addon.md",
     f"{SKILL_NAME}/references/do-tutorial-addon.md",
     f"{SKILL_NAME}/references/check-tutorial-addon.md",
+    f"{SKILL_NAME}/references/act-tutorial-addon.md",
     f"{SKILL_NAME}/references/testing-anti-patterns.md",
     f"{SKILL_NAME}/references/scripts/export-requirements.sh",
     f"{SKILL_NAME}/commands/pdca.md",
@@ -98,6 +99,7 @@ TUTORIAL_SOURCE_FILES = [
     TUTORIAL_ADDON_DIR / "plan-tutorial-addon.md",
     TUTORIAL_ADDON_DIR / "do-tutorial-addon.md",
     TUTORIAL_ADDON_DIR / "check-tutorial-addon.md",
+    TUTORIAL_ADDON_DIR / "act-tutorial-addon.md",
 ]
 
 # Optional third-party addons. Each slug's source files must exist, and every
