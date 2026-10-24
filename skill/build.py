@@ -73,6 +73,7 @@ COPIED_FROM_ADDON = {
     "superpowers-workflow.md": "superpowers-addon/sources/superpowers-workflow.md",
     "check-autonomous-critic-addon.md": "autonomous-critic-addon/sources/check-autonomous-critic-addon.md",
     "autonomous-critic-setup.md": "autonomous-critic-addon/sources/autonomous-critic-setup.md",
+    "tutorial-setup.md": "tutorial-addon/sources/tutorial-setup.md",
 }
 
 EXPORT_SCRIPT_SRC = "beads-addon/scripts/export-requirements.sh"
@@ -147,6 +148,7 @@ MANIFEST = (
     "references/superpowers-workflow.md",
     "references/check-autonomous-critic-addon.md",
     "references/autonomous-critic-setup.md",
+    "references/tutorial-setup.md",
     "references/testing-anti-patterns.md",
     f"references/{EXPORT_SCRIPT_DEST}",
     *(f"commands/{name}" for name in COMMAND_FILES),

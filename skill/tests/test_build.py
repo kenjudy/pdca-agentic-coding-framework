@@ -23,6 +23,7 @@ BEADS_ADDON_DIR = CLAUDE_SKILL_DIR / "pdca-framework" / "beads-addon" / "sources
 PONYTAIL_ADDON_DIR = CLAUDE_SKILL_DIR / "pdca-framework" / "ponytail-addon" / "sources"
 SUPERPOWERS_ADDON_DIR = CLAUDE_SKILL_DIR / "pdca-framework" / "superpowers-addon" / "sources"
 AUTONOMOUS_CRITIC_ADDON_DIR = CLAUDE_SKILL_DIR / "pdca-framework" / "autonomous-critic-addon" / "sources"
+TUTORIAL_ADDON_DIR = CLAUDE_SKILL_DIR / "pdca-framework" / "tutorial-addon" / "sources"
 
 SKILL_NAME = "pdca-framework"
 
@@ -45,6 +46,7 @@ EXPECTED_FILES = [
     f"{SKILL_NAME}/references/superpowers-workflow.md",
     f"{SKILL_NAME}/references/check-autonomous-critic-addon.md",
     f"{SKILL_NAME}/references/autonomous-critic-setup.md",
+    f"{SKILL_NAME}/references/tutorial-setup.md",
     f"{SKILL_NAME}/references/testing-anti-patterns.md",
     f"{SKILL_NAME}/references/scripts/export-requirements.sh",
     f"{SKILL_NAME}/commands/pdca.md",
@@ -88,6 +90,10 @@ AUTONOMOUS_CRITIC_SOURCE_FILES = [
     AUTONOMOUS_CRITIC_ADDON_DIR / "autonomous-critic-setup.md",
 ]
 
+TUTORIAL_SOURCE_FILES = [
+    TUTORIAL_ADDON_DIR / "tutorial-setup.md",
+]
+
 # Optional third-party addons. Each slug's source files must exist, and every
 # SKILL.md reference to that slug must be marked Optional. Add a slug here
 # (plus an ADDON_SOURCE_FILES entry) when a new addon lands.
@@ -98,6 +104,7 @@ ADDON_SOURCE_FILES = {
     "ponytail": PONYTAIL_SOURCE_FILES,
     "superpowers": SUPERPOWERS_SOURCE_FILES,
     "autonomous-critic": AUTONOMOUS_CRITIC_SOURCE_FILES,
+    "tutorial": TUTORIAL_SOURCE_FILES,
 }
 
 CLAUDE_ADDON_DIR = CLAUDE_SKILL_DIR / "pdca-framework" / "claude-addon" / "injections"
