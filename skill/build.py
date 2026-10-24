@@ -76,6 +76,7 @@ COPIED_FROM_ADDON = {
     "tutorial-setup.md": "tutorial-addon/sources/tutorial-setup.md",
     "plan-tutorial-addon.md": "tutorial-addon/sources/plan-tutorial-addon.md",
     "do-tutorial-addon.md": "tutorial-addon/sources/do-tutorial-addon.md",
+    "check-tutorial-addon.md": "tutorial-addon/sources/check-tutorial-addon.md",
 }
 
 EXPORT_SCRIPT_SRC = "beads-addon/scripts/export-requirements.sh"
@@ -153,6 +154,7 @@ MANIFEST = (
     "references/tutorial-setup.md",
     "references/plan-tutorial-addon.md",
     "references/do-tutorial-addon.md",
+    "references/check-tutorial-addon.md",
     "references/testing-anti-patterns.md",
     f"references/{EXPORT_SCRIPT_DEST}",
     *(f"commands/{name}" for name in COMMAND_FILES),
