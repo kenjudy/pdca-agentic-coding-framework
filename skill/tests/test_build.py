@@ -23,6 +23,7 @@ BEADS_ADDON_DIR = CLAUDE_SKILL_DIR / "pdca-framework" / "beads-addon" / "sources
 PONYTAIL_ADDON_DIR = CLAUDE_SKILL_DIR / "pdca-framework" / "ponytail-addon" / "sources"
 SUPERPOWERS_ADDON_DIR = CLAUDE_SKILL_DIR / "pdca-framework" / "superpowers-addon" / "sources"
 AUTONOMOUS_CRITIC_ADDON_DIR = CLAUDE_SKILL_DIR / "pdca-framework" / "autonomous-critic-addon" / "sources"
+TUTORIAL_ADDON_DIR = CLAUDE_SKILL_DIR / "pdca-framework" / "tutorial-addon" / "sources"
 
 SKILL_NAME = "pdca-framework"
 
@@ -45,6 +46,11 @@ EXPECTED_FILES = [
     f"{SKILL_NAME}/references/superpowers-workflow.md",
     f"{SKILL_NAME}/references/check-autonomous-critic-addon.md",
     f"{SKILL_NAME}/references/autonomous-critic-setup.md",
+    f"{SKILL_NAME}/references/tutorial-setup.md",
+    f"{SKILL_NAME}/references/plan-tutorial-addon.md",
+    f"{SKILL_NAME}/references/do-tutorial-addon.md",
+    f"{SKILL_NAME}/references/check-tutorial-addon.md",
+    f"{SKILL_NAME}/references/act-tutorial-addon.md",
     f"{SKILL_NAME}/references/testing-anti-patterns.md",
     f"{SKILL_NAME}/references/scripts/export-requirements.sh",
     f"{SKILL_NAME}/commands/pdca.md",
@@ -88,16 +94,26 @@ AUTONOMOUS_CRITIC_SOURCE_FILES = [
     AUTONOMOUS_CRITIC_ADDON_DIR / "autonomous-critic-setup.md",
 ]
 
-# Optional third-party addons. Each slug's source files must exist, and every
-# SKILL.md reference to that slug must be marked Optional. Add a slug here
-# (plus an ADDON_SOURCE_FILES entry) when a new addon lands.
-ADDON_SLUGS = ["beads", "ponytail", "superpowers", "autonomous-critic"]
+TUTORIAL_SOURCE_FILES = [
+    TUTORIAL_ADDON_DIR / "tutorial-setup.md",
+    TUTORIAL_ADDON_DIR / "plan-tutorial-addon.md",
+    TUTORIAL_ADDON_DIR / "do-tutorial-addon.md",
+    TUTORIAL_ADDON_DIR / "check-tutorial-addon.md",
+    TUTORIAL_ADDON_DIR / "act-tutorial-addon.md",
+]
+
+# Optional addons (third-party integrations and first-party PDCA-owned ones alike).
+# Each slug's source files must exist, and every SKILL.md reference to that slug must
+# be marked Optional. Add a slug here (plus an ADDON_SOURCE_FILES entry) when a new
+# addon lands.
+ADDON_SLUGS = ["beads", "ponytail", "superpowers", "autonomous-critic", "tutorial"]
 
 ADDON_SOURCE_FILES = {
     "beads": BEADS_SOURCE_FILES,
     "ponytail": PONYTAIL_SOURCE_FILES,
     "superpowers": SUPERPOWERS_SOURCE_FILES,
     "autonomous-critic": AUTONOMOUS_CRITIC_SOURCE_FILES,
+    "tutorial": TUTORIAL_SOURCE_FILES,
 }
 
 CLAUDE_ADDON_DIR = CLAUDE_SKILL_DIR / "pdca-framework" / "claude-addon" / "injections"
@@ -2468,3 +2484,81 @@ class TestEvalBaselines(unittest.TestCase):
                     f"{path.name} records no deepeval version, so the scores in it cannot "
                     "be attributed to a dependency set (#122)",
                 )
+
+
+class TestTutorialAddonContent(unittest.TestCase):
+    """Pin tutorial-addon's content and wiring. The generic addon tests (existence,
+    packaging, and "some Optional reference exists somewhere") do not catch a file's
+    content being wrong, or SKILL.md pointing a phase at the wrong file, or the addon
+    being wired as always-on instead of off-by-default -- a CHECK-phase critic pass
+    found 11 such mutations that left the full suite green."""
+
+    PHASES = ("PLAN", "DO", "CHECK", "ACT")
+
+    def _read_tutorial_file(self, phase):
+        return (TUTORIAL_ADDON_DIR / f"{phase.lower()}-tutorial-addon.md").read_text()
+
+    def test_each_phase_file_has_its_own_qualified_opener_and_no_others(self):
+        for phase in self.PHASES:
+            content = self._read_tutorial_file(phase)
+            with self.subTest(phase=phase):
+                self.assertIn(
+                    f"`Tutorial mode: on ({phase})`",
+                    content,
+                    f"{phase.lower()}-tutorial-addon.md is missing its own phase-qualified "
+                    "opener instruction",
+                )
+                for other in self.PHASES:
+                    if other == phase:
+                        continue
+                    self.assertNotIn(
+                        f"Tutorial mode: on ({other})",
+                        content,
+                        f"{phase.lower()}-tutorial-addon.md names the {other} opener, "
+                        "likely copy-paste residue from another phase's file",
+                    )
+
+    def test_qualified_opener_appears_nowhere_but_the_phase_files(self):
+        skill_content = SKILL_SRC.read_text()
+        setup_content = (TUTORIAL_ADDON_DIR / "tutorial-setup.md").read_text()
+        for phase in self.PHASES:
+            qualified = f"Tutorial mode: on ({phase})"
+            with self.subTest(phase=phase):
+                self.assertNotIn(
+                    qualified,
+                    skill_content,
+                    f"SKILL.md quotes '{qualified}' -- the model could echo this without "
+                    "ever reading the phase's tutorial file, defeating the point of the "
+                    "opener as an observable activation signal",
+                )
+                self.assertNotIn(qualified, setup_content, f"tutorial-setup.md quotes '{qualified}'")
+
+    def test_skill_md_wires_each_phase_to_its_own_tutorial_file(self):
+        skill_content = SKILL_SRC.read_text()
+        for phase in self.PHASES:
+            filename = f"{phase.lower()}-tutorial-addon.md"
+            with self.subTest(phase=phase):
+                pattern = (
+                    rf"only when tutorial mode is on.*also follow "
+                    rf"`references/{re.escape(filename)}`"
+                )
+                self.assertRegex(
+                    skill_content,
+                    pattern,
+                    f"SKILL.md has no line conditioning {filename} on tutorial mode being "
+                    "on -- it may be missing, pointed at the wrong phase's file, or "
+                    "(worst case) wired as always-on, contradicting 'off by default'",
+                )
+
+    def test_setup_file_states_off_by_default_and_its_scope(self):
+        content = (TUTORIAL_ADDON_DIR / "tutorial-setup.md").read_text()
+        self.assertIn(
+            "off by default",
+            content,
+            "tutorial-setup.md no longer states the addon is off by default",
+        )
+        self.assertIn(
+            "## Scope",
+            content,
+            "tutorial-setup.md is missing its Scope section (subagents/critics excluded)",
+        )
