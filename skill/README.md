@@ -897,6 +897,24 @@ There's no PDCA-side install step. `references/ponytail-setup.md` covers:
 - How ponytail's own mode is set (`/ponytail lite|full|ultra|off`) — stated as ponytail's mechanism, not PDCA's
 - A pointer to [ponytail's own repository](https://github.com/DietrichGebert/ponytail) for installation — PDCA does not vendor install instructions, since they'd drift from upstream
 
+## Tutorial Mode
+
+**Optional, off by default** — adds a brief explanation of the current phase (what it is, how
+to use it, what comes next) to each PLAN/DO/CHECK/ACT response, meant for someone new to the
+framework. No install step, no external tool — it's PDCA's own content.
+
+Turn it on durably by declaring it once in your project's instructions (`CLAUDE.md` for Claude
+Code, `AGENTS.md` for Codex, or a claude.ai Project's custom instructions):
+
+```markdown
+## PDCA Tutorial Mode
+- Tutorial mode: on
+```
+
+or for a single phase invocation, prefix your request with `tutorial mode:`. See
+`references/tutorial-setup.md` for the exact activation rules and scope (it applies only to
+replies addressed to you, never to a subagent's or critic's internal output).
+
 ---
 
 **Ready to start?** On Claude Code, try: `/pdca:cycle I need to [your coding task]`
