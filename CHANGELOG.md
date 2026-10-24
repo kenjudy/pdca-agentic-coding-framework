@@ -1,6 +1,6 @@
 # PDCA Framework Skill - Update Summary
 
-## Unreleased
+## v1.5.0 (2026-10-24)
 
 ### Documentation
 - Fixed `skill/README.md`, root `README.md`, and `skill/BUILD.md`, which still only
