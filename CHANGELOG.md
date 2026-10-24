@@ -11,6 +11,19 @@
   for manual installs), with `@pdca-framework` kept alongside for claude.ai/Codex,
   where slash commands aren't available.
 
+### Added: Tutorial Mode addon — explains the current phase to someone new to PDCA
+
+- New optional, first-party addon (`tutorial-addon/`, same shape as `autonomous-critic-addon/`):
+  when on, each PLAN/DO/CHECK/ACT response briefly explains what that phase is, how to use it,
+  and what comes next, framed as something the human does next rather than a cue for the agent
+  to keep going.
+- Off by default. Turn it on durably via a `## PDCA Tutorial Mode` section in your project's
+  instructions (`CLAUDE.md`, `AGENTS.md`, or a claude.ai Project's custom instructions — see
+  `references/tutorial-setup.md`), or for one invocation via a leading `tutorial mode:` prefix.
+  Scoped to replies addressed to the human operator only; a subagent or autonomous critic that
+  loads project instructions does not add tutorial explanations to its own output.
+- No existing PLAN/DO/CHECK/ACT behavior changes — this only adds an optional explanatory aside.
+
 ---
 
 ## v1.4.0 (2026-09-28)
