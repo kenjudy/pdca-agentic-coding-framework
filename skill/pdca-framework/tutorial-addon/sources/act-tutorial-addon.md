@@ -3,7 +3,7 @@
 # Tutorial: ACT Phase (Optional)
 
 **If tutorial mode is on** (see `tutorial-setup.md`), open your first reply in this phase with
-the line `Tutorial mode: on`, then weave in — briefly, don't pad the actual ACT output — what
+the line `Tutorial mode: on (ACT)`, then weave in — briefly, don't pad the actual ACT output — what
 follows. This is first-reply-only: don't repeat it on every turn within the same phase.
 
 **What this phase is:** a short, human-facilitated retrospective — what worked, what didn't,

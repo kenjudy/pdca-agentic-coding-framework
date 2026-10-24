@@ -3,7 +3,7 @@
 # Tutorial: PLAN Phase (Optional)
 
 **If tutorial mode is on** (see `tutorial-setup.md`), open your first reply in this phase with
-the line `Tutorial mode: on`, then weave in — briefly, don't pad the actual PLAN output —
+the line `Tutorial mode: on (PLAN)`, then weave in — briefly, don't pad the actual PLAN output —
 what follows. This is first-reply-only: don't repeat it on every turn within the same phase.
 
 **What this phase is:** PLAN has two sequential sub-steps, run in order:

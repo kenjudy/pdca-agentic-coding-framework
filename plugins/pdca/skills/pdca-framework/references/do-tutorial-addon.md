@@ -3,7 +3,7 @@
 # Tutorial: DO Phase (Optional)
 
 **If tutorial mode is on** (see `tutorial-setup.md`), open your first reply in this phase with
-the line `Tutorial mode: on`, then weave in — briefly, don't pad the actual DO output — what
+the line `Tutorial mode: on (DO)`, then weave in — briefly, don't pad the actual DO output — what
 follows. This is first-reply-only: don't repeat it on every turn within the same phase.
 
 **What this phase is:** strict TDD execution, one plan step at a time. Before every test: a

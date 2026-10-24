@@ -3,7 +3,7 @@
 # Tutorial: CHECK Phase (Optional)
 
 **If tutorial mode is on** (see `tutorial-setup.md`), open your first reply in this phase with
-the line `Tutorial mode: on`, then weave in — briefly, don't pad the actual CHECK output —
+the line `Tutorial mode: on (CHECK)`, then weave in — briefly, don't pad the actual CHECK output —
 what follows. This is first-reply-only: don't repeat it on every turn within the same phase.
 
 **What this phase is:** a completeness check against PLAN's acceptance criteria and the
