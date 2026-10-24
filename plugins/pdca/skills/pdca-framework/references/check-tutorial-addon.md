@@ -14,7 +14,8 @@ file, an adversarial critic pass (a fresh subagent, model of your choice) belong
 **How to use it:** invoke this phase once, after all of DO's plan steps are complete — not
 per step. Answer its checklist honestly; a "yes" you can't point to evidence for isn't a yes.
 
-**What's next:** you (not the agent) decide the cycle is verified. Open ACT with `/pdca:act`,
-`/pdca-act`, or `@pdca-framework` for the retrospective.
+**What's next:** you (not the agent) decide the cycle is verified. Open ACT with `/pdca:act`
+(marketplace install), `/pdca-act` (manual install), or `@pdca-framework` (claude.ai/Codex)
+for the retrospective.
 
 Full walkthrough: [CHEATSHEET.md](https://github.com/kenjudy/pdca-agentic-coding-framework/blob/main/CHEATSHEET.md).

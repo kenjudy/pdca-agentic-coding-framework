@@ -22,6 +22,9 @@
   `references/tutorial-setup.md`), or for one invocation via a leading `tutorial mode:` prefix.
   Scoped to replies addressed to the human operator only; a subagent or autonomous critic that
   loads project instructions does not add tutorial explanations to its own output.
+- Each phase's first reply opens with a phase-qualified line (`Tutorial mode: on (PLAN)`, etc.)
+  so activation is observable — the same string never appears in `SKILL.md` or the config
+  example, so printing it is evidence the phase's own file was actually read.
 - No existing PLAN/DO/CHECK/ACT behavior changes — this only adds an optional explanatory aside.
 
 ---

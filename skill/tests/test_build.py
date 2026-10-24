@@ -2484,3 +2484,81 @@ class TestEvalBaselines(unittest.TestCase):
                     f"{path.name} records no deepeval version, so the scores in it cannot "
                     "be attributed to a dependency set (#122)",
                 )
+
+
+class TestTutorialAddonContent(unittest.TestCase):
+    """Pin tutorial-addon's content and wiring. The generic addon tests (existence,
+    packaging, and "some Optional reference exists somewhere") do not catch a file's
+    content being wrong, or SKILL.md pointing a phase at the wrong file, or the addon
+    being wired as always-on instead of off-by-default -- a CHECK-phase critic pass
+    found 11 such mutations that left the full suite green."""
+
+    PHASES = ("PLAN", "DO", "CHECK", "ACT")
+
+    def _read_tutorial_file(self, phase):
+        return (TUTORIAL_ADDON_DIR / f"{phase.lower()}-tutorial-addon.md").read_text()
+
+    def test_each_phase_file_has_its_own_qualified_opener_and_no_others(self):
+        for phase in self.PHASES:
+            content = self._read_tutorial_file(phase)
+            with self.subTest(phase=phase):
+                self.assertIn(
+                    f"`Tutorial mode: on ({phase})`",
+                    content,
+                    f"{phase.lower()}-tutorial-addon.md is missing its own phase-qualified "
+                    "opener instruction",
+                )
+                for other in self.PHASES:
+                    if other == phase:
+                        continue
+                    self.assertNotIn(
+                        f"Tutorial mode: on ({other})",
+                        content,
+                        f"{phase.lower()}-tutorial-addon.md names the {other} opener, "
+                        "likely copy-paste residue from another phase's file",
+                    )
+
+    def test_qualified_opener_appears_nowhere_but_the_phase_files(self):
+        skill_content = SKILL_SRC.read_text()
+        setup_content = (TUTORIAL_ADDON_DIR / "tutorial-setup.md").read_text()
+        for phase in self.PHASES:
+            qualified = f"Tutorial mode: on ({phase})"
+            with self.subTest(phase=phase):
+                self.assertNotIn(
+                    qualified,
+                    skill_content,
+                    f"SKILL.md quotes '{qualified}' -- the model could echo this without "
+                    "ever reading the phase's tutorial file, defeating the point of the "
+                    "opener as an observable activation signal",
+                )
+                self.assertNotIn(qualified, setup_content, f"tutorial-setup.md quotes '{qualified}'")
+
+    def test_skill_md_wires_each_phase_to_its_own_tutorial_file(self):
+        skill_content = SKILL_SRC.read_text()
+        for phase in self.PHASES:
+            filename = f"{phase.lower()}-tutorial-addon.md"
+            with self.subTest(phase=phase):
+                pattern = (
+                    rf"only when tutorial mode is on.*also follow "
+                    rf"`references/{re.escape(filename)}`"
+                )
+                self.assertRegex(
+                    skill_content,
+                    pattern,
+                    f"SKILL.md has no line conditioning {filename} on tutorial mode being "
+                    "on -- it may be missing, pointed at the wrong phase's file, or "
+                    "(worst case) wired as always-on, contradicting 'off by default'",
+                )
+
+    def test_setup_file_states_off_by_default_and_its_scope(self):
+        content = (TUTORIAL_ADDON_DIR / "tutorial-setup.md").read_text()
+        self.assertIn(
+            "off by default",
+            content,
+            "tutorial-setup.md no longer states the addon is off by default",
+        )
+        self.assertIn(
+            "## Scope",
+            content,
+            "tutorial-setup.md is missing its Scope section (subagents/critics excluded)",
+        )

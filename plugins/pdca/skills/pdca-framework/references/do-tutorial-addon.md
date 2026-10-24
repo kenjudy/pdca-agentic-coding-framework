@@ -16,6 +16,7 @@ Intervene immediately if the agent writes code before a failing test, or writes 
 plan step calls for.
 
 **What's next:** you (not the agent) decide when all plan steps are done. Open CHECK with
-`/pdca:check`, `/pdca-check`, or `@pdca-framework` once implementation is complete.
+`/pdca:check` (marketplace install), `/pdca-check` (manual install), or `@pdca-framework`
+(claude.ai/Codex) once implementation is complete.
 
 Full walkthrough: [CHEATSHEET.md](https://github.com/kenjudy/pdca-agentic-coding-framework/blob/main/CHEATSHEET.md).
