@@ -463,7 +463,7 @@ This repository uses a dual license. Documentation and prompts — including all
 
 ## Acknowledgments
 
-The PDCA cycle itself comes from **W. Edwards Deming**, popularizing **Walter Shewhart**'s original Plan-Do-Check-Act formulation from statistical process control — the learning loop lean manufacturing runs on, applied here to agent collaboration instead of a production line.
+The PDCA cycle itself comes from **W. Edwards Deming**, popularizing **Walter Shewhart**'s original Plan-Do-Check-Act formulation from statistical process control. The loop has outlasted the production line it was built for: lean manufacturing, lean design, Six Sigma, and agile retrospectives all run some version of it, because continuous improvement comes from closing the loop, not from any particular tool or cadence. This framework points that same loop at agent collaboration.
 
 Beyond that lineage, individual phases draw on further sources, credited here as they're confirmed:
 
