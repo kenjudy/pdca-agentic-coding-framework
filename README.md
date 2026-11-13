@@ -41,7 +41,7 @@ The PDCA cycle helps me own the code, even when I haven't typed a line of it.
 - **Token efficiency:** Loads only what's needed in background
 - **Maintenance:** Update once, improves everywhere
 - **Platforms:** macOS, Linux, Windows
-- **Also included:** optional [ponytail](https://github.com/DietrichGebert/ponytail) interop. If you already run ponytail, PDCA reconciles its minimalism guidance with TDD discipline automatically. Nothing extra to install.
+- **Also included:** optional [ponytail](https://github.com/DietrichGebert/ponytail) interop. If you already run ponytail, PDCA reconciles its minimalism guidance with TDD discipline automatically. Also tested with [caveman](https://github.com/juliusbrussee/caveman). Combined, this reduces generated tokens in both code and session transcripts.
 
 📦 **[Get started with Standard Skill →](skill/README.md)**
 
