@@ -1,10 +1,32 @@
-# PDCA Framework
+# PDCA Agentic Coding Framework
 
-A Claude skill for human-supervised AI-assisted software development using Plan-Do-Check-Act methodology. Enforces explicit human-AI role separation, mandatory STOP gates, and TDD discipline.
+A Claude skill for human-supervised AI-assisted software development using Plan-Do-Check-Act methodology. Enforces explicit human-AI role separation, mandatory STOP gates, TDD discipline, and continuous improvement.
 
-> **Looking to build a custom AI workflow for any domain?** See [human-directed-ai-workflow-builder](https://github.com/kenjudy/human-directed-ai-workflow-builder) — generates a tailored PDCA skill for any complex repeatable task, with a built-in learning loop that sharpens it each cycle.
+The tools make us faster. The business outcomes aren't keeping up.
+
+DX's Q2 2026 report, tracking 500+ organizations for a year, found median weekly code throughput up 37% and deployment frequency up double digits. Developers' own sense of how fast they're delivering hasn't moved: perceived rate of delivery has held flat for a full year, and the Developer Experience Index slipped from 67 to 65. DORA's 2025 survey found the same split industry-wide: individual developers reporting real productivity and quality gains, team-level delivery stability barely moving. PR size nearly doubled over the same stretch, and change confidence fell 6.1% while code maintainability rose only 3.8%. Code is easier to read. It's harder to trust.
+
+Heavier code review doesn't fix that; review lands at the end, after the batch size has already exploded. Waiting for a smarter model doesn't either. What fixes it is structure, applied earlier and distributed through the work instead of stacked at the end.
+
+Anthropic's own recommended loop for working with Claude Code is explore, plan, implement, commit. What's missing is the retrospective. PDCA is that loop, closed: Plan, Do, Check, Act, lean's learning cycle, pointed now at agent collaboration.
+
+More on the evidence and the mechanism: [SOSA 2025 Notes](https://github.com/kenjudy/pdca-agentic-coding-framework/blob/main/presentations/SOSA%202025/SOSA%202025%20Notes.md), a presentation prepared for [XP 2026](https://kenjudy.us/presentations/human-centric-ai-code-generation/).
+
+> **Looking to build a custom AI workflow for any domain?** See [human-directed-ai-workflow-builder](https://github.com/kenjudy/human-directed-ai-workflow-builder). It generates a tailored PDCA skill for any complex repeatable task, with a built-in learning loop that sharpens it each cycle.
 
 > **Already know the framework and just need a reference?** See [CHEATSHEET.md](CHEATSHEET.md) — a one-page guide to running a PDCA session: what to say at each phase, and what only the human operator can catch.
+
+---
+
+## PDCA Framework Overview
+
+The PDCA workflow consists of four phases:
+1. **Plan** - Analysis and detailed planning. Forces architecture discovery before any code exists, so the agent reuses what's already there instead of inventing new abstractions.
+2. **Do** - Test-driven implementation. All new code is written to address a specific expectation for behavior the current code does not address. Nothing ships that wasn't proven necessary.
+3. **Check** - Completeness verification. An explicit, auditable definition of done, not the agent's own say-so.
+4. **Act** - Retrospection for continuous improvement. The agent gathers the data and asks probing questions. I arrive at the insights and take action.
+
+The PDCA cycle helps me own the code, even when I haven't typed a line of it.
 
 ---
 
@@ -19,7 +41,7 @@ A Claude skill for human-supervised AI-assisted software development using Plan-
 - **Token efficiency:** Loads only what's needed in background
 - **Maintenance:** Update once, improves everywhere
 - **Platforms:** macOS, Linux, Windows
-- **Also included:** optional [ponytail](https://github.com/DietrichGebert/ponytail) interop — if you already run ponytail, PDCA reconciles its minimalism guidance with TDD discipline automatically. Nothing extra to install; inert if you don't have ponytail.
+- **Also included:** optional [ponytail](https://github.com/DietrichGebert/ponytail) interop. If you already run ponytail, PDCA reconciles its minimalism guidance with TDD discipline automatically. Also tested with [caveman](https://github.com/juliusbrussee/caveman). Combined, this reduces generated tokens in both code and session transcripts.
 
 📦 **[Get started with Standard Skill →](skill/README.md)**
 
@@ -83,29 +105,6 @@ running the full cycle; `/pdca:plan`/`/pdca-plan` sequences PLAN's own two sub-s
 (1a Analysis, then 1b Detailed Planning) rather than collapsing them.
 
 📦 **[Get started with Per-Phase Commands →](plugins/pdca/README.md)**
-
----
-
-## Why This Framework
-
-Research shows AI code generation without human oversight leads to measurable quality degradation:
-- 10x increase in duplicated code (GitClear 2024)
-- 7.2% decrease in delivery stability per 25% AI adoption increase (Google DORA 2024)
-- 19% slower development with AI tools vs. without (METR 2025)
-
-PDCA Framework keeps humans actively engaged, empowered, and accountable while using structured prompts to regulate agent behavior toward transparency and discipline.
-
-Read the full framework paper: [SOSA 2025 Notes](https://github.com/kenjudy/pdca-agentic-coding-framework/blob/main/presentations/SOSA%202025/SOSA%202025%20Notes.md) — Presentation prepared for [XP 2026](https://kenjudy.us/presentations/human-centric-ai-code-generation/)
-
----
-
-## PDCA Framework Overview
-
-The PDCA workflow consists of four phases:
-1. **Plan** - Analysis and detailed planning
-2. **Do** - Test-driven implementation
-3. **Check** - Completeness verification
-4. **Act** - Retrospection and continuous improvement
 
 ---
 
@@ -464,14 +463,20 @@ This repository uses a dual license. Documentation and prompts — including all
 
 ## Acknowledgments
 
-The TDD content in this framework draws from several foundational sources:
+The PDCA cycle itself comes from **W. Edwards Deming**, popularizing **Walter Shewhart**'s original Plan-Do-Check-Act formulation from statistical process control. The loop has outlasted the production line it was built for: lean manufacturing, lean design, Six Sigma, and agile retrospectives all run some version of it, because continuous improvement comes from closing the loop. This framework points that same loop at agent collaboration.
 
+Beyond that lineage, individual phases draw on further sources, credited here as they're confirmed:
+
+**Do (test-driven implementation):**
 - **[afbreilyn/afb-tdd](https://github.com/afbreilyn/afb-tdd)** (AFB Breilyn) -- stub design principle ("hardcode if possible, don't make it handle future scenarios"), Anti-Pattern #7 (Happy-Path Tunnel Vision), and the called-shot discipline of predicting the exact failure before running a test
 - **[obra/superpowers](https://github.com/obra/superpowers/tree/main/skills/test-driven-development)** (Jesse Vincent) -- Testing Anti-Patterns reference, adapted and extended for this framework
 - **Kent Beck** -- *TDD by Example* (2002), "Canon TDD" (2023), *Tidy First?* (2023), *Refactoring* (1999), and "Test Desiderata": foundational TDD sequencing (Fake It / Obvious Implementation / Triangulate), the Starter Test principle, Two Hats doctrine, and the behavioral definition of unit tests
 - **James Grenning** -- ZOMBIES test ordering (Zero/One/Many first), informing degenerate-case-first sequencing
 
-obra/superpowers and afb-tdd are MIT licensed; content adapted from them is used with attribution as required. Beck and Grenning are cited as intellectual influences; no copyrighted text is reproduced from their published works.
+**Act (retrospection and continuous improvement):**
+- **Diana Larsen**, co-author, with Esther Derby, of *Agile Retrospectives: Making Good Teams Great* (2006): the retrospective-as-learning-loop framing behind this phase, and the view that teams improve by learning, not just executing
+
+obra/superpowers and afb-tdd are MIT licensed; content adapted from them is used with attribution as required. Beck, Grenning, Deming, Shewhart, and Larsen are cited as intellectual influences; no copyrighted text is reproduced from their published works.
 
 ---
 
