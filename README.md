@@ -10,7 +10,7 @@ Heavier code review doesn't fix that; review lands at the end, after the batch s
 
 Anthropic's own recommended loop for working with Claude Code is explore, plan, implement, commit. What's missing is the retrospective. PDCA is that loop, closed: Plan, Do, Check, Act, lean's learning cycle, pointed now at agent collaboration.
 
-The agent drafts the retrospective. I own what it says. At the end, it's my code, even on the days I haven't typed a line of it.
+The agent gathers the data and asks probing questions. I arrive at the insights and take action. The PDCA cycle helps me own the code, even when I haven't typed a line of it.
 
 More on the evidence and the mechanism: [SOSA 2025 Notes](https://github.com/kenjudy/pdca-agentic-coding-framework/blob/main/presentations/SOSA%202025/SOSA%202025%20Notes.md), a presentation prepared for [XP 2026](https://kenjudy.us/presentations/human-centric-ai-code-generation/).
 
