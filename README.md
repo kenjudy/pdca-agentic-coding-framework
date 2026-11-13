@@ -2,6 +2,18 @@
 
 A Claude skill for human-supervised AI-assisted software development using Plan-Do-Check-Act methodology. Enforces explicit human-AI role separation, mandatory STOP gates, and TDD discipline.
 
+The tools got faster. The outcomes didn't.
+
+DORA's 2025 research found individual developers reporting real gains: more confidence, fewer defects, faster cycles. Team-level delivery stability didn't move with it. GitClear's 2024 numbers show why: that was the first year copy-pasted code overtook moved, refactored code in commit history. Moved code fell from roughly a quarter of all changes to under a tenth; duplicated commits rose nearly tenfold. Individual productivity went up. Delivery didn't follow it.
+
+Heavier code review doesn't fix that; review lands at the end, after the batch size has already exploded. Waiting for a smarter model doesn't either. What fixes it is structure, applied earlier and distributed through the work instead of stacked at the end.
+
+Anthropic's own recommended loop for working with Claude Code is explore, plan, implement, commit. What's missing is the retrospective. PDCA is that loop, closed: Plan, Do, Check, Act, lean's learning cycle, pointed now at agent collaboration.
+
+The agent drafts the retrospective. I own what it says. At the end, it's my code, even on the days I haven't typed a line of it.
+
+More on the evidence and the mechanism: [SOSA 2025 Notes](https://github.com/kenjudy/pdca-agentic-coding-framework/blob/main/presentations/SOSA%202025/SOSA%202025%20Notes.md), a presentation prepared for [XP 2026](https://kenjudy.us/presentations/human-centric-ai-code-generation/).
+
 > **Looking to build a custom AI workflow for any domain?** See [human-directed-ai-workflow-builder](https://github.com/kenjudy/human-directed-ai-workflow-builder) — generates a tailored PDCA skill for any complex repeatable task, with a built-in learning loop that sharpens it each cycle.
 
 > **Already know the framework and just need a reference?** See [CHEATSHEET.md](CHEATSHEET.md) — a one-page guide to running a PDCA session: what to say at each phase, and what only the human operator can catch.
@@ -83,19 +95,6 @@ running the full cycle; `/pdca:plan`/`/pdca-plan` sequences PLAN's own two sub-s
 (1a Analysis, then 1b Detailed Planning) rather than collapsing them.
 
 📦 **[Get started with Per-Phase Commands →](plugins/pdca/README.md)**
-
----
-
-## Why This Framework
-
-Research shows AI code generation without human oversight leads to measurable quality degradation:
-- 10x increase in duplicated code (GitClear 2024)
-- 7.2% decrease in delivery stability per 25% AI adoption increase (Google DORA 2024)
-- 19% slower development with AI tools vs. without (METR 2025)
-
-PDCA Framework keeps humans actively engaged, empowered, and accountable while using structured prompts to regulate agent behavior toward transparency and discipline.
-
-Read the full framework paper: [SOSA 2025 Notes](https://github.com/kenjudy/pdca-agentic-coding-framework/blob/main/presentations/SOSA%202025/SOSA%202025%20Notes.md) — Presentation prepared for [XP 2026](https://kenjudy.us/presentations/human-centric-ai-code-generation/)
 
 ---
 
