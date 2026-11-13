@@ -23,10 +23,10 @@ More on the evidence and the mechanism: [SOSA 2025 Notes](https://github.com/ken
 ## PDCA Framework Overview
 
 The PDCA workflow consists of four phases:
-1. **Plan** - Analysis and detailed planning
-2. **Do** - Test-driven implementation
-3. **Check** - Completeness verification
-4. **Act** - Retrospection and continuous improvement
+1. **Plan** - Analysis and detailed planning. Forces architecture discovery before any code exists, so the agent reuses what's already there instead of inventing new abstractions.
+2. **Do** - Test-driven implementation. A failing test sits behind every change, so nothing ships that wasn't proven necessary.
+3. **Check** - Completeness verification. An explicit, auditable definition of done, not the agent's own say-so.
+4. **Act** - Retrospection and continuous improvement. Turns the human's own prompts and process, not the model, into the lever for getting better next time.
 
 ---
 
@@ -463,14 +463,20 @@ This repository uses a dual license. Documentation and prompts — including all
 
 ## Acknowledgments
 
-The TDD content in this framework draws from several foundational sources:
+The PDCA cycle itself comes from **W. Edwards Deming**, popularizing **Walter Shewhart**'s original Plan-Do-Check-Act formulation from statistical process control — the learning loop lean manufacturing runs on, applied here to agent collaboration instead of a production line.
 
+Beyond that lineage, individual phases draw on further sources, credited here as they're confirmed:
+
+**Do (test-driven implementation):**
 - **[afbreilyn/afb-tdd](https://github.com/afbreilyn/afb-tdd)** (AFB Breilyn) -- stub design principle ("hardcode if possible, don't make it handle future scenarios"), Anti-Pattern #7 (Happy-Path Tunnel Vision), and the called-shot discipline of predicting the exact failure before running a test
 - **[obra/superpowers](https://github.com/obra/superpowers/tree/main/skills/test-driven-development)** (Jesse Vincent) -- Testing Anti-Patterns reference, adapted and extended for this framework
 - **Kent Beck** -- *TDD by Example* (2002), "Canon TDD" (2023), *Tidy First?* (2023), *Refactoring* (1999), and "Test Desiderata": foundational TDD sequencing (Fake It / Obvious Implementation / Triangulate), the Starter Test principle, Two Hats doctrine, and the behavioral definition of unit tests
 - **James Grenning** -- ZOMBIES test ordering (Zero/One/Many first), informing degenerate-case-first sequencing
 
-obra/superpowers and afb-tdd are MIT licensed; content adapted from them is used with attribution as required. Beck and Grenning are cited as intellectual influences; no copyrighted text is reproduced from their published works.
+**Act (retrospection and continuous improvement):**
+- **Diana Larsen** -- co-author, with Esther Derby, of *Agile Retrospectives: Making Good Teams Great* (2006); the retrospective-as-learning-loop framing behind this phase, and the view that teams improve by learning, not just executing
+
+obra/superpowers and afb-tdd are MIT licensed; content adapted from them is used with attribution as required. Beck, Grenning, Deming, Shewhart, and Larsen are cited as intellectual influences; no copyrighted text is reproduced from their published works.
 
 ---
 
