@@ -20,6 +20,16 @@ More on the evidence and the mechanism: [SOSA 2025 Notes](https://github.com/ken
 
 ---
 
+## PDCA Framework Overview
+
+The PDCA workflow consists of four phases:
+1. **Plan** - Analysis and detailed planning
+2. **Do** - Test-driven implementation
+3. **Check** - Completeness verification
+4. **Act** - Retrospection and continuous improvement
+
+---
+
 ## pdca-framework — Three Ways to Use This Framework
 
 ### Option 1: Claude Skill - Standard (Recommended for Most Users)
@@ -95,16 +105,6 @@ running the full cycle; `/pdca:plan`/`/pdca-plan` sequences PLAN's own two sub-s
 (1a Analysis, then 1b Detailed Planning) rather than collapsing them.
 
 📦 **[Get started with Per-Phase Commands →](plugins/pdca/README.md)**
-
----
-
-## PDCA Framework Overview
-
-The PDCA workflow consists of four phases:
-1. **Plan** - Analysis and detailed planning
-2. **Do** - Test-driven implementation
-3. **Check** - Completeness verification
-4. **Act** - Retrospection and continuous improvement
 
 ---
 
