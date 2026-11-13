@@ -2,9 +2,9 @@
 
 A Claude skill for human-supervised AI-assisted software development using Plan-Do-Check-Act methodology. Enforces explicit human-AI role separation, mandatory STOP gates, TDD discipline, and continuous improvement.
 
-The tools got faster. The outcomes didn't.
+The tools make us faster. The business outcomes aren't keeping up.
 
-DORA's 2025 research found individual developers reporting real gains: more confidence, fewer defects, faster cycles. Team-level delivery stability didn't move with it. GitClear's 2024 numbers show why: that was the first year copy-pasted code overtook moved, refactored code in commit history. Moved code fell from roughly a quarter of all changes to under a tenth; duplicated commits rose nearly tenfold. Individual productivity went up. Delivery didn't follow it.
+DX's Q2 2026 report, tracking 500+ organizations for a year, found median weekly code throughput up 37% and deployment frequency up double digits. Developers' own sense of how fast they're delivering hasn't moved: perceived rate of delivery has held flat for a full year, and the Developer Experience Index slipped from 67 to 65. PR size nearly doubled over the same stretch, and change confidence fell 6.1% while code maintainability rose only 3.8%. Code is easier to read. It's harder to trust.
 
 Heavier code review doesn't fix that; review lands at the end, after the batch size has already exploded. Waiting for a smarter model doesn't either. What fixes it is structure, applied earlier and distributed through the work instead of stacked at the end.
 
