@@ -1,4 +1,4 @@
-# PDCA Framework
+# PDCA Agentic Coding Framework
 
 A Claude skill for human-supervised AI-assisted software development using Plan-Do-Check-Act methodology. Enforces explicit human-AI role separation, mandatory STOP gates, TDD discipline, and continuous improvement.
 
