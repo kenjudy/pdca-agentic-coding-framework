@@ -10,8 +10,6 @@ Heavier code review doesn't fix that; review lands at the end, after the batch s
 
 Anthropic's own recommended loop for working with Claude Code is explore, plan, implement, commit. What's missing is the retrospective. PDCA is that loop, closed: Plan, Do, Check, Act, lean's learning cycle, pointed now at agent collaboration.
 
-The agent gathers the data and asks probing questions. I arrive at the insights and take action. The PDCA cycle helps me own the code, even when I haven't typed a line of it.
-
 More on the evidence and the mechanism: [SOSA 2025 Notes](https://github.com/kenjudy/pdca-agentic-coding-framework/blob/main/presentations/SOSA%202025/SOSA%202025%20Notes.md), a presentation prepared for [XP 2026](https://kenjudy.us/presentations/human-centric-ai-code-generation/).
 
 > **Looking to build a custom AI workflow for any domain?** See [human-directed-ai-workflow-builder](https://github.com/kenjudy/human-directed-ai-workflow-builder). It generates a tailored PDCA skill for any complex repeatable task, with a built-in learning loop that sharpens it each cycle.
@@ -24,9 +22,11 @@ More on the evidence and the mechanism: [SOSA 2025 Notes](https://github.com/ken
 
 The PDCA workflow consists of four phases:
 1. **Plan** - Analysis and detailed planning. Forces architecture discovery before any code exists, so the agent reuses what's already there instead of inventing new abstractions.
-2. **Do** - Test-driven implementation. A failing test sits behind every change, so nothing ships that wasn't proven necessary.
+2. **Do** - Test-driven implementation. All new code is written to address a specific expectation for behavior the current code does not address. Nothing ships that wasn't proven necessary.
 3. **Check** - Completeness verification. An explicit, auditable definition of done, not the agent's own say-so.
-4. **Act** - Retrospection and continuous improvement. Turns the human's own prompts and process, not the model, into the lever for getting better next time.
+4. **Act** - Retrospection for continuous improvement. The agent gathers the data and asks probing questions. I arrive at the insights and take action.
+
+The PDCA cycle helps me own the code, even when I haven't typed a line of it.
 
 ---
 
